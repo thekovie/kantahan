@@ -1,0 +1,10 @@
+# How published models appear in the app. A model is published only if it is listed here and has
+# mapped releases. Hue is one of: magenta, violet, aqua, orange, lime, yellow.
+source:
+  label: Platinum Karaoke song list updates
+  url: https://platinumkaraoke.com/pages/songlist-update
+models:
+  reyna:
+    name: Reyna
+    family: Reyna series
+    hue: magenta

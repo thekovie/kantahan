@@ -13,7 +13,7 @@ from typing import Any
 
 import yaml
 
-from . import db
+from . import db, runner
 from .build import BuildError, build_bundle
 from .discover import (
     DiscoveredLink,
@@ -25,6 +25,15 @@ from .discover import (
 )
 from .fetch import Fetcher, FetchError
 from .importer import FILE_KEY, ensure_source, import_pdf
+from .publish import (
+    DEFAULT_KEEP,
+    PublishError,
+    load_display,
+    publish,
+    rollback,
+    set_suspended,
+    withdraw_release,
+)
 
 SCRIPT_SRC = re.compile(r'src="((?:https?:)?//[^"]*songlist-update-data\.js[^"]*)"')
 DEFAULT_SECTION = "REYNA SERIES"
@@ -170,10 +179,162 @@ def cmd_build(args: argparse.Namespace, out: Out, **_: Any) -> int:
     return 0 if result.status == "validated" else 2
 
 
+def _publish_dir(args: argparse.Namespace) -> Path:
+    return Path(args.out) if args.out else args.work / "publish"
+
+
+def _do_publish(
+    args: argparse.Namespace, out: Out, conn: sqlite3.Connection, allow_drop: bool
+) -> str:
+    result = publish(
+        conn,
+        _publish_dir(args),
+        load_display(args.display),
+        keep=args.keep,
+        allow_drop=allow_drop or args.allow_drop,
+    )
+    for note in result.skipped:
+        out(f"  skipped {note}")
+    songs = ", ".join(f"{slug} {n}" for slug, n in sorted(result.songs.items()))
+    out(f"{result.outcome} {result.version}: {songs}")
+    return result.outcome
+
+
+def cmd_publish(args: argparse.Namespace, out: Out, **_: Any) -> int:
+    conn = db.connect(args.work / "catalog.sqlite")
+    db.migrate(conn)
+    with runner.run_lock(args.work):
+        _do_publish(args, out, conn, allow_drop=False)
+    return 0
+
+
+def cmd_rollback(args: argparse.Namespace, out: Out, **_: Any) -> int:
+    conn = db.connect(args.work / "catalog.sqlite")
+    db.migrate(conn)
+    with runner.run_lock(args.work):
+        rollback(conn, _publish_dir(args), args.version)
+    out(f"live catalog is now {args.version}")
+    return 0
+
+
+def cmd_suspend(args: argparse.Namespace, out: Out, **_: Any) -> int:
+    conn = db.connect(args.work / "catalog.sqlite")
+    db.migrate(conn)
+    suspend = args.command == "suspend"
+    with runner.run_lock(args.work):
+        set_suspended(
+            conn, _publish_dir(args), suspend, getattr(args, "notice", None) if suspend else None
+        )
+    out("catalog suspended: apps will hide it" if suspend else "catalog resumed")
+    return 0
+
+
+def cmd_withdraw(args: argparse.Namespace, out: Out, **_: Any) -> int:
+    conn = db.connect(args.work / "catalog.sqlite")
+    db.migrate(conn)
+    with runner.run_lock(args.work):
+        withdraw_release(conn, label=args.release, release_id=args.release_id)
+        out("release withdrawn; publishing a catalog without it")
+        try:
+            _do_publish(args, out, conn, allow_drop=True)
+        except PublishError as exc:
+            out(f"error: {exc}")
+            out("the release stays withdrawn, but the live catalog still contains it;")
+            out("run `suspend` to hide the catalog until a new one can be published")
+            return 1
+    return 0
+
+
+def _sub(args: argparse.Namespace, **extra: Any) -> argparse.Namespace:
+    base = {"section": DEFAULT_SECTION, "from_sources": ["a"], "refresh": False}
+    return argparse.Namespace(**{**vars(args), **base, "retry_quarantined": False, **extra})
+
+
+def _run_steps(
+    args: argparse.Namespace, out: Out, fetcher: Fetcher, conn: sqlite3.Connection
+) -> tuple[int, str, dict[str, Any]]:
+    stats: dict[str, Any] = {}
+    steps: tuple[tuple[str, Callable[..., int]], ...] = (
+        ("discover", cmd_discover),
+        ("fetch", cmd_fetch),
+        ("import", cmd_import),
+    )
+    for name, step in steps:
+        if step(_sub(args), out, fetcher=fetcher):
+            return 1, f"{name}-failed", stats
+    stats["open_quarantine"] = _count(
+        conn, "SELECT count(*) FROM quarantine WHERE resolved_at IS NULL"
+    )
+    if stats["open_quarantine"]:
+        out(f"WARNING: {stats['open_quarantine']} document(s) in quarantine; they add no songs")
+    return 0, _do_publish(args, out, conn, allow_drop=False), stats
+
+
+def cmd_run(args: argparse.Namespace, out: Out, fetcher: Fetcher, **_: Any) -> int:
+    conn = db.connect(args.work / "catalog.sqlite")
+    db.migrate(conn)
+    kind = "manual" if args.manual else "scheduled"
+    if kind == "scheduled" and not runner.is_due(conn, args.min_interval_days):
+        out(f"not due: a scheduled run succeeded within {args.min_interval_days} days")
+        return 0
+    with runner.run_lock(args.work):
+        run_id = runner.start_run(conn, kind)
+        try:
+            code, outcome, stats = _run_steps(args, out, fetcher, conn)
+        except PublishError as exc:
+            out(f"error: {exc}")
+            code, outcome, stats = (
+                (2 if exc.blocked else 1),
+                "blocked" if exc.blocked else "error",
+                {},
+            )
+        except BaseException:
+            runner.finish_run(conn, run_id, "error", {})
+            raise
+        runner.finish_run(conn, run_id, outcome, stats)
+    return code
+
+
+def cmd_audit(args: argparse.Namespace, out: Out, fetcher: Fetcher, **_: Any) -> int:
+    conn = db.connect(args.work / "catalog.sqlite")
+    db.migrate(conn)
+    with runner.run_lock(args.work):
+        run_id = runner.start_run(conn, "audit")
+        result = runner.audit_links(conn, fetcher, _section_links(_sub(args)))
+        drift = bool(result.changed or result.failed)
+        runner.finish_run(
+            conn,
+            run_id,
+            "drift" if drift else "clean",
+            {
+                "checked": result.checked,
+                "changed": list(result.changed),
+                "failed": list(result.failed),
+            },
+        )
+    for label in result.changed:
+        out(f"  CHANGED {label}: the file behind this link is not the one imported")
+    for label in result.failed:
+        out(f"  FAILED {label}: could not be downloaded")
+    out(
+        f"audit: checked {result.checked}, changed {len(result.changed)}, "
+        f"failed {len(result.failed)}, not yet imported {result.new}"
+    )
+    if result.changed:
+        out("to take a changed file: fetch --refresh, import, then publish")
+    return 2 if drift else 0
+
+
 def parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="kantahan-catalog", description=__doc__)
     p.add_argument("--work", type=Path, default=Path("work"), help="output folder (gitignored)")
     p.add_argument("--sources", type=Path, default=Path("sources.yaml"))
+    p.add_argument(
+        "--display", type=Path, default=Path("display.yaml"), help="model names and hues"
+    )
+    p.add_argument(
+        "--out", type=Path, default=None, help="publish folder (default: <work>/publish)"
+    )
     sub = p.add_subparsers(dest="command", required=True)
     m = sub.add_parser("migrate", help="apply (or with --down N revert) database migrations")
     m.add_argument("--down", type=int, default=0)
@@ -196,6 +357,25 @@ def parser() -> argparse.ArgumentParser:
     sub.add_parser("stats", help="show database counts")
     b = sub.add_parser("build", help="build a local catalog bundle for one model")
     b.add_argument("--model", default="reyna")
+    pub = sub.add_parser("publish", help="build all models and publish a new version")
+    pub.add_argument("--keep", type=int, default=DEFAULT_KEEP, help="versions to keep on disk")
+    pub.add_argument("--allow-drop", action="store_true", help="allow a big drop in songs")
+    r = sub.add_parser("run", help="discover, fetch, import and publish (what cron runs)")
+    r.add_argument("--manual", action="store_true", help="run now, ignoring the interval")
+    r.add_argument("--min-interval-days", type=int, default=14)
+    r.add_argument("--keep", type=int, default=DEFAULT_KEEP)
+    r.add_argument("--allow-drop", action="store_true")
+    sub.add_parser("audit", help="re-download every document and report files that changed")
+    rb = sub.add_parser("rollback", help="point the live catalog at an older version")
+    rb.add_argument("version", help="for example v3")
+    s = sub.add_parser("suspend", help="make apps hide the catalog (bundles stay in place)")
+    s.add_argument("--notice", default=None, help="text the app shows instead of songs")
+    sub.add_parser("resume", help="show the catalog again")
+    w = sub.add_parser("withdraw", help="leave a release out of the catalog and publish")
+    w.add_argument("--release", default=None, help="release label, for example 'Volume 64'")
+    w.add_argument("--release-id", type=int, default=None)
+    w.add_argument("--keep", type=int, default=DEFAULT_KEEP)
+    w.add_argument("--allow-drop", action="store_true")
     return p
 
 
@@ -206,6 +386,13 @@ COMMANDS: dict[str, Callable[..., int]] = {
     "import": cmd_import,
     "stats": cmd_stats,
     "build": cmd_build,
+    "publish": cmd_publish,
+    "run": cmd_run,
+    "audit": cmd_audit,
+    "rollback": cmd_rollback,
+    "suspend": cmd_suspend,
+    "resume": cmd_suspend,
+    "withdraw": cmd_withdraw,
 }
 
 
@@ -214,12 +401,15 @@ def main(
 ) -> int:
     args = parser().parse_args(argv)
     args.work.mkdir(parents=True, exist_ok=True)
-    needs_network = args.command in ("discover", "fetch")
+    needs_network = args.command in ("discover", "fetch", "run", "audit")
     try:
         return COMMANDS[args.command](
             args, out, fetcher=(fetcher or Fetcher()) if needs_network else None
         )
-    except (FetchError, ValueError) as exc:
+    except PublishError as exc:
+        out(f"error: {exc}")
+        return 2 if exc.blocked else 1
+    except (FetchError, ValueError, runner.RunLocked) as exc:
         out(f"error: {exc}")
         return 1
 
