@@ -114,6 +114,14 @@ describe("songbook", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
 
+  it("says how many song numbers were left out of a model", async () => {
+    const manifest = makeManifest();
+    const left = { ...manifest, models: [{ ...manifest.models[0]!, excluded: 205 }, manifest.models[1]!] };
+    stubNetwork({ ...ROUTES, "/catalog/manifest.json": left });
+    mount();
+    expect(await screen.findByText(/205 song numbers are left out/)).toBeInTheDocument();
+  });
+
   it("never shows another model's songs, and remembers the choice", async () => {
     stubNetwork(ROUTES);
     const user = userEvent.setup();

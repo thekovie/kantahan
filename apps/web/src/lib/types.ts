@@ -40,6 +40,8 @@ export interface ModelInfo {
   sha256: string;
   bytes: number;
   songs: number;
+  /** Song numbers the publisher lists with different titles in different volumes, left out on purpose. */
+  excluded?: number;
   /** Plain-language coverage, for example "Volumes 62 to 76". */
   coverage: string;
 }

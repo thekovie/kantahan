@@ -72,6 +72,16 @@ describe("parseManifest", () => {
     }
   });
 
+  it("accepts a left-out count and rejects a nonsense one", () => {
+    const good = makeManifest();
+    const withCount = parseManifest({ ...good, models: [{ ...good.models[0], excluded: 12 }] });
+    expect(withCount.models[0]?.excluded).toBe(12);
+    expect(parseManifest(good).models[0]?.excluded).toBeUndefined();
+    for (const excluded of [-1, 1.5, "3"]) {
+      expect(() => parseManifest({ ...good, models: [{ ...good.models[0], excluded }] })).toThrow(CatalogError);
+    }
+  });
+
   it("keeps the notice of a suspended catalog", () => {
     const parsed = parseManifest({ ...makeManifest(), suspended: true, notice: "Paused." });
     expect(parsed.suspended).toBe(true);
