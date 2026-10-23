@@ -20,6 +20,7 @@ SQLite, created by numbered migrations in [`catalog/src/kantahan_catalog/migrati
 | `release_model` | the evidence row tying a release to a model, with the header line as text |
 | `song_entry` | a row as printed: `number` (TEXT, leading zeros kept), raw title and artist, folded title/artist for matching, page, `flags`. Unique per `(release, number)` |
 | `song` | canonical song, created only when folded title and artist are both non-empty and equal. Entries are linked, never merged or dropped: the same title under different numbers stays separate |
+| `publication`, `publication_event` | M3: one row per published catalog (`v<id>`, status, manifest hash) and a log of rollback, suspend, resume and withdraw actions (migration 0004) |
 | `catalog_version`, `catalog_version_model` | local build records: status `building`/`validated`/`published`/`withdrawn`, parent version, bundle SHA-256 and song count per model |
 | `quarantine` | documents rejected by validation, with reason and sample details |
 | `import_run` | reserved for the scheduled runs in M3; not written yet |
@@ -34,4 +35,4 @@ SQLite, created by numbered migrations in [`catalog/src/kantahan_catalog/migrati
 
 ## Bundle format (local build output, schema 1)
 
-`kantahan-catalog build` writes an immutable `work/releases/<model>.v<N>.json` per build and, for a validated build only, atomically replaces `work/releases/<model>.json` (never committed): columnar arrays `n` numbers, `t` titles, `a` artists (empty when withheld), `r` index into `releases`, `u` 1 when the artist is withheld, plus `count`, `model`, `schema`. Keys are sorted, so the same input gives the same bytes and SHA-256. Publication, manifests and gzip arrive in M3.
+`kantahan-catalog build` writes an immutable `work/releases/<model>.v<N>.json` per build and, for a validated build only, atomically replaces `work/releases/<model>.json` (never committed): columnar arrays `n` numbers, `t` titles, `a` artists (empty when withheld), `r` index into `releases`, `u` 1 when the artist is withheld, plus `count`, `model`, `schema`. Keys are sorted, so the same input gives the same bytes and SHA-256. `kantahan-catalog publish` builds every model listed in `display.yaml` into `work/publish/v<N>/` and writes the manifest the app reads; see [catalog-updates.md](catalog-updates.md). Bundles are served as plain JSON (the web server compresses them); the manifest carries the SHA-256 of the exact bytes. `release.withdrawn_at` (migration 0004) leaves a release out of every later build.

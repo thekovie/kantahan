@@ -1,6 +1,6 @@
 # Testing
 
-Catalog pipeline: **140 tests, 98% line coverage** (`pytest --cov`), `ruff` clean, `mypy --strict` clean. Web app: **115 unit and integration tests (97.8% line coverage), 36 Playwright end-to-end tests** (mobile Pixel 7 and desktop 1440 wide, including axe scans), `tsc --strict` clean.
+Catalog pipeline: **176 tests, 96% line coverage** (`pytest --cov`), `ruff` clean, `mypy --strict` clean. Web app: **146 unit and integration tests (98% line coverage), 44 Playwright end-to-end tests** (mobile Pixel 7 and desktop 1440 wide, including axe scans), `tsc --strict` clean.
 
 ## Policy
 
@@ -20,13 +20,16 @@ Tests first, 80%+ coverage. No test touches the network or real Platinum documen
 | `test_discover.py` | JS literal scanner, Source A and HTML parsing, link diff |
 | `test_fetch.py` | host allowlist, redirects, retry/backoff, size cap, robots.txt, atomic download |
 | `test_cli.py` | end-to-end discover, fetch, import, build with a fake site |
+| `test_publish.py` | manifest content and hashes, unchanged publishes, conflict and drop gates, pruning, failed publish keeps the live manifest, rollback (and refusing unknown or tampered versions), suspend and resume surviving a publish, withdraw (old versions deleted, scoped drop gate, rollback refuses older versions), an existing version folder is never deleted, a pause set during a publish survives it, display-only changes publish, display file validation |
+| `test_run.py` | discover-to-publish run, no-change run, 14-day interval, run lock, a dead link gives a partial run that still publishes the rest, suspend while a run holds the lock, audit drift and audit without discovery, admin commands |
 
 ## Web app (`apps/web`)
 
 | Layer | Tooling | Covers |
 |---|---|---|
 | Unit and integration | Vitest, Testing Library, jsdom, fake-indexeddb | search ranking and number handling (leading zeros), catalog and manifest validation, storage, preferences, loader (saved copy first, offline, invalid), model and letter pickers, app routes, and `theme.contrast.test.ts`, which parses the real CSS tokens and asserts WCAG AA for every text pair in both themes |
-| End to end | Playwright with the installed Chrome, against the production build (`npm run build && npm run preview`) | letter browsing, title and number search, read-out dialog and its digit size, no horizontal scroll at 320/390/768/1280, theme and model persistence, offline reload, keyboard-only journey, axe WCAG 2.2 AA scans in both themes on index, results, read-out and static pages |
+| Updates | `sync.test.ts`, `hash.test.ts`, App tests | up to date, only changed saved models downloaded, corrupt or missing download keeps the old catalog, offline, paused and resumed, rollback to an older version, models removed, server error, unknown format; overlapping checks share one request, a slow model load cannot overwrite a later choice, size limits, SHA-256 against published vectors and the platform; on-open check only when stale |
+| End to end | Playwright with the installed Chrome, against the production build (`npm run build && npm run preview`) | letter browsing, title and number search, read-out dialog and its digit size, no horizontal scroll at 320/390/768/1280, theme and model persistence, offline reload, keyboard-only journey, update while searching (new songs appear, search kept, saved after reload), corrupt download refused, pause and resume, axe WCAG 2.2 AA scans in both themes on index, results, read-out and static pages |
 
 `SCREENSHOTS=1 npx playwright test e2e/screenshots.spec.ts` captures review screenshots into `.impeccable/review/` (gitignored). Lighthouse on the production build (mobile): accessibility 100, best practices 100.
 

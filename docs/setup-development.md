@@ -40,6 +40,20 @@ cd catalog
 
 Options: `--work DIR` (default `work`), `--sources FILE` (default `sources.yaml`), `--section NAME` and `--from a b c` (case-insensitive) on `fetch`/`import`; `fetch --refresh` downloads even when the file exists; `import --retry-quarantined` evaluates quarantined documents again after an extractor fix. `migrate --down N` reverts migrations. `build` exits 0 when validated, 2 when conflicts block validation, 1 on error.
 
+Publishing and scheduled runs (M3), all under `catalog/work/`:
+
+```bash
+.venv/bin/kantahan-catalog publish                 # build every model in display.yaml, publish vN
+.venv/bin/kantahan-catalog run --manual            # discover, fetch, import, publish now
+.venv/bin/kantahan-catalog audit                   # re-hash every document, report changes
+.venv/bin/kantahan-catalog rollback v1             # point the live manifest at an older version
+.venv/bin/kantahan-catalog suspend --notice "Paused while a request is reviewed."
+.venv/bin/kantahan-catalog resume
+.venv/bin/kantahan-catalog withdraw --release "Volume 64"
+```
+
+`--out DIR` changes the publish folder, `--display FILE` the display file. See [catalog-updates.md](catalog-updates.md).
+
 Fetching downloads about 49 MB the first time. The site rate-limits automated requests, so do not lower the delay or run fetches in parallel.
 
 ## Web app
@@ -60,8 +74,15 @@ To browse the real catalog built by the pipeline (stays on your machine, gitigno
 
 ```bash
 cd apps/web
-npm run catalog:local            # copies catalog/work/releases/*.json to public/catalog-local
+npm run catalog:local            # copies the catalog published by `kantahan-catalog publish` to public/catalog-local
 VITE_CATALOG_BASE=/catalog-local npm run dev
 ```
 
 `public/catalog-local/` must never be committed or deployed.
+
+### Trying it on a phone
+
+- **Android, full PWA (install, offline, updates):** connect by USB, open `chrome://inspect/#devices` in desktop Chrome, add port forwarding `4173 -> localhost:4173`, run `npm run build && npm run preview`, then open `http://localhost:4173` on the phone. The phone treats `localhost` as a secure page, so the service worker and install work.
+- **Any phone on the same Wi-Fi, quick look:** `npm run build && npm run preview -- --host`, then open `http://<your computer's address>:4173`. Over plain http browsers do not run the service worker (no install, no offline) but search, themes and catalog updates work; downloads are still checksum-verified by the built-in SHA-256.
+- **iPhone, full PWA:** needs https, for example a tunnel to port 4173.
+- To test an update: build a newer catalog (`kantahan-catalog publish` or `npm run catalog:synthetic` with a changed generator), serve it, and tap "Check for updates".
