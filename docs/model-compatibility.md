@@ -20,6 +20,10 @@ Reyna, Reyna 2, Reyna 3C, Reyna SE (grouped as "Reyna /2/3C/SE") and Reyna 3 / R
 | 95 | "SD SERIES" | Not stated | **Unknown** |
 | 96 to 108 | "T-X Series" (+ "K-Box Series V. N") | T-X and K-Box, not Reyna | **Not Reyna evidence** |
 
+## What the importer did with the evidence (M1, run locally on 2026-10-23)
+
+Page-1 headers were classified automatically. 14 releases (Vol 62 to 76) are `mapped` to the single `reyna` model (3,216 rows); 29 are `held` (9,273 rows) and are never built. Mapped releases do not say which Reyna variant they target, so the model is "Reyna (variant not specified)".
+
 ## Rules for the importer
 
 - A document is associated with a model only through an explicit evidence row (`release_model.evidence`), never through the section it was found in.
@@ -29,5 +33,5 @@ Reyna, Reyna 2, Reyna 3C, Reyna SE (grouped as "Reyna /2/3C/SE") and Reyna 3 / R
 ## Open questions (need owner or vendor input)
 
 1. Which published volumes map to Reyna 2/3C/SE and which to Reyna 3/4?
-2. What do the Source D product descriptions say about compatible models? (Blocked by HTTP 429 on 2026-10-23.)
+2. ~~What do the Source D product descriptions say?~~ Read on 2026-10-23 (fetched slowly, one page every 45 s, five pages, no rate limiting): the pages only list "Featured Songs" and a price (PHP 595 to 750). They name no compatible models beyond the product title, and say nothing about song numbering. **For Vol 100 and Vol 108 the Reyna /2/3C/SE, Reyna 3/4 and T-X Series pages list identical featured songs**, and the Vol 108 featured songs are in the free Vol 108 PDF. That suggests the three families carry the same songs for those volumes, but not that they share song numbers. The mapping rules are unchanged.
 3. Is the T-X-R-BMB generation (Vol 77 to 81) usable on Reyna machines?

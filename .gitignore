@@ -3,6 +3,10 @@ dist/
 .venv/
 __pycache__/
 *.pyc
+*.egg-info/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
 .env
 .env.*
 !.env.example
@@ -11,7 +15,7 @@ __pycache__/
 *.db
 
 # Catalog source documents and generated catalog data are never committed:
-# redistribution rights are unresolved (see docs/legal-and-attribution.md).
+# the catalog is built where it is served (see docs/legal-and-attribution.md).
 catalog/work/
 catalog/releases/
 catalog/downloads/

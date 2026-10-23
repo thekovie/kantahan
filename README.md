@@ -4,7 +4,7 @@
 
 Offline-first digital karaoke songbook. Pick your machine model, then search by song title, artist, or song number.
 
-> **Status: early development (milestone M0, source audit).** There is no app yet. See [HANDOFF.md](HANDOFF.md) for exactly what exists and what is next.
+> **Status: early development (M1 done locally).** The catalog pipeline exists in `catalog/`; there is no app yet and no catalog data is published. See [HANDOFF.md](HANDOFF.md) for exactly what exists and what is next.
 
 Kantahan is an independent project. It is **not affiliated with, endorsed by, or sponsored by** Platinum Karaoke or Vismay International Corporation. See [docs/legal-and-attribution.md](docs/legal-and-attribution.md).
 
@@ -15,7 +15,7 @@ A songbook only: search, model selection, offline use, automatic catalog updates
 ## Planned architecture
 
 - `apps/web`: React + TypeScript + Vite + Tailwind PWA, IndexedDB for local catalogs (planned, M2)
-- `catalog`: Python + SQLite pipeline that discovers, extracts, validates and publishes versioned catalog bundles (planned, M1 and M3)
+- `catalog`: Python + SQLite pipeline that discovers, fetches, extracts, validates and builds catalog bundles (implemented locally in M1; scheduling and publishing are M3)
 - `deploy`: Docker Compose for a self-hosted VPS (planned, M5)
 
 Details: [docs/architecture.md](docs/architecture.md).
