@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "version": "demo-1",
+  "generatedAt": "2026-10-23T00:00:00Z",
+  "synthetic": true,
+  "source": {
+    "label": "Synthetic demo data, not a real catalog",
+    "url": "https://github.com/thekovie/kantahan"
+  },
+  "models": [
+    {
+      "slug": "demo-a",
+      "name": "Model A",
+      "family": "Demo family one",
+      "hue": "magenta",
+      "file": "demo-a.json",
+      "songs": 1200,
+      "coverage": "Demo volumes 1 and 2"
+    },
+    {
+      "slug": "demo-b",
+      "name": "Model B",
+      "family": "Demo family two",
+      "hue": "aqua",
+      "file": "demo-b.json",
+      "songs": 420,
+      "coverage": "Demo volumes 1 and 2"
+    },
+    {
+      "slug": "demo-c",
+      "name": "Model C",
+      "family": "Demo family three",
+      "hue": "lime",
+      "file": "demo-c.json",
+      "songs": 160,
+      "coverage": "Demo volumes 1 and 2"
+    }
+  ]
+}
