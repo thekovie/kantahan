@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-23T00:00:00Z",
+  "title": "Design System: Kantahan",
+  "extensions": {
+    "colorMeta": {
+      "stage-indigo": { "role": "neutral", "displayName": "Stage Indigo", "canonical": "#1b1038", "tonalRamp": ["#0d081c", "#1b1038", "#261650", "#33206b", "#4b3a83", "#7a68ad", "#b3a6d3", "#ece8f5"] },
+      "mic-magenta": { "role": "primary", "displayName": "Mic Magenta", "canonical": "#c4006d", "tonalRamp": ["#4a0029", "#76003f", "#9e0058", "#c4006d", "#e0338f", "#ee6bb0", "#f7a5d0", "#fddff0"] },
+      "sunbeam-yellow": { "role": "secondary", "displayName": "Sunbeam Yellow", "canonical": "#ffc93c", "tonalRamp": ["#4d3a00", "#7a5c00", "#a88000", "#d6a500", "#ffc93c", "#ffd76b", "#ffe6a0", "#fff5d6"] },
+      "aqua-glow": { "role": "secondary", "displayName": "Aqua Glow", "canonical": "#3de0f5", "tonalRamp": ["#033c44", "#066877", "#0a95aa", "#17bdd3", "#3de0f5", "#7aebf9", "#b3f3fc", "#e3fafe"] },
+      "led-magenta": { "role": "tertiary", "displayName": "LED Magenta", "canonical": "#ff4fb0", "tonalRamp": ["#4d0033", "#80005a", "#b30080", "#e0309a", "#ff4fb0", "#ff82c8", "#ffb3de", "#ffe3f3"] },
+      "led-lime": { "role": "tertiary", "displayName": "LED Lime", "canonical": "#a6f04a", "tonalRamp": ["#2a4000", "#4a7000", "#6fa30a", "#8cd02e", "#a6f04a", "#c0f57c", "#d9f9ad", "#effcd9"] },
+      "fiesta-blush": { "role": "neutral", "displayName": "Fiesta Blush", "canonical": "#fff0f7", "tonalRamp": ["#7a5c93", "#a98cbd", "#e4c3d6", "#f2d6e5", "#ffe1ef", "#fff0f7", "#fff7fb", "#ffffff"] }
+    },
+    "typographyMeta": {
+      "wordmark": { "displayName": "Wordmark", "purpose": "Header brand only, Fredoka." },
+      "led-digits": { "displayName": "LED digits", "purpose": "Song numbers only, DSEG7; sized by container in the read-out." },
+      "body": { "displayName": "Body", "purpose": "Everything else, Atkinson Hyperlegible Next." }
+    },
+    "shadows": [
+      { "name": "menu-panel", "value": "0 12px 28px rgb(10 4 24 / 0.35)", "purpose": "Only shadow in the system; the open menu." },
+      { "name": "focus-ring", "value": "outline: 3px solid var(--focus); outline-offset: 3px", "purpose": "Keyboard focus, aqua in dark and violet in light." }
+    ],
+    "motion": [
+      { "name": "ease-out-expo", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Read-out entry (200ms) and LED light-up (260ms, 55ms stagger per digit)." },
+      { "name": "press", "value": "transform: scale(0.96 to 0.985)", "purpose": "Active state on chips, rows, buttons." },
+      { "name": "reduced-motion", "value": "animation and transition disabled", "purpose": "prefers-reduced-motion removes all motion." }
+    ],
+    "breakpoints": [
+      { "name": "wide", "value": "48rem" },
+      { "name": "desktop", "value": "64rem" }
+    ]
+  },
+  "components": [
+    {
+      "name": "LED Number Token",
+      "kind": "custom",
+      "refersTo": "led-tile",
+      "description": "Song number in seven-segment digits on a dark tile with ghost segments.",
+      "html": "<span class=\"ds-led\" data-ghost=\"88888\"><span class=\"ds-led-digits\">01234</span></span>",
+      "css": ".ds-led{position:relative;display:inline-grid;place-items:center;padding:.5rem .75rem;border-radius:.75rem;background:#12091f;font-family:DSEG7,ui-monospace,monospace;font-weight:700;font-size:1.625rem;line-height:1;letter-spacing:.06em}.ds-led::before,.ds-led-digits{grid-area:1/1;white-space:pre;color:#ff4fb0}.ds-led::before{content:attr(data-ghost);opacity:.13}"
+    },
+    {
+      "name": "Song Row",
+      "kind": "card",
+      "refersTo": "song-row",
+      "description": "Tappable result: LED token, title over artist.",
+      "html": "<button class=\"ds-song\"><span class=\"ds-tok\">01234</span><span><span class=\"ds-t\">Song Title</span><span class=\"ds-a\">Artist</span></span></button>",
+      "css": ".ds-song{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:.875rem;width:100%;min-height:4.5rem;padding:.625rem .875rem .625rem .625rem;border:0;border-radius:1rem;background:#261650;color:#f8f3ff;text-align:left;font-family:'Atkinson Hyperlegible Next',system-ui,sans-serif}.ds-song:hover{background:#33206b}.ds-song:focus-visible{outline:3px solid #3de0f5;outline-offset:3px}.ds-song:active{transform:scale(.985)}.ds-tok{padding:.5rem .75rem;border-radius:.75rem;background:#12091f;color:#ff4fb0;font-family:DSEG7,ui-monospace,monospace;font-weight:700;font-size:1.625rem}.ds-t{display:block;font-size:1.0625rem;font-weight:600}.ds-a{display:block;font-size:.9375rem;color:#cdbff0}"
+    },
+    {
+      "name": "Model Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Machine model selector; selected state fills with the family hue.",
+      "html": "<button class=\"ds-chip\">Model A</button> <button class=\"ds-chip ds-on\">Model B</button>",
+      "css": ".ds-chip{min-height:3rem;padding:0 1.125rem;border:2px solid #9a86d6;border-radius:999px;background:#261650;color:#f8f3ff;font:600 1rem 'Atkinson Hyperlegible Next',system-ui,sans-serif}.ds-chip:focus-visible{outline:3px solid #3de0f5;outline-offset:3px}.ds-chip:active{transform:scale(.97)}.ds-on{border-color:#f8f3ff;background:#3de0f5;color:#1b1038}"
+    },
+    {
+      "name": "Search Field",
+      "kind": "input",
+      "refersTo": "search-field",
+      "description": "56px search input on Surface with a strong border.",
+      "html": "<input class=\"ds-search\" type=\"search\" placeholder=\"Title, artist or number\">",
+      "css": ".ds-search{width:100%;min-height:3.5rem;padding:0 1rem;border:2px solid #9a86d6;border-radius:1rem;background:#261650;color:#f8f3ff;font:400 1.125rem 'Atkinson Hyperlegible Next',system-ui,sans-serif}.ds-search::placeholder{color:#cdbff0}.ds-search:focus-visible{outline:3px solid #3de0f5;outline-offset:3px}"
+    },
+    {
+      "name": "Letter Rail Key",
+      "kind": "nav",
+      "refersTo": "letter",
+      "description": "48px alphabet key; selected is Sunbeam Yellow.",
+      "html": "<button class=\"ds-letter\">A</button> <button class=\"ds-letter ds-sel\">B</button>",
+      "css": ".ds-letter{width:3rem;height:3rem;border:2px solid transparent;border-radius:.875rem;background:#261650;color:#f8f3ff;font:700 1rem 'Atkinson Hyperlegible Next',system-ui,sans-serif}.ds-letter:hover{background:#33206b}.ds-letter:focus-visible{outline:3px solid #3de0f5;outline-offset:3px}.ds-sel{background:#ffc93c;color:#1b1038}"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Magenta 56px action, used for closing the read-out and state actions.",
+      "html": "<button class=\"ds-btn\">Close</button>",
+      "css": ".ds-btn{min-height:3.5rem;padding:0 1.5rem;border:0;border-radius:1rem;background:#c4006d;color:#fff;font:700 1rem 'Atkinson Hyperlegible Next',system-ui,sans-serif}.ds-btn:focus-visible{outline:3px solid #3de0f5;outline-offset:3px}.ds-btn:active{transform:scale(.98)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Videoke Night",
+    "overview": "A songbook you can read in the dark. Videoke night is taken only as palette, type, density and one move: the LED song number. The ground is Stage Indigo, the shell is Mic Magenta, and the number is the product, so every result is led by a seven-segment numeral on a dark tile while the rest of the screen stays calm and complete. Dark is the default because people use it in a dim room; the light theme, Fiesta Blush, keeps the same hues darkened for contrast.",
+    "keyCharacteristics": [
+      "Dark default, light Fiesta Blush alternative, switched by data-theme=\"light\" on the root.",
+      "Song numbers in DSEG7 on a tile that is dark in both themes, with unlit \"ghost\" segments behind the lit digits.",
+      "Colour carries meaning: magenta shell, yellow selection, aqua focus, family hue per machine model.",
+      "Hyperlegible body face, rounded wordmark face, digit face reserved for numbers.",
+      "A \"Demo\" pill in the header marks the synthetic catalog."
+    ],
+    "rules": [
+      { "name": "The Number Carries Colour Rule", "body": "Hue is spent on song numbers and the model that owns them. Chrome stays indigo, magenta or neutral.", "section": "colors" },
+      { "name": "The Contrast Pair Rule", "body": "Every text and background pair is checked in theme.contrast.test.ts; change a token and its test together.", "section": "colors" },
+      { "name": "The Digits Only Rule", "body": "DSEG7 is for song numbers. Never set words in it.", "section": "typography" },
+      { "name": "The Leading Zero Rule", "body": "Numbers are strings; render every digit given.", "section": "typography" },
+      { "name": "The Flat Rows Rule", "body": "Rows, chips and fields have no shadow at rest or on hover; hover shifts to Surface 2.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep every target at least 48px and every text pair AA.",
+      "Do show the model, coverage and source near the results.",
+      "Do underline links inside running text.",
+      "Do give each machine model family one LED hue and use it consistently across chip, digits and read-out border.",
+      "Do keep the LED tile dark in both themes."
+    ],
+    "donts": [
+      "Don't use DSEG7 or the LED tile for anything but song numbers.",
+      "Don't add shadows to rows, chips or fields.",
+      "Don't put gradient text, glass, coloured side stripes, textures or emoji icons on any surface.",
+      "Don't use a one-colour accent: selection, focus and shell each have their own hue.",
+      "Don't animate layout properties; use opacity and transform, and honour reduced motion."
+    ]
+  }
+}

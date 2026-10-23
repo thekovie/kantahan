@@ -1,12 +1,12 @@
 # Design and brand
 
-> **Status: brand identity done; the app UI is planned (milestone M2) and not built.** This page records decisions so far and the constraints the UI must meet.
+> **Status: brand identity and the M2 app UI are done.** This page records the decisions; the shipped design system is described in [DESIGN.md](../DESIGN.md) and the direction in [ADR 0003](decisions/0003-m2-ui-direction.md).
 
 ## Direction: "Videoke Night"
 
 Colorful, playful, readable. The hero element of the UI is the **song number**: large tabular digits on a chunky badge, keyed by model family; titles and artists stay quiet around it. Light and dark themes are both colorful. The look draws on the project brief (large touch targets, readable typography, accessible contrast, no unnecessary animation) and was checked against the UI/UX design guidance used for this project.
 
-## Brand tokens (draft; AA contrast of every text pair is verified at M2)
+## Brand tokens (AA contrast of every text and background pair is asserted in `apps/web/src/theme.contrast.test.ts`)
 
 | Token | Hex | Use |
 |---|---|---|
@@ -35,10 +35,10 @@ Concept B, "K with mic": a white K on a magenta rounded tile whose upper arm end
 
 The PNGs were rendered from the SVGs with headless Chrome. Usage rules: keep clear space of at least a quarter of the tile width, do not recolor or rotate the mark, and never combine it with Platinum Karaoke or Vismay names or marks.
 
-## UI constraints for M2
+## UI constraints (all met in M2)
 
 - Mobile first; touch targets at least 48 px with 8 px gaps; body text at least 16 px.
 - AA contrast (4.5:1 text, 3:1 large text and UI parts) in light and dark.
 - Respect `prefers-reduced-motion`; animate transform and opacity only.
-- Fonts self-hosted (offline PWA, no third-party requests); display face for brand and numbers with tabular figures, plain legible face for body. Final choice at M2.
-- Standalone wordmark SVG is deferred until the display font is chosen, so the lettering can be outlined.
+- Fonts self-hosted (offline PWA, no third-party requests); display face for brand and numbers with tabular figures, plain legible face for body. Chosen in M2: Atkinson Hyperlegible Next (body), Fredoka (wordmark), DSEG7 Classic Bold (song numbers only), all under the SIL OFL (licenses in `apps/web/src/assets/fonts/`).
+- A standalone outlined wordmark SVG is still deferred; the app sets the wordmark in Fredoka.

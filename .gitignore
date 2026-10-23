@@ -26,3 +26,9 @@ catalog/downloads/
 .vscode/
 coverage/
 .coverage
+
+# Design tooling output: review screenshots and mocks stay local; the surface brief
+# (.impeccable/surfaces/) and design.json are development documents and are kept.
+.impeccable/review/
+.impeccable/mocks/
+.impeccable/build/

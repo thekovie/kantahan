@@ -1,0 +1,8 @@
+node_modules/
+dist/
+dev-dist/
+coverage/
+test-results/
+playwright-report/
+# Real catalog bundles are copied here by `npm run catalog:local` and never committed.
+public/catalog-local/
