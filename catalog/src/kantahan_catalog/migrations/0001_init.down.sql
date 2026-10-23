@@ -1,0 +1,14 @@
+DROP TABLE import_run;
+DROP TABLE quarantine;
+DROP TABLE catalog_version_model;
+DROP TABLE catalog_version;
+DROP INDEX idx_song_entry_number;
+DROP TABLE song_entry;
+DROP TABLE song;
+DROP TABLE release_model;
+DROP TABLE release;
+DROP TABLE document_link;
+DROP TABLE document;
+DROP TABLE source;
+DROP TABLE model;
+DROP TABLE model_family;
