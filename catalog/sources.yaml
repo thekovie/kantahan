@@ -1,0 +1,47 @@
+# Approved source registry (URLs only; no song data).
+# Dates are YYYY-MM-DD. "checked" = last date the page was fetched during the audit.
+sources:
+  - id: A
+    url: https://platinumkaraoke.com/pages/songlist-update
+    priority: P0
+    role: primary official archive
+    status: ok            # HTTP 200; lists are rendered client-side from a public data script
+    checked: 2026-10-23
+    notes: >
+      The page body is empty HTML; links live in /cdn/shop/t/50/assets/songlist-update-data.js
+      (a JavaScript array literal). Parse it statically; do not execute it.
+  - id: B
+    url: https://platinumkaraoke.com/pages/songlist-update-old
+    priority: P0
+    role: older official archive
+    status: ok            # HTTP 200; static HTML tables
+    checked: 2026-10-23
+    notes: Reyna section has 42 links, all also on A. Newest is Vol 106 (no Vol 108).
+  - id: C
+    url: https://platinumkaraoke.ph/updates/Songlist%20Update.html
+    priority: P1
+    role: legacy Philippine archive
+    status: ok            # HTTP 200; static HTML
+    checked: 2026-10-23
+    notes: Reyna section has 35 links (Vol 62 to 98), all also on A. Adds no unique Reyna documents.
+  - id: D
+    url: https://platinumkaraoke.com/collections/song-lists
+    priority: P1
+    role: model compatibility reference (product listing)
+    status: rate-limited  # collection page read once; individual product pages returned HTTP 429
+    checked: 2026-10-23
+    notes: Product descriptions not yet read. Retry-After 60 seconds was returned.
+  - id: E
+    url: https://platinumkaraoke.com/pages/song-update
+    priority: P2
+    role: release cross-reference
+    status: ok            # HTTP 200; content is a product listing, not a catalog
+    checked: 2026-10-23
+    notes: Song update packages are sold as products. Not a reusable metadata source.
+  - id: F
+    url: https://platinumkaraoke.com/pages/faq
+    priority: P2
+    role: update policy reference
+    status: ok            # HTTP 200
+    checked: 2026-10-23
+    notes: Describes USB update procedure for Cello and firmware steps. No publication schedule found.

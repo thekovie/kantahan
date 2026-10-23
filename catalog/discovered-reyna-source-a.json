@@ -1,0 +1,876 @@
+{
+ "generated": "2026-10-23",
+ "note": "URLs, sizes and hashes of public documents only. No song data. Hashes are of files fetched on the check date.",
+ "documents": [
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "108",
+   "url": "https://www.mediafire.com/file_premium/xqdkzqfvo4rdzy3/Reyna_Volume_108_Additional_List__yellow__-_p_260923_103524.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 121203,
+   "sha256": "8dc4017cf79d2f9d4b003990fd2f273fc6dfca1775fbfe8f6d8270e51379cef1",
+   "pages": 3,
+   "text_layer": true,
+   "header_text": [
+    "T-X series Vol. 108",
+    "KBox Vol. 35"
+   ],
+   "header_family": "t-x (+k-box)",
+   "also_in_source_B": false,
+   "also_in_source_C": false,
+   "five_digit_tokens": 228,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "106",
+   "url": "https://www.mediafire.com/file_premium/nq12po54bum3arg/Reyna_Volume_106_Additional_List_-_pages_1-2_only.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 111157,
+   "sha256": "3bc78e666cc17458eb92e5f46c509eed832ed6e8725dfcb500d7fcade9458f77",
+   "pages": 2,
+   "text_layer": true,
+   "header_text": [
+    "! T-X Series V.106",
+    "K-Box Series V. 33 featuring songs New Songs 1"
+   ],
+   "header_family": "t-x (+k-box)",
+   "also_in_source_B": true,
+   "also_in_source_C": false,
+   "five_digit_tokens": 240,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "104~105",
+   "url": "https://www.mediafire.com/file_premium/kttezjtjoz4dnw3/Reyna_Volume_104%257E105_Additional_List_-_pages_1-3_only.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 308487,
+   "sha256": "e86f2a0d658908ec5934a91f90e085aa1142311e450281913c5477adbc1a29b7",
+   "pages": 3,
+   "text_layer": true,
+   "header_text": [
+    "! T-X Series V.104~105",
+    "K-Box Series V. 31~32 featuring songs New Songs 1"
+   ],
+   "header_family": "t-x (+k-box)",
+   "also_in_source_B": true,
+   "also_in_source_C": false,
+   "five_digit_tokens": 369,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "103",
+   "url": "https://www.mediafire.com/file_premium/3ttwarokoectrct/Reyna_Volume_103_Additional_List_-_pages_1-2_only.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 98187,
+   "sha256": "afa47e392e0ef493f2eb547fdae59e59f01beb4e4ce0f41141d69b3d467f1c8b",
+   "pages": 2,
+   "text_layer": true,
+   "header_text": [
+    "! T-X Series V.103",
+    "K-Box Series V. 30 featuring songs New Songs 1"
+   ],
+   "header_family": "t-x (+k-box)",
+   "also_in_source_B": true,
+   "also_in_source_C": false,
+   "five_digit_tokens": 184,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "102",
+   "url": "https://www.mediafire.com/file_premium/yr8iydhscxlkyvz/Reyna_Volume_102_Additional_List_-_page_1-2_only.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 103594,
+   "sha256": "f07e001f8eb325f22438b6666495572beb28e26ec112203b5fbeecea8849bead",
+   "pages": 2,
+   "text_layer": true,
+   "header_text": [
+    "! Vol 102 T-X Series",
+    "K-Box Series featuring songs New Songs"
+   ],
+   "header_family": "t-x (+k-box)",
+   "also_in_source_B": true,
+   "also_in_source_C": false,
+   "five_digit_tokens": 192,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "101",
+   "url": "https://www.mediafire.com/file_premium/kckk76jlbl0225l/Reyna_Volume_101_Additional_List_-_page_1_only.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 60054,
+   "sha256": "e93a337dc891573971445e8c38729f44bc3a2fb829f2da29f3a4b04d4502edc4",
+   "pages": 1,
+   "text_layer": true,
+   "header_text": [
+    "! Vol 101 T-X Series",
+    "K-Box Series featuring songs New Songs"
+   ],
+   "header_family": "t-x (+k-box)",
+   "also_in_source_B": true,
+   "also_in_source_C": false,
+   "five_digit_tokens": 120,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "100",
+   "url": "https://www.mediafire.com/file_premium/3axkqopav0wutg5/Reyna_Volume_100_Additional_List_-_pages_2.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 109948,
+   "sha256": "6248e0b0752d3c576aad4623ac93cee8a3a130cdb62feac429b0ee1dbb84a875",
+   "pages": 2,
+   "text_layer": true,
+   "header_text": [
+    "! Vol 100 T-X Series",
+    "K-Box Series featuring songs New Songs"
+   ],
+   "header_family": "t-x (+k-box)",
+   "also_in_source_B": true,
+   "also_in_source_C": false,
+   "five_digit_tokens": 241,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "99",
+   "url": "https://www.mediafire.com/file_premium/yrcfmpa8bnfnt32/Reyna_Volume_99_Additional_List_-_pages_1-2_only.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 101645,
+   "sha256": "e56a2a65540138f782ad9ffad646f97252841b3a488ff4813a2fcc095f8e8cba",
+   "pages": 2,
+   "text_layer": true,
+   "header_text": [
+    "! Vol 99 T-X Series",
+    "K-Box Series featuring songs New Songs"
+   ],
+   "header_family": "t-x (+k-box)",
+   "also_in_source_B": true,
+   "also_in_source_C": false,
+   "five_digit_tokens": 180,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "98",
+   "url": "https://www.mediafire.com/file_premium/4miy8rbe2ypyxh5/Reyna_Volume_98_Additional_List_-_pages_1-3_only.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 154405,
+   "sha256": "9d1aa7e3b64c046b0e5ec6f1fb14ff7144f1b60967211bde3a624ee4ca6b672f",
+   "pages": 3,
+   "text_layer": true,
+   "header_text": [
+    "! Vol 98 T-X Series"
+   ],
+   "header_family": "t-x (+k-box)",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 310,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "96",
+   "url": "https://www.mediafire.com/file_premium/28gxz9cg75eilr5/Reyna_Volume_96_Additional_List_-_pages_1-3_only.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 141250,
+   "sha256": "8e624d0e54b8110a3341e3b3d8f59cd6e6caabab33dad38e91af770f448bcf61",
+   "pages": 3,
+   "text_layer": true,
+   "header_text": [
+    "! Vol 96 T-X Series",
+    "Vol 24 Kbox Series featuring songs New Songs 1"
+   ],
+   "header_family": "t-x (+k-box)",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 238,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "95",
+   "url": "https://www.mediafire.com/file_premium/j1dh04vacosag0w/T-X%252C_Reyna%252C_Flute%252C_PK-10%252C_Piano%252BSeries_Volume_95_Additional_List-pages_1-3_only.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 133675,
+   "sha256": "4b16da762ba58e9b3e9a305cfcb5a3a98b82976bb0113807375c838d92a540e5",
+   "pages": 3,
+   "text_layer": true,
+   "header_text": [
+    "! Volume 95",
+    "SD SERIES featuring songs New Songs"
+   ],
+   "header_family": "sd series",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 228,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "94",
+   "url": "https://www.mediafire.com/file_premium/1ujaga9j6johquo/T-X_Series_Volume_94_Additional_List_-_pages_1-4_only.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 213380,
+   "sha256": "9bc1469b1a50568ae56c63198064e96874febec06cd80720cdb64c7f6a7a2404",
+   "pages": 4,
+   "text_layer": true,
+   "header_text": [
+    "! Volume 94"
+   ],
+   "header_family": "unstated",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 362,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "93",
+   "url": "https://www.mediafire.com/file/09kz827b2012rgp/T-X_Series_Volume_93_Additional_List_-_pages_1-4_only.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 225688,
+   "sha256": "9f27bdbc93715ecc44ac24ade3531b658cea1c4163ec9be8ffffe8b5be3e2d39",
+   "pages": 4,
+   "text_layer": true,
+   "header_text": [
+    "! Volume 93"
+   ],
+   "header_family": "unstated",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 423,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "92",
+   "url": "https://www.mediafire.com/file/1vdczjv4d1jvk2a/T-X_Series_Volume_92_Additional_List_-_pages_1-4_only.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 213815,
+   "sha256": "c66419373fd0787ca0435c762a15628d7cf78d88cc1a5ff3d44cc4403282ff08",
+   "pages": 4,
+   "text_layer": true,
+   "header_text": [
+    "! Volume 92"
+   ],
+   "header_family": "unstated",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 370,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "91",
+   "url": "https://www.mediafire.com/file/5g0ijysahpu1l9h/T-X,+Reyna,+Flute,+PK-10,+Piano+Series+Volume+91+Additional+List+-+pages+1-5+only.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 256607,
+   "sha256": "aac4c0cd881666cfed736f06d910f08b971944a0bdac9707010b1bdce72f5120",
+   "pages": 5,
+   "text_layer": true,
+   "header_text": [
+    "! Volume 91"
+   ],
+   "header_family": "unstated",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 443,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "90",
+   "url": "https://www.mediafire.com/file/onz1bp4g2o9zsjp/Reyna+Series+Volume+90+Additional+List+-+pages+1-3+only.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 173665,
+   "sha256": "723369323c4d9710c641930ee753098e4307c1663021063fd59a932e593f6753",
+   "pages": 3,
+   "text_layer": true,
+   "header_text": [
+    "! Volume 90"
+   ],
+   "header_family": "unstated",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 306,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "89",
+   "url": "https://www.mediafire.com/file/rt5wavrurgin7fe/Reyna_Volume_89_Additional_List_-_pages_1-3_only_-.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 172388,
+   "sha256": "550f68fefad64d8825acb2dc72e207fa6c245ce8f71286f2b1fbdda91d31d0f7",
+   "pages": 3,
+   "text_layer": true,
+   "header_text": [
+    "! Volume 89"
+   ],
+   "header_family": "unstated",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 314,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "88",
+   "url": "https://www.mediafire.com/file/mwugu3mux86pzfo/Reyna_Volume_88_Additional_List_-_pages_1-4_only.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 216667,
+   "sha256": "9bd59637d029eb5b3df4e125bef7649f5039522d01e4acafecf7df69f7db61a4",
+   "pages": 4,
+   "text_layer": true,
+   "header_text": [
+    "! Volume 88"
+   ],
+   "header_family": "unstated",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 379,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "87",
+   "url": "https://www.mediafire.com/file/6h5y1r8ad24k4i3/Reyna_Volume_87_Additional_List_-_pages_1-3_only.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 168665,
+   "sha256": "d5ca46b275701972b23e49898000c158047a1bd650fdf1c9d26122f7c78ab10a",
+   "pages": 3,
+   "text_layer": true,
+   "header_text": [
+    "! Volume 87"
+   ],
+   "header_family": "unstated",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 302,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "86",
+   "url": "https://www.mediafire.com/file/nfmrles7ja6mzhd/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 211600,
+   "sha256": "7574ccaae0ddf60e1b78b33c7618b316db28ec40722f0e1d5befadff36b277ca",
+   "pages": 4,
+   "text_layer": true,
+   "header_text": [
+    "! Volume 86"
+   ],
+   "header_family": "unstated",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 369,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "85",
+   "url": "https://www.mediafire.com/file/2q5kux4ljfshe1c/T-X_Series_Volume_85_Additional_List_-_pages_1-3_only_%25282%2529.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 166236,
+   "sha256": "4dacf2a591da6b90b24018fcbd7e48405e1c5ee353a906513908799a54acae9f",
+   "pages": 3,
+   "text_layer": true,
+   "header_text": [
+    "! Volume 85"
+   ],
+   "header_family": "unstated",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 280,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "84",
+   "url": "https://www.mediafire.com/file/z6u470a0kotteh3/T-X_Series_Volume_84_Additional_List_-_pages_1-6_only_%25281%2529.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 311724,
+   "sha256": "79dde189eebd3d1804dfc8e02f8f5f54b05197718c6ac582fdd072fa301d69ba",
+   "pages": 6,
+   "text_layer": true,
+   "header_text": [
+    "! Volume 84"
+   ],
+   "header_family": "unstated",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 543,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "83",
+   "url": "https://www.mediafire.com/file/6p2rva1w666w9o0/T_-_X_-_Volume_83_Additional_List_-_pages_1-3_only.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 402230,
+   "sha256": "ef5d774cb9790bc337c41b2b1712e75ae079c1d6aeff957c9e00e1fac35f6135",
+   "pages": 3,
+   "text_layer": true,
+   "header_text": [
+    "! Volume 83"
+   ],
+   "header_family": "unstated",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 260,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "82",
+   "url": "https://www.mediafire.com/file/v2r78wv5ojd3cdt/T_-_X_-_Volume_82_Additional_List_-_pages_1-6_only.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 493626,
+   "sha256": "838e433d8bc5f467567526ba3cd514c0e5af809a2d067812f6d4a51c8540f939",
+   "pages": 6,
+   "text_layer": true,
+   "header_text": [
+    "! Volume 82"
+   ],
+   "header_family": "unstated",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 545,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "81",
+   "url": "https://www.mediafire.com/file/nbxj5mddjg8gk8l/Reyna_-_Volume_81_Additional_List_-_pages_1-4_only.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 1206945,
+   "sha256": "df8ca903f51767368b2112d982c982f9b10a8f4eed4fdca773407e0752496394",
+   "pages": 4,
+   "text_layer": true,
+   "header_text": [
+    "Vol. 81 T-X-R-BMB Series ! 1"
+   ],
+   "header_family": "t-x-r-bmb",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 271,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "80",
+   "url": "https://www.mediafire.com/file/7e84w6rtstbcjmq/Reyna_-_Volume_80_Additional_List_-_pages_1-4_only.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 447715,
+   "sha256": "7f6a82f89ffc6cc6588300ccba809a3cad6c843da9a35d31f8bb7a1b87e084b7",
+   "pages": 4,
+   "text_layer": true,
+   "header_text": [
+    "Vol. 80 T-X-R-BMB Series ! 1"
+   ],
+   "header_family": "t-x-r-bmb",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 280,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "79",
+   "url": "https://www.mediafire.com/file/d9ax2vyvjbm8em2/Reyna_-_Volume_79_Additional_List.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 1874078,
+   "sha256": "62f63ce6f55eef47f9aa094a9efabffd7bdb8c14353e46f4571def47090b810f",
+   "pages": 6,
+   "text_layer": true,
+   "header_text": [
+    "Vol. 79 T-X-R-BMB Series ! 1"
+   ],
+   "header_family": "t-x-r-bmb",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 504,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "78",
+   "url": "https://www.mediafire.com/file/1cx4cij58s5jkc0/T_-_X_-_Volume_78_Additional_List_-_pages_1-4_only.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 646186,
+   "sha256": "9fb8ceac4e0cb78d595f91d14bbeb5bc6c634ca28082530d03fb256a06fa683a",
+   "pages": 4,
+   "text_layer": true,
+   "header_text": [
+    "Vol. 78 T-X-R-BMB Series ! 1"
+   ],
+   "header_family": "t-x-r-bmb",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 400,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "77",
+   "url": "https://www.mediafire.com/file/q5gcvcd870duqwp/Reyna_Volume_77_Additional_List_-_pages_1-4_only.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 652597,
+   "sha256": "e40d41a36769d5d1fc26a957ddb90ca820e14dcd3f87aff31370042e3e8f76a3",
+   "pages": 4,
+   "text_layer": true,
+   "header_text": [
+    "Vol. 77 T-X-R-BMB Series ! 1"
+   ],
+   "header_family": "t-x-r-bmb",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 394,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "76",
+   "url": "https://www.mediafire.com/file/680b39pw37y970w/Reyna_-_Volume_76_Additional_List.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 445303,
+   "sha256": "abac23b3dda0122ef28dcba02244fd9416ad67bd91f68636e7c43f6b979fb8a0",
+   "pages": 3,
+   "text_layer": true,
+   "header_text": [
+    "Vol. 76 For Reyna! 1"
+   ],
+   "header_family": "reyna",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 300,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "75",
+   "url": "https://www.mediafire.com/file/ta2iddk2b2g4fva/Reyna_-_Volume_75_Additional_List.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 768016,
+   "sha256": "0d23e0499606b0313ad33f6aef95e86ccdc2e6ab0d6cd8d40adf225da9a6c808",
+   "pages": 2,
+   "text_layer": true,
+   "header_text": [
+    "Vol. 75 For Reyna ! 1"
+   ],
+   "header_family": "reyna",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 200,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "74",
+   "url": "https://www.mediafire.com/file/9q40qew0f0fdwi8/Reyna_-_Volume_74_Additional_List.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 1145168,
+   "sha256": "24974a196f426c2cb032f7b0a271c2e90bdaf96f66e67244f1f2b978ed67fef9",
+   "pages": 4,
+   "text_layer": true,
+   "header_text": [
+    "Vol. 74 For Reyna ! 1"
+   ],
+   "header_family": "reyna",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 330,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "73",
+   "url": "https://www.mediafire.com/file/2vgasaen0uu6216/Reyna_-_Volume_73_Additional_List.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 1603571,
+   "sha256": "3064a5aa486753206f1753865787ef3f0a5ebba6195ba539f97d6858830dcc49",
+   "pages": 4,
+   "text_layer": true,
+   "header_text": [
+    "Vol. 73 For Reyna! 1"
+   ],
+   "header_family": "reyna",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 330,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "72",
+   "url": "https://www.mediafire.com/file/b4iyk94bmd121sl/Reyna_-_Volume_72_Additional_List.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 3121827,
+   "sha256": "ce66678ad891e078d1a934e55b1d5114ad8f1cc589bcaba075b5c7075570340c",
+   "pages": 6,
+   "text_layer": true,
+   "header_text": [
+    "Vol. 72 For Reyna! 1"
+   ],
+   "header_family": "reyna",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 487,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "71",
+   "url": "https://www.mediafire.com/file/m7h5qgxfhbo2ah7/Reyna_Volume_71_Additional_Song_List.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 2751198,
+   "sha256": "c967553de77a2be1e95795a68454a4512a88e11802b5a3287d0a0c4cab58698e",
+   "pages": 2,
+   "text_layer": true,
+   "header_text": [
+    "Vol. 71 For Reyna ! 1"
+   ],
+   "header_family": "reyna",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 179,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "70",
+   "url": "https://www.mediafire.com/file/7k3a3a899qqarq8/Reyna_Volume_70_Additional_Song_List.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 3054991,
+   "sha256": "ce72de78c0e5ee9d0754b42184f7a07be0a2c8490e805ac756971105303e6b38",
+   "pages": 2,
+   "text_layer": true,
+   "header_text": [
+    "Vol. 70 For Reyna! 1"
+   ],
+   "header_family": "reyna",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 180,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "69",
+   "url": "https://www.mediafire.com/file/qtqce404ke1cmpq/Reyna_Volume_69_Additional_List.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 8681867,
+   "sha256": "a58956842c19765fbd0da74e540c8c6a1611aaa7b376a29f8bd67916c799f387",
+   "pages": 4,
+   "text_layer": true,
+   "header_text": [
+    "Vol. 69 For Reyna! 1"
+   ],
+   "header_family": "reyna",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 227,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "68",
+   "url": "https://www.mediafire.com/file/gtu7tu6ix2ot5o6/Reyna_Volume_68_Additional_List.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 5229735,
+   "sha256": "84d55ef60b5f5b0a190333b82fdd506b7510076fe05776fd80af9dc902f677a3",
+   "pages": 2,
+   "text_layer": true,
+   "header_text": [
+    "Vol. 68 For Reyna! 1"
+   ],
+   "header_family": "reyna",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 168,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "67",
+   "url": "https://www.mediafire.com/file/ozck2a5gj1ozfmy/Reyna_Volume_67_Additional_List.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 2460376,
+   "sha256": "c29427abd8d0889c1a50d37e7b1037fe013fa42cd690942fc2cd2ab602c87842",
+   "pages": 4,
+   "text_layer": true,
+   "header_text": [
+    "Vol. 67 For Reyna ! 1"
+   ],
+   "header_family": "reyna",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 180,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "66",
+   "url": "https://www.mediafire.com/file/t81v0wsw49s9iwq/Reyna_Volume_66_Additional_List.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 3325962,
+   "sha256": "3718700b910691c71cb0992d2e4ad2e5c4413651d957f92428d787aaa0b8b353",
+   "pages": 2,
+   "text_layer": true,
+   "header_text": [
+    "Vol. 66 For Reyna DVD ! 1"
+   ],
+   "header_family": "reyna",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 120,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "64-65",
+   "url": "https://www.mediafire.com/file/9a1r1y1k295ttxy/Volume_64_-_65_Reyna_Additional_List.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 2678823,
+   "sha256": "48f514102ae056fecdece79856eb3929c8451f3aa5ae93827ca49b88023c8367",
+   "pages": 2,
+   "text_layer": true,
+   "header_text": [
+    "Vol. 65 for Reyna ! 1"
+   ],
+   "header_family": "reyna",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 180,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "63",
+   "url": "https://www.mediafire.com/file/8maonej7m3v27n6/Reyna_Volume_63_Additional_Song_List.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 725732,
+   "sha256": "e03e2e0a0f81f71282da3d8ddcf2b5d0b2940a52a5a09dbc70d581ef7f2f3e63",
+   "pages": 2,
+   "text_layer": true,
+   "header_text": [
+    "Reyna Vol. 63! 1"
+   ],
+   "header_family": "reyna",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 98,
+   "checked": "2026-10-23"
+  },
+  {
+   "source": "A",
+   "section": "REYNA SERIES",
+   "volume_label": "62",
+   "url": "https://www.mediafire.com/file/7lctu8f4akbymxk/Reyna_Volume_62_Additional_List.pdf/file",
+   "http_status": 206,
+   "content_type": "application/pdf",
+   "bytes": 4398586,
+   "sha256": "aa0c747cd5607d2e77ff1efc9f71d242823f9a07b381088eaea4ef286c1d6183",
+   "pages": 4,
+   "text_layer": true,
+   "header_text": [
+    "Vol. 62 For Reyna ! 1"
+   ],
+   "header_family": "reyna",
+   "also_in_source_B": true,
+   "also_in_source_C": true,
+   "five_digit_tokens": 238,
+   "checked": "2026-10-23"
+  }
+ ]
+}
