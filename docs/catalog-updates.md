@@ -23,7 +23,7 @@ phone: open app -> saved catalog shows at once -> (if the last check is over 12 
 
 | Command | What it does |
 |---|---|
-| `run` | The scheduled pass: `discover`, `fetch` (new links only), `import`, `publish`. Skips itself ("not due") unless the last successful scheduled run is older than `--min-interval-days` (default 14). `--manual` ignores the interval. Holds a lock, so two runs never overlap. One dead download link does not block the others: the run continues, publishes what it has, and exits 1 with outcome `partial`, which does not count as a success, so the next daily run tries again. Exit 0 ok, 1 error or partial, 2 blocked by a safety gate. Each run is recorded in `import_run`. |
+| `run` | The scheduled pass: `discover`, `fetch` (new links only), `import`, `map`, `publish`. Skips itself ("not due") unless the last successful scheduled run is older than `--min-interval-days` (default 14). `--manual` ignores the interval. Holds a lock, so two runs never overlap. One dead download link does not block the others: the run continues, publishes what it has, and exits 1 with outcome `partial`, which does not count as a success, so the next daily run tries again. Exit 0 ok, 1 error or partial, 2 blocked by a safety gate. Each run is recorded in `import_run`. |
 | `publish` | Build every model listed in `display.yaml`, verify, and publish a new version. `--keep N` versions stay on disk (default 5; the live one is never pruned). `--allow-drop` lifts the drop gate. |
 | `audit` | Download every known document again and compare its hash with what was imported. The document host sends no ETag or Last-Modified, so a file replaced behind the same link is only visible this way. Reports `CHANGED` files, imports nothing, exits 2 on drift. Meant to run monthly. To take a changed file: `fetch --refresh`, `import`, then `publish`. |
 | `rollback vN` | Point the live manifest at an older version after re-checking that version's hashes. Phones follow because they update to any different version, not only newer ones. **Rollback is temporary**: the next `run` or `publish` builds from the database again and publishes a new version, so to keep something out use `withdraw`, and to stop updates use `suspend`. Refuses versions that predate a withdrawal. Waits for no one: if a `run` or `publish` is in progress it stops with a message. |
@@ -34,7 +34,7 @@ All of these use `work/publish/` (or `--out`) and `display.yaml`, which names ea
 
 ### Safety gates (publish refuses, live catalog unchanged, exit 2)
 
-- A model has conflicting numbers (the same number with different text in two releases).
+- More than 5% of a model's numbers conflict (the same number with different titles in two releases). Up to 5% are left out and counted in the manifest as `excluded`; a number with the same title but different artist text keeps the song with the artist withheld.
 - A model would lose more than 2% of its songs, or disappear, compared with the live manifest (unless `--allow-drop`).
 - A bundle fails the self-check after being written: valid JSON, schema, equal column lengths, digit-only unique numbers, count matches, hash matches the file on disk.
 - Nothing is publishable at all.
@@ -60,7 +60,7 @@ v<N>/manifest.json    the manifest as published, used by rollback
   "models": [{
     "slug": "reyna", "name": "Reyna", "family": "Reyna series", "hue": "magenta",
     "file": "v3/reyna.json", "sha256": "<64 hex of the file's exact bytes>", "bytes": 143995,
-    "songs": 3186, "coverage": "Volumes 62 to 76"
+    "songs": 3186, "excluded": 0, "coverage": "Volumes 62 to 76"
   }]
 }
 ```

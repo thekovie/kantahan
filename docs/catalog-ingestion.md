@@ -1,5 +1,7 @@
 # Catalog ingestion
 
+> M4 update (2026-10-24): the extractor now also reads the older two-table layouts and tables with merged artist cells, volumes are mapped to machine groups by a separate `map` step, and `import --reimport` re-extracts documents after an extractor fix. See the section "Older layouts and M4 results" at the end.
+
 Status: **discover, fetch, extract, validate, import and local build are implemented (M1). Scheduled runs, publication and client sync are planned (M3).** Findings below were measured on 2026-10-23 against the 43 documents in the "REYNA SERIES" section of Source A. Source documents and extracted data stay on the developer machine under `catalog/work/` (gitignored).
 
 ## Pipeline (`catalog/src/kantahan_catalog/`)
@@ -83,3 +85,16 @@ A release is `mapped` only when the page-1 header says "For Reyna" (see [model-c
 ## Not done yet
 
 Scheduled 14-day runs and monthly audit, publication, manifest and gzip, client sync (M3). Other model families (M4). A larger hand-checked accuracy set. Source D product-page compatibility text (blocked by HTTP 429 in the audit).
+
+
+## Older layouts and M4 results
+
+**Readers.** Documents are first read through their cell borders (the Reyna-era layout, unchanged). When that leaves more than 3 song codes outside every table (and more than 1% of rows), or finds no usable table structure, the document is read by where its 5-digit codes sit instead. The code column of each table is measured on each page, because pages of one document are laid out with different offsets (some alternate between two, book style). A table's cut is the strongest per-line vote for where the widest gap on a text line ends, and a page with too little to measure borrows from the nearest page on the same side of the spread. Whichever reading leaves fewer stray codes wins, with the border reading preferred on ties.
+
+**Merged artist cells.** Some layouts ("5x5 Featured Artists") draw one artist cell across five rows. A tall rectangle in the artist column gives its text to every row it covers.
+
+**Safety checks.** All 43 Reyna-section documents, and every other document read through borders, extract identically with the new code (compared row by row). The older layouts were checked against rendered pages. A bundle never changes when a document is re-imported with the same hash unless `--reimport` is used on purpose; after `--reimport`, run `import` over all sections once (a shared file loses its links to other sections' URLs) and then `map`.
+
+**Reviewed exceptions.** `catalog/reviewed.yaml` lists files a person checked on the rendered page where the source legitimately leaves artists blank. It names files and reasons only.
+
+**Results (local run, 2026-10-24).** 363 files fetched (815 MB, 0 failures), 295 distinct documents, 292 releases imported, 3 documents quarantined (see [model-compatibility.md](model-compatibility.md)), about 62,000 rows in mapped releases, 12 bundles published.

@@ -4,19 +4,19 @@ Last updated: **2026-10-23**
 
 ## Current milestone
 
-**M3, automatic updates: built and verified locally on branch `m3-updates` (PR pending).** M0, M1 and M2 are merged to `main`. Nothing is hosted yet: serving `work/publish/` and the cron entry come with M5. Next: M4 other models.
+**M4, other Platinum machine groups: built and verified locally on branch `m4-models` (PR pending).** M0 to M3 are merged to `main`. All 12 machine groups now have models and bundles locally (about 62,000 songs; Reyna unchanged at 3,186). Nothing is hosted yet. Next: M5 production readiness.
 
 ## Completed
 
-- **M0** source audit ([docs/source-audit.md](docs/source-audit.md)), repo, docs skeleton, logo and icon set.
-- **M1** catalog pipeline in `catalog/` (Python 3.12, SQLite, pdfplumber): migrations, discovery, polite fetcher, geometry-based PDF extractor with an overlap rule, validator, importer, local bundle builder ([docs/catalog-ingestion.md](docs/catalog-ingestion.md)).
-- **M2** offline songbook PWA in `apps/web` (React 19, TypeScript, Vite, Tailwind 4, idb, MiniSearch): model picker, search, browse by letter, full-size read-out, light and dark themes, fake demo catalog ([DESIGN.md](DESIGN.md), [ADR 0003](docs/decisions/0003-m2-ui-direction.md)).
-- **M3** automatic updates ([docs/catalog-updates.md](docs/catalog-updates.md), [docs/security.md](docs/security.md)):
-  - server: `publish` (immutable `v<N>` folders, self-check, gates for conflicts and drops over 2%, atomic manifest swap, pruning), `run` (discover, fetch new, import, publish; 14 day due check; run lock; `import_run` records), `audit` (re-hash every document), `rollback`, `suspend`/`resume`, `withdraw`; migration 0004; `catalog/display.yaml` names and colours each model
-  - client: on-open check when the last one is over 12 h old and a "Check for updates" button; only changed saved models are downloaded; SHA-256, schema, model and count are verified; manifest and bundles are committed in one IndexedDB transaction; any failure keeps the old catalog; the search index is swapped without losing the search box; a paused catalog shows its notice; rollbacks are followed
-  - tests: catalog 176 (96% coverage), web 146 unit (98%) and 44 Playwright (update while searching, corrupt download, pause and resume, axe)
-  - reviewed by independent security and code reviewers; accepted findings fixed (version-folder collision, withdraw purges old versions, no service-worker caching of the catalog, size limits, single-flight checks, partial runs, manifest lock so `suspend` works during a run)
-  - real data: `publish` on the local database produced `v1` with 3,186 Reyna songs (local only)
+- **M0** source audit, repo, logo. **M1** catalog pipeline ([docs/catalog-ingestion.md](docs/catalog-ingestion.md)). **M2** offline songbook PWA ([DESIGN.md](DESIGN.md)). **M3** versioned publishing, rollback, suspend, verified automatic updates ([docs/catalog-updates.md](docs/catalog-updates.md), [docs/security.md](docs/security.md)).
+- **M4** machine groups ([docs/model-compatibility.md](docs/model-compatibility.md), [ADR 0004](docs/decisions/0004-machine-group-models.md)):
+  - owner rule (2026-10-24): each Source A section is a model; a volume belongs to every section that lists it ("listed under ... on the publisher's page"); **Reyna stays on its header rule** (Vol 62 to 76)
+  - migration 0005 seeds the models; `map` step (also run by `run`); `import --reimport`; `reviewed.yaml` for the two "Kid Songs" lists with blank artists
+  - extractor reads the older two-table layouts per page (codes position, cuts, borrowed measurements) and merged artist cells; identical output for every document the border reader handled (compared row by row, 11 sections)
+  - build: same title with different artist text keeps the song and withholds the artist; title conflicts are left out and a model publishes while they are at most 5% of its numbers (the manifest carries `excluded`, the app says so)
+  - app: shows how many numbers were left out; the 12-model picker is the grouped dropdown from M2
+  - tests: catalog 198 (96%), web 148 unit (98%) and 44 Playwright
+  - local data: 363 files (815 MB) fetched, 295 documents, 292 releases, 3 documents still quarantined
 
 ## Results on real data (local run, 2026-10-23)
 
@@ -39,8 +39,8 @@ Last updated: **2026-10-23**
 
 ## Next recommended steps
 
-1. Review and merge the M3 PR; check CI.
-2. **M4** other Platinum models: only where header evidence ties a volume to a model (see [docs/model-compatibility.md](docs/model-compatibility.md)); add each model to `display.yaml` with a hue.
+1. Review and merge the M4 PR; check CI.
+2. Optional data work: the 3 quarantined HDD documents (2015 Oct and Nov have 3 and 4 digit numbers; 2021 March lists one number twice), a hand check of more rows from the older layouts (only rendered-page spot checks so far), and the open Reyna questions below.
 3. **M5** production: serve `work/publish/` as `/catalog/` behind the reverse proxy (cache headers: `manifest.json` short, `v*/` immutable), cron entries from [docs/catalog-updates.md](docs/catalog-updates.md), Docker, contact form, e-mail alerts, backup and restore drills, legal pages.
 
 ## Key paths
@@ -84,6 +84,7 @@ Details: [docs/setup-development.md](docs/setup-development.md).
 - A device that loaded the demo catalog (`demo-1`) switches to a real catalog through the normal update path only if both are served from the same URL; for development clear site data when changing catalogs.
 - `audit` finds files replaced behind a link but only by hash; the monthly cron entry is documented, not installed.
 - Search is capped at 80 results; very short queries show the first 80 in rank order, with a prompt to type more.
+- Title conflicts (a number with different titles in different volumes) are left out per model: T-X 205, Flute/Piano 183, P-Series 13, HDD 5, KS-100 2, Home 40 1. Whether the machines really share numbering across volumes is the publisher's statement, not verified.
 - Playwright is run with Chrome only; Firefox and Safari are untested.
 - 12 rows in held volumes have uncertain titles and are left out of any build.
 - `import_run` table is created but unused until M3.

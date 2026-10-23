@@ -4,7 +4,7 @@
 
 Offline-first digital karaoke songbook. Pick your machine model, then search by song title, artist, or song number.
 
-> **Status: early development (M3 done locally).** The catalog pipeline (`catalog/`), publishing with automatic updates, and the offline songbook app (`apps/web`) exist and run locally; the app ships with a clearly fake demo catalog, and no real catalog data is published. See [HANDOFF.md](HANDOFF.md) for exactly what exists and what is next.
+> **Status: early development (M4 done locally).** The catalog pipeline (`catalog/`), publishing with automatic updates, and the offline songbook app (`apps/web`) exist and run locally; the app ships with a clearly fake demo catalog, and no real catalog data is published. See [HANDOFF.md](HANDOFF.md) for exactly what exists and what is next.
 
 Kantahan is an independent project. It is **not affiliated with, endorsed by, or sponsored by** Platinum Karaoke or Vismay International Corporation. See [docs/legal-and-attribution.md](docs/legal-and-attribution.md).
 

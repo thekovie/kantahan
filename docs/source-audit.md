@@ -30,7 +30,7 @@ Method: read-only requests with an identifying User-Agent, 1.5 to 4 s spacing, n
 - **VERIFIED:** All 43 Reyna links resolve (302 to `download*.mediafire.com`) and return `application/pdf`; sizes range from 60 KB (Vol 101) to 8.7 MB (Vol 69).
 - **VERIFIED:** No `ETag` or `Last-Modified` was present in the headers read. Change detection must use SHA-256 plus diffing the discovered link list. The MediaFire download host changes per request, so only the stable file id and content hash identify a document.
 - **VERIFIED:** `platinumkaraoke.com` rate-limits (HTTP 429, `Retry-After: 60`): the collection page returned 429 on the fifth page request, 1.5 s apart, and product pages kept returning 429 on retries minutes later. One transient "empty reply" from MediaFire was also seen. The crawler needs backoff and a very low request rate.
-- **UNVERIFIED:** Non-Reyna sections (about 350 links) were not link-checked.
+- **VERIFIED (M4, 2026-10-24):** the other 11 sections (350 links) were all fetched without a failure (363 files in total with the Reyna ones; several are byte-identical copies listed under different links, 295 distinct documents); all have a text layer. Their layouts, headers and results are in [model-compatibility.md](model-compatibility.md) and [catalog-ingestion.md](catalog-ingestion.md).
 
 ## 3. PDF structure and extractability
 
