@@ -1,8 +1,10 @@
 """Build a per-model catalog bundle from the database (local output only, never committed).
 
 Only live (not superseded) releases mapped to the model through header evidence are used.
-Numbers that two releases list with different text are conflicts: they are left out and the
-build is not marked validated. Rows with uncertain artist text keep number and title but have
+Numbers that two releases list with a different title are conflicts: they are left out, and the
+build is validated only when they are no more than `max_conflict_share` of the model's numbers
+(default none). A number whose title agrees but whose artist text differs keeps the song and
+withholds the artist. Rows with uncertain artist text keep number and title but have
 the artist withheld; rows with uncertain title text are left out.
 
 Every build is written to an immutable `<model>.v<version>.json`. The stable `<model>.json`
@@ -57,20 +59,27 @@ def _entries(conn: sqlite3.Connection, model_slug: str) -> tuple[list[sqlite3.Ro
     return usable, len(rows) - len(usable)
 
 
-def _merge(entries: list[sqlite3.Row]) -> tuple[list[sqlite3.Row], list[str]]:
-    """One entry per number. Identical re-listings collapse; differing text is a conflict."""
+def _merge(entries: list[sqlite3.Row]) -> tuple[list[sqlite3.Row], list[str], set[str]]:
+    """One entry per number. Identical re-listings collapse. Returns (kept, conflicts, artist_open).
+
+    A different title for one number is a conflict. The same title with different artist text
+    keeps the song, and its number is returned in `artist_open` so the artist is withheld.
+    """
     by_number: dict[str, list[sqlite3.Row]] = {}
     for e in entries:
         by_number.setdefault(e["number"], []).append(e)
     kept: list[sqlite3.Row] = []
     conflicts: list[str] = []
+    artist_open: set[str] = set()
     for number in sorted(by_number):
         group = by_number[number]
-        if len({(g["title_norm"], g["artist_norm"]) for g in group}) > 1:
+        if len({g["title_norm"] for g in group}) > 1:
             conflicts.append(number)
-        else:
-            kept.append(group[0])
-    return kept, conflicts
+            continue
+        if len({g["artist_norm"] for g in group}) > 1:
+            artist_open.add(number)
+        kept.append(group[0])
+    return kept, conflicts, artist_open
 
 
 def _write_atomic(path: Path, payload: bytes) -> None:
@@ -79,12 +88,12 @@ def _write_atomic(path: Path, payload: bytes) -> None:
     os.replace(tmp, path)
 
 
-def _payload(model_slug: str, kept: list[sqlite3.Row]) -> bytes:
+def _payload(model_slug: str, kept: list[sqlite3.Row], artist_open: set[str]) -> bytes:
     labels: list[str] = []
     for e in kept:
         if e["label"] not in labels:
             labels.append(e["label"])
-    withheld = ["overprint" in e["flags"].split(",") for e in kept]
+    withheld = ["overprint" in e["flags"].split(",") or e["number"] in artist_open for e in kept]
     bundle = {
         "schema": SCHEMA,
         "model": model_slug,
@@ -100,13 +109,17 @@ def _payload(model_slug: str, kept: list[sqlite3.Row]) -> bytes:
 
 
 def build_bundle(
-    conn: sqlite3.Connection, model_slug: str, out_dir: str | Path, now: datetime | None = None
+    conn: sqlite3.Connection,
+    model_slug: str,
+    out_dir: str | Path,
+    now: datetime | None = None,
+    max_conflict_share: float = 0.0,
 ) -> BuildResult:
     model = conn.execute("SELECT id FROM model WHERE slug = ?", (model_slug,)).fetchone()
     if model is None:
         raise BuildError(f"unknown model {model_slug!r}")
     entries, titles_excluded = _entries(conn, model_slug)
-    kept, conflicts = _merge(entries)
+    kept, conflicts, artist_open = _merge(entries)
     if not entries:
         raise BuildError(f"no mapped releases with songs for model {model_slug!r}")
     if not kept:
@@ -114,9 +127,10 @@ def build_bundle(
             f"every number conflicts between releases ({len(conflicts)}); nothing to build"
         )
 
-    payload = _payload(model_slug, kept)
+    payload = _payload(model_slug, kept, artist_open)
     digest = hashlib.sha256(payload).hexdigest()
-    status = "validated" if not conflicts else "building"
+    share = len(conflicts) / (len(kept) + len(conflicts))
+    status = "validated" if share <= max_conflict_share else "building"
     stamp = (now or datetime.now(UTC)).isoformat(timespec="seconds")
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -144,7 +158,9 @@ def build_bundle(
         if status == "validated":
             path = out / f"{model_slug}.json"
             _write_atomic(path, payload)
-    withheld = sum(1 for e in kept if "overprint" in e["flags"].split(","))
+    withheld = sum(
+        1 for e in kept if "overprint" in e["flags"].split(",") or e["number"] in artist_open
+    )
     return BuildResult(
         version_id, status, path, digest, len(kept), withheld, titles_excluded, tuple(conflicts)
     )

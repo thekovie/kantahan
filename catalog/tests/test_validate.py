@@ -90,3 +90,11 @@ def test_fullwidth_digits_are_not_a_valid_number():
 def test_overprinted_titles_warn_that_rows_are_left_out():
     issues = validate_document(doc(row("15001", flags=["title_overprint"]), row("15002")))
     assert "title_uncertain" in codes(issues) and not has_errors(issues)
+
+
+def test_blank_artists_are_accepted_only_when_a_person_confirmed_the_document():
+    rows = tuple(RawRow(f"{15000 + i}", f"Song {i}", "", 1, 0, i) for i in range(40))
+    doc = DocumentExtract(rows, 1, ("Vol. 1",), 0)
+    assert any(i.code == "artist_missing_rate" for i in validate_document(doc))
+    reviewed = validate_document(doc, blank_artists_ok=True)
+    assert not any(i.severity == "error" for i in reviewed)

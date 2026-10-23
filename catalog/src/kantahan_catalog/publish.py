@@ -38,6 +38,7 @@ HUES = ("magenta", "violet", "aqua", "orange", "lime", "yellow")
 DEFAULT_KEEP = 5
 MAX_TEXT = 80  # names and families shown on chips
 MAX_NOTICE = 500
+MAX_EXCLUDED_SHARE = 0.05  # numbers left out as conflicting, at most this share of a model
 DEFAULT_MAX_DROP = 0.02  # a model may lose at most this share of its songs without --allow-drop
 _VERSION = re.compile(r"v(\d+)")
 _SLUG = re.compile(r"^[a-z0-9-]+$")
@@ -72,6 +73,7 @@ class PublishResult:
     version: str
     songs: dict[str, int]
     skipped: tuple[str, ...] = ()
+    excluded: dict[str, int] | None = None
 
 
 def load_display(path: str | Path) -> Display:
@@ -154,8 +156,32 @@ def read_manifest(out_dir: str | Path) -> dict[str, Any] | None:
     return result
 
 
+_MONTHS = (
+    "January February March April May June July August September October November December"
+).split()
+_MONTH_LABEL = re.compile(
+    rf"^\s*(?:(?P<y1>\d{{4}})\s+(?P<m1>{'|'.join(_MONTHS)})|(?P<m2>{'|'.join(_MONTHS)})\s+(?P<y2>\d{{4}}))\s*$",
+    re.I,
+)
+_VOLUME_LABEL = re.compile(r"volume\s+(\d+)(?:\s*[-~]\s*(\d+))?", re.I)
+
+
 def _coverage(labels: list[str]) -> str:
-    numbers = [int(n) for label in labels for n in re.findall(r"\d+", label)]
+    """Plain-language span of what a model covers, from the release labels it was built from."""
+    months = []
+    for label in labels:
+        m = _MONTH_LABEL.match(label)
+        if m:
+            month = (m["m1"] or m["m2"]).capitalize()
+            months.append((int(m["y1"] or m["y2"]), _MONTHS.index(month), month))
+    if months and len(months) == len(labels):
+        first, last = min(months), max(months)
+        return f"Monthly lists, {first[2]} {first[0]} to {last[2]} {last[0]}"
+    numbers = [
+        int(n) for label in labels for m in _VOLUME_LABEL.finditer(label) for n in m.groups() if n
+    ]
+    if not numbers:
+        numbers = [int(n) for label in labels for n in re.findall(r"\d+", label)]
     if not numbers:
         return "Volumes not stated"
     low, high = min(numbers), max(numbers)
@@ -258,25 +284,27 @@ def publish(
 
 def _build_all(
     conn: sqlite3.Connection, staging: Path, display: Display
-) -> tuple[dict[str, bytes], list[str]]:
+) -> tuple[dict[str, bytes], list[str], dict[str, int]]:
     payloads: dict[str, bytes] = {}
     skipped: list[str] = []
-    conflicts: list[str] = []
+    blocked: list[str] = []
+    excluded: dict[str, int] = {}
     for slug in display.models:
         try:
-            result = build_bundle(conn, slug, staging)
+            result = build_bundle(conn, slug, staging, max_conflict_share=MAX_EXCLUDED_SHARE)
         except BuildError as exc:
             skipped.append(f"{slug}: {exc}")
             continue
         if result.status != "validated":
-            conflicts.append(f"{slug}: {len(result.conflicts)} conflicting numbers")
+            blocked.append(f"{slug}: {len(result.conflicts)} conflicting numbers")
             continue
         payloads[slug] = (staging / f"{slug}.json").read_bytes()
-    if conflicts:
-        raise PublishError("refusing to publish, " + "; ".join(conflicts), blocked=True)
+        excluded[slug] = len(result.conflicts)
+    if blocked:
+        raise PublishError("refusing to publish, " + "; ".join(blocked), blocked=True)
     if not payloads:
         raise PublishError("nothing to publish: " + ("; ".join(skipped) or "no models"))
-    return payloads, skipped
+    return payloads, skipped, excluded
 
 
 def _publish(
@@ -290,7 +318,7 @@ def _publish(
     allow_drop: bool | Collection[str],
     now: datetime | None,
 ) -> PublishResult:
-    payloads, skipped = _build_all(conn, staging, display)
+    payloads, skipped, excluded = _build_all(conn, staging, display)
     bundles = {slug: check_bundle(p, slug) for slug, p in payloads.items()}
     songs = {slug: int(b["count"]) for slug, b in bundles.items()}
     _gate(previous, songs, max_drop, allow_drop)
@@ -314,11 +342,12 @@ def _publish(
         }
         == shown
     ):
-        return PublishResult("unchanged", str(previous["version"]), songs, tuple(skipped))
+        return PublishResult("unchanged", str(previous["version"]), songs, tuple(skipped), excluded)
 
     with conn:
         pub_id = conn.execute(
-            "INSERT INTO publication (created_at, status) VALUES (?, 'building')", (_stamp(now),)
+            "INSERT INTO publication (created_at, status, notes) VALUES (?, 'building', ?)",
+            (_stamp(now), json.dumps({"excluded": excluded}, sort_keys=True)),
         ).lastrowid
     version = f"v{pub_id}"
     target = out / version
@@ -356,6 +385,7 @@ def _publish(
                     "bytes": len(payloads[slug]),
                     "songs": songs[slug],
                     "coverage": _coverage(bundles[slug]["releases"]),
+                    **({"excluded": excluded[slug]} if excluded[slug] else {}),
                 }
                 for slug in payloads
             ],
@@ -391,7 +421,7 @@ def _publish(
         conn.execute("UPDATE catalog_version SET status = 'published' WHERE status = 'validated'")
     _prune(out, keep)
     _purge_withdrawn(conn, out)
-    return PublishResult("published", version, songs, tuple(skipped))
+    return PublishResult("published", version, songs, tuple(skipped), excluded)
 
 
 def _log(

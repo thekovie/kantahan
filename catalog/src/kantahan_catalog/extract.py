@@ -44,6 +44,8 @@ FALLBACK_STRAY_RATE = 0.01
 CODE_CLUSTER_GAP = 12.0  # points between code columns of different tables
 MIN_CODE_SHARE = 0.05  # a code column holds at least this share of all 5-digit tokens
 MIN_CELL_GAP = 8.0  # empty space between an artist cell's text and the next table's titles
+MERGED_MIN_ROWS = 1.8  # a cell this many row pitches tall spans several rows
+MERGED_MIN_WIDTH = 20.0
 MIN_PAGE_CODES = 3  # codes per column a page needs before its own columns are trusted
 MIN_PAGE_VOTES = 3  # lines a page needs before its own cut is trusted over the document's
 LINE_TOLERANCE = 4.0  # words whose centres are this close vertically are on one text line
@@ -125,39 +127,56 @@ def _cut_votes(page: Any, low: float, high: float) -> Counter[int]:
     return votes
 
 
+def _borrow(index: int, measured: dict[int, Any]) -> Any:
+    """The measurement of the nearest page that has one, preferring the same side of the spread.
+
+    Some documents alternate page offsets (book-style inner margins), so a sparse page is most
+    like another page an even number of pages away.
+    """
+    best = min(measured, key=lambda j: (abs(index - j) % 2, abs(index - j)))
+    return measured[best]
+
+
 def borderless_template(pages: list[Any]) -> list[list[Edges]]:
     """Table edges per page for documents whose cell borders cannot be read as borders.
 
     Each table has one code column. A table's titles run from the previous table's cut to its
     codes, its artists from its codes to the next cut. Pages of one document are laid out with
     slightly different offsets, so code columns and cuts are measured on each page; a page with
-    too little to measure uses the whole document's values.
+    too little to measure borrows from a similar page.
     """
-    overall_columns = _code_columns(pages)
-    if len(overall_columns) < 2:
-        raise ExtractionError("expected at least two code columns")
-    page_width = min(float(p.width) for p in pages)
     per_page = [_code_columns([page], MIN_PAGE_CODES) for page in pages]
-    columns = [c if len(c) == len(overall_columns) else overall_columns for c in per_page]
+    counts = Counter(len(c) for c in per_page if c)
+    expected = counts.most_common(1)[0][0] if counts else 0
+    if expected < 2:
+        raise ExtractionError("expected at least two code columns")
+    measured = {i: c for i, c in enumerate(per_page) if len(c) == expected}
+    columns = [measured[i] if i in measured else _borrow(i, measured) for i in range(len(pages))]
 
-    def spans(cols: list[tuple[float, float]]) -> list[tuple[float, float]]:
-        return [(cols[i][1] + 2, cols[i + 1][0] - 2) for i in range(len(cols) - 1)]
-
-    own = [
-        [_cut_votes(page, lo, hi) for lo, hi in spans(cols)]
-        for page, cols in zip(pages, columns, strict=True)
+    spans = [
+        [(cols[k][1] + 2, cols[k + 1][0] - 2) for k in range(expected - 1)] for cols in columns
     ]
-    overall = [sum((votes[i] for votes in own), Counter[int]()) for i in range(len(own[0]))]
-    if any(not votes for votes in overall):
+    votes = [
+        [_cut_votes(page, lo, hi) for lo, hi in page_spans]
+        for page, page_spans in zip(pages, spans, strict=True)
+    ]
+    own: dict[int, list[float | None]] = {
+        i: [
+            float(v.most_common(1)[0][0]) - 1.5 if sum(v.values()) >= MIN_PAGE_VOTES else None
+            for v in page_votes
+        ]
+        for i, page_votes in enumerate(votes)
+    }
+    complete = {i: cuts for i, cuts in own.items() if all(c is not None for c in cuts)}
+    if not complete:
         raise ExtractionError("cannot tell where one table ends and the next begins")
+    page_width = min(float(p.width) for p in pages)
     templates: list[list[Edges]] = []
-    for cols, votes in zip(columns, own, strict=True):
-        cuts = [0.0]
-        for i, total in enumerate(overall):
-            chosen = votes[i] if sum(votes[i].values()) >= MIN_PAGE_VOTES else total
-            cuts.append(float(chosen.most_common(1)[0][0]) - 1.5)
-        ends = [*cuts[1:], page_width]
-        templates.append([(cuts[i], c[0] - 1, c[1] + 1, ends[i]) for i, c in enumerate(cols)])
+    for i, cols in enumerate(columns):
+        cuts = complete[i] if i in complete else _borrow(i, complete)
+        bounded = [min(max(float(c), lo), hi) for c, (lo, hi) in zip(cuts, spans[i], strict=True)]
+        edges = [0.0, *bounded, page_width]
+        templates.append([(edges[k], c[0] - 1, c[1] + 1, edges[k + 1]) for k, c in enumerate(cols)])
     return templates
 
 
@@ -274,8 +293,47 @@ def _suspect(unresolved: set[int], row_count: int) -> set[int]:
     return out
 
 
+def _merged_artists(
+    artist_words: list[dict[str, Any]],
+    cy: list[float],
+    pitch: float,
+    edges: Edges,
+    rects: list[dict[str, Any]],
+) -> dict[int, str]:
+    """Artist text of cells that are drawn across several rows ("5 songs by one artist").
+
+    Such a cell is a tall rectangle in the artist column. Its text belongs to every row whose
+    number sits inside it, not just to the row the text happens to be centred on.
+    """
+    out: dict[int, str] = {}
+    for r in rects:
+        if not (
+            r["x0"] >= edges[2] - 3
+            and r["x1"] <= edges[3] + 6
+            and r["x1"] - r["x0"] >= MERGED_MIN_WIDTH
+            and r["bottom"] - r["top"] >= MERGED_MIN_ROWS * pitch
+        ):
+            continue
+        inside = [
+            w
+            for w in artist_words
+            if r["x0"] <= _center(w)[0] <= r["x1"] and r["top"] <= _center(w)[1] <= r["bottom"]
+        ]
+        text = _lines_text(inside)
+        if not text:
+            continue
+        for row, y in enumerate(cy):
+            if r["top"] <= y <= r["bottom"]:
+                out[row] = text
+    return out
+
+
 def _table_rows(
-    words: list[dict[str, Any]], edges: Edges, page_no: int, table_no: int
+    words: list[dict[str, Any]],
+    edges: Edges,
+    page_no: int,
+    table_no: int,
+    rects: list[dict[str, Any]] | None = None,
 ) -> tuple[list[RawRow], int]:
     e0, e1, e2, e3 = edges
     numbers = sorted(
@@ -305,6 +363,7 @@ def _table_rows(
             artist_words.append(w)
     titles, title_open = _assign_cell(title_words, cy, pitch)
     artists, artist_open = _assign_cell(artist_words, cy, pitch)
+    merged = _merged_artists(artist_words, cy, pitch, edges, rects or [])
     title_hits = _suspect(title_open, len(numbers))
     artist_hits = _suspect(artist_open, len(numbers))
     rows = []
@@ -316,7 +375,7 @@ def _table_rows(
             RawRow(
                 number=n["text"],
                 title=_lines_text(titles.get(i, [])),
-                artist=_lines_text(artists.get(i, [])),
+                artist=merged.get(i) or _lines_text(artists.get(i, [])),
                 page=page_no,
                 table=table_no,
                 row=i,
@@ -335,7 +394,7 @@ def _read(pages: list[Any], templates: list[list[Edges]]) -> tuple[list[RawRow],
             word["_i"] = position  # PDF write order
         page_used = 0
         for table_no, edges in enumerate(templates[page_no - 1]):
-            table_rows, count = _table_rows(words, edges, page_no, table_no)
+            table_rows, count = _table_rows(words, edges, page_no, table_no, page.rects)
             rows.extend(table_rows)
             page_used += count
         used += page_used

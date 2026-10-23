@@ -137,7 +137,7 @@ def _insert_entries(conn: sqlite3.Connection, release_id: int, extract: Document
 
 
 def _forget_quarantined(conn: sqlite3.Connection, document_id: int) -> None:
-    """Drop a quarantined document so it can be evaluated again (after an extractor fix)."""
+    """Drop a document, its release and songs, so it is evaluated again after an extractor fix."""
     with conn:
         conn.execute(
             "UPDATE document_link SET document_id = NULL WHERE document_id = ?", (document_id,)
@@ -154,6 +154,8 @@ def import_pdf(
     label: str,
     now: datetime | None = None,
     retry_quarantined: bool = False,
+    reimport: bool = False,
+    blank_artists_ok: bool = False,
 ) -> ImportResult:
     stamp = _stamp(now)
     data = Path(path).read_bytes()
@@ -164,7 +166,7 @@ def import_pdf(
     source_id = int(source["id"])
 
     existing = conn.execute("SELECT id, status FROM document WHERE sha256 = ?", (sha,)).fetchone()
-    if existing and retry_quarantined and existing["status"] == "quarantined":
+    if existing and (reimport or (retry_quarantined and existing["status"] == "quarantined")):
         _forget_quarantined(conn, existing["id"])
         existing = None
     if existing:
@@ -177,7 +179,7 @@ def import_pdf(
     extract: DocumentExtract | None
     try:
         extract = extract_rows(path)
-        issues = validate_document(extract, previous or None)
+        issues = validate_document(extract, previous or None, blank_artists_ok)
     except ExtractionError as exc:
         extract, issues = None, [Issue("extraction_failed", "error", str(exc))]
     blocked = has_errors(issues)

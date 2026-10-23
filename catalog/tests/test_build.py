@@ -139,3 +139,36 @@ def test_recorded_hash_matches_an_immutable_versioned_file(conn, pdf, tmp_path):
     build_bundle(conn, "reyna", tmp_path)
     old = tmp_path / f"reyna.v{first.version_id}.json"
     assert hashlib.sha256(old.read_bytes()).hexdigest() == first.sha256
+
+
+def test_same_title_with_different_artist_text_keeps_the_song_and_withholds_the_artist(
+    conn, pdf, tmp_path
+):
+    add(conn, pdf("a.pdf", [("15001", "Indigo", "keshi"), ("15002", "Fine", "Artist")]), 1)
+    add(conn, pdf("b.pdf", [("15001", "Indigo", "keshi Rascal Flatts,")]), 2)
+    result = build_bundle(conn, "reyna", tmp_path)
+    bundle = load(result)
+    i = bundle["n"].index("15001")
+    assert bundle["t"][i] == "Indigo" and bundle["a"][i] == "" and bundle["u"][i] == 1
+    assert result.conflicts == () and result.status == "validated"
+    assert result.artists_withheld == 1
+
+
+def test_a_few_title_conflicts_can_be_tolerated_when_the_caller_allows_a_share(conn, pdf, tmp_path):
+    rows = [(str(15000 + i), f"Song {i}", "Artist") for i in range(50)]
+    add(conn, pdf("a.pdf", rows), 1)
+    add(conn, pdf("b.pdf", [("15001", "A different song", "Other")]), 2)
+    strict = build_bundle(conn, "reyna", tmp_path / "strict")
+    assert strict.status == "building" and strict.conflicts == ("15001",)
+    lenient = build_bundle(conn, "reyna", tmp_path / "lenient", max_conflict_share=0.05)
+    assert lenient.status == "validated" and lenient.conflicts == ("15001",)
+    assert "15001" not in load(lenient)["n"] and len(load(lenient)["n"]) == 49
+
+
+def test_too_many_title_conflicts_are_never_tolerated(conn, pdf, tmp_path):
+    rows = [(str(15000 + i), f"Song {i}", "Artist") for i in range(50)]
+    add(conn, pdf("a.pdf", rows), 1)
+    clash = [(str(15000 + i), f"Other {i}", "Other") for i in range(10)]
+    add(conn, pdf("b.pdf", clash), 2)
+    result = build_bundle(conn, "reyna", tmp_path, max_conflict_share=0.05)
+    assert result.status == "building" and len(result.conflicts) == 10

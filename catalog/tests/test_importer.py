@@ -155,3 +155,21 @@ def test_overprinted_title_rows_get_no_canonical_song(conn, pdf):
     rows = sample_rows(count=3)
     run(conn, pdf("r.pdf", rows))
     assert count(conn, "song") == 3
+
+
+def test_reimport_replaces_rows_that_an_older_extractor_got_wrong(conn, pdf):
+    path = pdf("a.pdf", [("15001", "Dati", "Sam Conception"), ("15002", "Dahilan", "Hunyo")])
+    import_pdf(conn, path, source_slug="a", url=URL, label="Volume 1")
+    conn.execute("UPDATE song_entry SET artist_raw = 'Conc' WHERE number = '15001'")
+    unchanged = import_pdf(conn, path, source_slug="a", url=URL, label="Volume 1")
+    assert unchanged.outcome == "unchanged"
+    assert (
+        conn.execute("SELECT artist_raw FROM song_entry WHERE number='15001'").fetchone()[0]
+        == "Conc"
+    )
+
+    again = import_pdf(conn, path, source_slug="a", url=URL, label="Volume 1", reimport=True)
+    assert again.outcome == "imported" and again.rows == 2
+    artist = conn.execute("SELECT artist_raw FROM song_entry WHERE number='15001'").fetchone()[0]
+    assert artist == "Sam Conception"
+    assert conn.execute("SELECT count(*) FROM release").fetchone()[0] == 1

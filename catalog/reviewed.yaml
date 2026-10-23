@@ -1,0 +1,8 @@
+# Documents a person has looked at and confirmed need an exception to a validation rule.
+# Nothing here is catalog data: only the identity of a file and why it is accepted.
+accept_blank_artists:
+  # The "Kid Songs" tables (nursery rhymes) leave the artist cell empty for most rows. The same
+  # list appears in both documents. Viewed on the rendered page (2026-10-24): titles and codes
+  # read correctly, the artist cells are blank in the source.
+  - file_key: 9pcb6892l9zmhc2   # BRAVO Volume 8
+  - file_key: 2lllhcub1ac61xu   # P-SERIES Volume 73

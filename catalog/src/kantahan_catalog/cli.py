@@ -113,9 +113,18 @@ def cmd_fetch(args: argparse.Namespace, out: Out, fetcher: Fetcher, **_: Any) ->
     return 1 if failed else 0
 
 
+def _blank_artist_keys(path: Path) -> frozenset[str]:
+    """File keys a person has looked at and confirmed leave the artist cell empty on purpose."""
+    if not path.exists():
+        return frozenset()
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    return frozenset(str(e["file_key"]) for e in data.get("accept_blank_artists", []))
+
+
 def cmd_import(args: argparse.Namespace, out: Out, **_: Any) -> int:
     conn = db.connect(args.work / "catalog.sqlite")
     db.migrate(conn)
+    blank_ok = _blank_artist_keys(args.reviewed)
     sources = _sources(args.sources)
     for sid in args.from_sources:
         if sid not in sources:
@@ -134,6 +143,8 @@ def cmd_import(args: argparse.Namespace, out: Out, **_: Any) -> int:
             url=link.url,
             label=link.label,
             retry_quarantined=args.retry_quarantined,
+            reimport=args.reimport,
+            blank_artists_ok=bool((m := FILE_KEY.search(link.url)) and m.group(1) in blank_ok),
         )
         tally[result.outcome] = tally.get(result.outcome, 0) + 1
         if result.outcome == "quarantined":
@@ -217,6 +228,9 @@ def _do_publish(
         out(f"  skipped {note}")
     songs = ", ".join(f"{slug} {n}" for slug, n in sorted(result.songs.items()))
     out(f"{result.outcome} {result.version}: {songs}")
+    for slug, count in sorted((result.excluded or {}).items()):
+        if count:
+            out(f"  {slug}: {count} song numbers left out (listed with different titles)")
     return result.outcome
 
 
@@ -269,7 +283,9 @@ def cmd_withdraw(args: argparse.Namespace, out: Out, **_: Any) -> int:
 
 def _sub(args: argparse.Namespace, **extra: Any) -> argparse.Namespace:
     base = {"section": DEFAULT_SECTION, "from_sources": ["a"], "refresh": False}
-    return argparse.Namespace(**{**vars(args), **base, "retry_quarantined": False, **extra})
+    return argparse.Namespace(
+        **{**vars(args), **base, "retry_quarantined": False, "reimport": False, **extra}
+    )
 
 
 def _run_steps(
@@ -365,6 +381,9 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--work", type=Path, default=Path("work"), help="output folder (gitignored)")
     p.add_argument("--sources", type=Path, default=Path("sources.yaml"))
     p.add_argument(
+        "--reviewed", type=Path, default=Path("reviewed.yaml"), help="human-reviewed exceptions"
+    )
+    p.add_argument(
         "--display", type=Path, default=Path("display.yaml"), help="model names and hues"
     )
     p.add_argument(
@@ -388,6 +407,12 @@ def parser() -> argparse.ArgumentParser:
                 "--retry-quarantined",
                 action="store_true",
                 help="evaluate quarantined documents again (after an extractor fix)",
+            )
+            s.add_argument(
+                "--reimport",
+                action="store_true",
+                help="extract documents again even if already imported (after an extractor fix); "
+                "run `map` afterwards",
             )
     sub.add_parser("map", help="join imported volumes to the machine groups that list them")
     sub.add_parser("stats", help="show database counts")

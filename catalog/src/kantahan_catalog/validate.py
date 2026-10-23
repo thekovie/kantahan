@@ -18,14 +18,16 @@ MAX_STRAY_TOKENS = 3
 MAX_STRAY_RATE = 0.01
 
 
-def validate_document(extract: DocumentExtract, previous_rows: int | None = None) -> list[Issue]:
+def validate_document(
+    extract: DocumentExtract, previous_rows: int | None = None, blank_artists_ok: bool = False
+) -> list[Issue]:
     rows = extract.rows
     if not rows:
         return [Issue("no_rows", "error", "no song rows were extracted")]
     issues: list[Issue] = []
     issues += _row_errors(extract)
     issues += _duplicates(extract)
-    issues += _artist_checks(extract)
+    issues += _artist_checks(extract, blank_artists_ok)
     issues += _drift(extract, previous_rows)
     issues += _review_flags(extract)
     return issues
@@ -65,11 +67,11 @@ def _duplicates(extract: DocumentExtract) -> list[Issue]:
     return issues
 
 
-def _artist_checks(extract: DocumentExtract) -> list[Issue]:
+def _artist_checks(extract: DocumentExtract, blank_artists_ok: bool = False) -> list[Issue]:
     rows = extract.rows
     missing = [r for r in rows if not r.artist]
     issues = []
-    if len(missing) / len(rows) > MAX_MISSING_ARTIST_RATE:
+    if len(missing) / len(rows) > MAX_MISSING_ARTIST_RATE and not blank_artists_ok:
         issues.append(
             Issue(
                 "artist_missing_rate", "error", f"{len(missing)} of {len(rows)} rows have no artist"

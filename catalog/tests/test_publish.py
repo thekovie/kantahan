@@ -79,15 +79,28 @@ def test_new_volume_makes_a_new_version_and_keeps_the_old_one(loaded, pdf, tmp_p
     assert read_manifest(tmp_path)["models"][0]["coverage"] == "Volumes 1 to 2"
 
 
-def test_conflicting_numbers_block_publishing_and_leave_the_live_manifest(loaded, pdf, tmp_path):
+def test_many_conflicting_numbers_block_publishing_and_leave_the_live_manifest(
+    loaded, pdf, tmp_path
+):
     pub(loaded, tmp_path)
     before = (tmp_path / "manifest.json").read_bytes()
-    add(loaded, pdf("b.pdf", [("15001", "Changed title", "Other")]), 2)
+    clash = [(str(15000 + i), f"Changed {i}", "Other") for i in range(10)]
+    add(loaded, pdf("b.pdf", clash), 2)
     with pytest.raises(PublishError) as err:
         pub(loaded, tmp_path)
     assert err.value.blocked and "conflict" in str(err.value)
     assert (tmp_path / "manifest.json").read_bytes() == before
     assert not (tmp_path / "v2").exists()
+
+
+def test_a_small_share_of_conflicts_is_left_out_and_reported(loaded, pdf, tmp_path):
+    add(loaded, pdf("b.pdf", [("15001", "Changed title", "Other")]), 2)
+    result = pub(loaded, tmp_path)
+    assert result.outcome == "published" and result.excluded == {"reyna": 1}
+    model = read_manifest(tmp_path)["models"][0]
+    assert model["excluded"] == 1 and model["songs"] == 49
+    notes = json.loads(loaded.execute("SELECT notes FROM publication").fetchone()[0])
+    assert notes["excluded"] == {"reyna": 1}
 
 
 def test_withdrawing_everything_is_an_error_not_an_empty_catalog(loaded, tmp_path):
@@ -321,3 +334,22 @@ def test_a_pause_set_during_a_publish_is_not_lost(loaded, pdf, tmp_path, monkeyp
     manifest = read_manifest(tmp_path)
     assert manifest["suspended"] is True and manifest["notice"] == "Paused mid-publish."
     assert json.loads((tmp_path / "v2" / "manifest.json").read_text())["suspended"] is True
+
+
+@pytest.mark.parametrize(
+    ("labels", "expected"),
+    [
+        (["Volume 64-65", "Volume 62", "Volume 76"], "Volumes 62 to 76"),
+        (["Volume 7"], "Volume 7"),
+        (["Volume 104~105", "Volume 108"], "Volumes 104 to 108"),
+        (["Volume 87 (Training Mode)", "Volume 90"], "Volumes 87 to 90"),
+        (
+            ["2019 March", "2026 November", "2020 January"],
+            "Monthly lists, March 2019 to November 2026",
+        ),
+        (["December 2019", "May 2020"], "Monthly lists, December 2019 to May 2020"),
+        (["Odd label"], "Volumes not stated"),
+    ],
+)
+def test_coverage_is_worded_for_volumes_and_for_monthly_lists(labels, expected):
+    assert publish_module._coverage(labels) == expected
