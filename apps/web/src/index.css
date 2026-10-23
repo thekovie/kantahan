@@ -546,6 +546,17 @@ a {
 .btn:active {
   transform: scale(0.98);
 }
+.btn--quiet {
+  min-height: 3rem;
+  padding: 0 1.125rem;
+  border: 2px solid var(--line-strong);
+  background: transparent;
+  color: var(--text);
+  font-size: 0.9375rem;
+}
+.btn--quiet:disabled {
+  opacity: 0.7;
+}
 .btn--block {
   width: 100%;
   margin-top: 1.5rem;
@@ -607,6 +618,19 @@ a {
 }
 .catalog-note a {
   color: var(--text);
+}
+.catalog-note p {
+  margin: 0;
+}
+.update-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-top: 0.75rem;
+}
+.update-row .status {
+  margin: 0;
 }
 .footer {
   padding: 1rem 1rem calc(1.5rem + env(safe-area-inset-bottom));

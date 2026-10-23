@@ -49,4 +49,32 @@ describe("parseManifest", () => {
     expect(() => parseManifest({ ...bad, version: 3 })).toThrow(CatalogError);
     expect(() => parseManifest(null)).toThrow(CatalogError);
   });
+
+  it("requires a checksum and the suspended flag, and accepts versioned bundle paths", () => {
+    const good = makeManifest();
+    const versioned = { ...good, models: [{ ...good.models[0], file: "v12/model-a.json" }] };
+    expect(parseManifest(versioned).models[0]?.file).toBe("v12/model-a.json");
+    expect(() => parseManifest({ ...good, models: [{ ...good.models[0], sha256: "abc" }] })).toThrow(CatalogError);
+    expect(() => parseManifest({ ...good, suspended: undefined })).toThrow(CatalogError);
+    expect(() => parseManifest({ ...good, notice: 5 })).toThrow(CatalogError);
+    for (const file of ["a/b/c.json", "/abs.json", "v1/../x.json", "x.exe", "v1\\x.json", "https://evil.test/x.json"]) {
+      expect(() => parseManifest({ ...good, models: [{ ...good.models[0], file }] })).toThrow(CatalogError);
+    }
+  });
+
+  it("refuses a source link that is not https and sizes that make no sense", () => {
+    const good = makeManifest();
+    for (const url of ["javascript:alert(1)", "data:text/html,x", "http://insecure.test", "not a url"]) {
+      expect(() => parseManifest({ ...good, source: { label: "x", url } })).toThrow(CatalogError);
+    }
+    for (const patch of [{ bytes: 0 }, { bytes: 26 * 1024 * 1024 }, { bytes: 1.5 }, { songs: 0 }]) {
+      expect(() => parseManifest({ ...good, models: [{ ...good.models[0], ...patch }] })).toThrow(CatalogError);
+    }
+  });
+
+  it("keeps the notice of a suspended catalog", () => {
+    const parsed = parseManifest({ ...makeManifest(), suspended: true, notice: "Paused." });
+    expect(parsed.suspended).toBe(true);
+    expect(parsed.notice).toBe("Paused.");
+  });
 });

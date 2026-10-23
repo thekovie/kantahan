@@ -1,6 +1,7 @@
 // Generates the demo catalog in public/catalog/. Every title and artist is invented from word
 // lists; none of it is real song data. Deterministic, so re-running changes nothing.
-import { mkdirSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -54,17 +55,36 @@ const models = [
   { slug: "demo-c", name: "Model C", family: "Demo family three", hue: "lime", seed: 37, count: 160, first: 590, withheld: 0, coverage: "Demo volumes 1 and 2" },
 ];
 
-mkdirSync(OUT, { recursive: true });
+// Bundles live in a versioned folder, exactly like a published catalog, and the manifest carries
+// the SHA-256 of each file's bytes.
+const VERSION = "demo-1";
+const DIR = join(OUT, VERSION);
+rmSync(OUT, { recursive: true, force: true });
+mkdirSync(DIR, { recursive: true });
+const entries = [];
 for (const m of models) {
-  writeFileSync(join(OUT, `${m.slug}.json`), JSON.stringify(makeModel(m.slug, m.seed, m.count, m.first, m.withheld)));
+  const text = JSON.stringify(makeModel(m.slug, m.seed, m.count, m.first, m.withheld));
+  writeFileSync(join(DIR, `${m.slug}.json`), text);
+  entries.push({
+    slug: m.slug,
+    name: m.name,
+    family: m.family,
+    hue: m.hue,
+    file: `${VERSION}/${m.slug}.json`,
+    sha256: createHash("sha256").update(text).digest("hex"),
+    bytes: Buffer.byteLength(text),
+    songs: m.count,
+    coverage: m.coverage,
+  });
 }
 const manifest = {
   schema: 1,
-  version: "demo-1",
+  version: VERSION,
   generatedAt: "2026-10-23T00:00:00Z",
   synthetic: true,
+  suspended: false,
   source: { label: "Synthetic demo data, not a real catalog", url: "https://github.com/thekovie/kantahan" },
-  models: models.map((m) => ({ slug: m.slug, name: m.name, family: m.family, hue: m.hue, file: `${m.slug}.json`, songs: m.count, coverage: m.coverage })),
+  models: entries,
 };
 writeFileSync(join(OUT, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
 console.log(`wrote ${models.length} demo bundles and manifest.json to ${OUT}`);

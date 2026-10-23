@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { fakeFetch, makeBundle, makeManifest } from "../test-utils";
+import { TAMPERED_ROWS, fakeFetch, makeBundle, makeManifest, sha256 } from "../test-utils";
 import { LoadError, loadManifestFromAnywhere, loadSongs } from "./loader";
-import { resetStorage, saveCatalog, saveManifest } from "./storage";
+import { loadCatalog, resetStorage, saveCatalog, saveManifest } from "./storage";
 
 afterEach(() => {
   resetStorage();
@@ -45,7 +45,7 @@ describe("loadManifestFromAnywhere", () => {
 
 describe("loadSongs", () => {
   it("reads the saved bundle for the same catalog version", async () => {
-    await saveCatalog({ slug: model.slug, version: manifest.version, savedAt: "now", bundle: makeBundle() });
+    await saveCatalog({ slug: model.slug, version: manifest.version, savedAt: "now", sha256: model.sha256, bundle: makeBundle() });
     const fetchFn = fakeFetch({});
     const { songs, source } = await loadSongs(model, manifest, { fetchFn });
     expect(source).toBe("device");
@@ -53,8 +53,8 @@ describe("loadSongs", () => {
     expect(fetchFn.calls).toEqual([]);
   });
 
-  it("downloads and saves a bundle that is missing or from an older catalog", async () => {
-    await saveCatalog({ slug: model.slug, version: "old", savedAt: "now", bundle: makeBundle() });
+  it("downloads and saves a bundle that is missing or differs from the catalog's", async () => {
+    await saveCatalog({ slug: model.slug, version: "old", savedAt: "now", sha256: sha256("older"), bundle: makeBundle() });
     const fetchFn = fakeFetch({ "/catalog/model-a.json": makeBundle() });
     expect((await loadSongs(model, manifest, { fetchFn })).source).toBe("network");
     expect((await loadSongs(model, manifest, { fetchFn })).source).toBe("device");
@@ -69,7 +69,27 @@ describe("loadSongs", () => {
   });
 
   it("rejects a bundle that fails validation", async () => {
-    const fetchFn = fakeFetch({ "/catalog/model-a.json": { schema: 1, model: "x", n: ["1"], t: [], a: [], r: [], u: [], releases: [] } });
-    await expect(loadSongs(model, manifest, { fetchFn })).rejects.toMatchObject({ kind: "invalid" });
+    const broken = { schema: 1, model: "model-a", n: ["1"], t: [], a: [], r: [], u: [], releases: [] };
+    const entry = { ...model, sha256: sha256(JSON.stringify(broken)) };
+    const fetchFn = fakeFetch({ "/catalog/model-a.json": broken });
+    await expect(loadSongs(entry, manifest, { fetchFn })).rejects.toMatchObject({ kind: "invalid" });
+  });
+
+  it("rejects a download whose checksum differs from the manifest and saves nothing", async () => {
+    const tampered = makeBundle(TAMPERED_ROWS);
+    const fetchFn = fakeFetch({ "/catalog/model-a.json": tampered });
+    await expect(loadSongs(model, manifest, { fetchFn })).rejects.toMatchObject({
+      kind: "invalid",
+      message: expect.stringContaining("checksum"),
+    });
+    expect(await loadCatalog(model.slug)).toBeNull();
+  });
+
+  it("rejects a bundle for another model or with a different song count", async () => {
+    const other = { ...model, slug: "model-b" };
+    const fetchFn = fakeFetch({ "/catalog/model-a.json": makeBundle() });
+    await expect(loadSongs(other, manifest, { fetchFn })).rejects.toMatchObject({ kind: "invalid" });
+    const wrongCount = { ...model, songs: model.songs + 1 };
+    await expect(loadSongs(wrongCount, manifest, { fetchFn })).rejects.toMatchObject({ kind: "invalid" });
   });
 });

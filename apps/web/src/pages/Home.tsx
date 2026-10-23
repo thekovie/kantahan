@@ -1,4 +1,4 @@
-import { SearchX, TriangleAlert, WifiOff } from "lucide-react";
+import { PauseCircle, SearchX, TriangleAlert, WifiOff } from "lucide-react";
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { CatalogNote } from "../components/CatalogNote";
 import { LetterStrip } from "../components/LetterStrip";
@@ -7,7 +7,7 @@ import { Readout } from "../components/Readout";
 import { SearchField } from "../components/SearchField";
 import { SongList } from "../components/SongList";
 import { BootSkeleton, SongSkeleton, StatePanel } from "../components/StatePanel";
-import type { useCatalog } from "../hooks/useCatalog";
+import type { UpdateState, useCatalog } from "../hooks/useCatalog";
 import { RESULT_LIMIT, type SongIndex } from "../lib/search";
 import type { Manifest, ModelInfo, Song } from "../lib/types";
 
@@ -15,12 +15,26 @@ const PAGE_SIZE = 120;
 const PANEL_ID = "letter-panel";
 
 export function Home({ catalog }: { catalog: ReturnType<typeof useCatalog> }) {
-  const { state, selectModel, retry } = catalog;
+  const { state, selectModel, retry, update, checkNow } = catalog;
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState<Song | null>(null);
 
   if (state.phase === "manifest-loading") return <BootSkeleton />;
   if (state.phase === "manifest-failed") return <FailurePanel kind={state.kind} message={state.message} onRetry={retry} />;
+  if (state.phase === "suspended") {
+    return (
+      <StatePanel
+        icon={<PauseCircle size={40} />}
+        title="The songbook is paused"
+        action={{ label: update.phase === "checking" ? "Checking…" : "Check again", onClick: checkNow, disabled: update.phase === "checking" }}
+      >
+        {state.manifest.notice ?? "The songs are not available for now. Please check back later."}
+        <span className="status" role="status">
+          {update.phase === "done" && update.message !== "The songbook is paused." ? ` ${update.message}` : ""}
+        </span>
+      </StatePanel>
+    );
+  }
 
   const { manifest, slug: modelSlug } = state;
   const model = manifest.models.find((m) => m.slug === modelSlug) ?? manifest.models[0];
@@ -40,6 +54,8 @@ export function Home({ catalog }: { catalog: ReturnType<typeof useCatalog> }) {
             model={model}
             query={query}
             onOpen={setOpen}
+            update={update}
+            onCheck={checkNow}
           />
         )}
       </div>
@@ -54,9 +70,11 @@ interface SongbookProps {
   model: ModelInfo;
   query: string;
   onOpen: (song: Song) => void;
+  update: UpdateState;
+  onCheck: () => void;
 }
 
-function Songbook({ index, manifest, model, query, onOpen }: SongbookProps) {
+function Songbook({ index, manifest, model, query, onOpen, update, onCheck }: SongbookProps) {
   const deferred = useDeferredValue(query);
   const searching = deferred.trim() !== "";
   return (
@@ -66,7 +84,7 @@ function Songbook({ index, manifest, model, query, onOpen }: SongbookProps) {
       ) : (
         <Browse index={index} onOpen={onOpen} />
       )}
-      <CatalogNote manifest={manifest} model={model} songCount={index.songs.length} />
+      <CatalogNote manifest={manifest} model={model} songCount={index.songs.length} update={update} onCheck={onCheck} />
     </>
   );
 }

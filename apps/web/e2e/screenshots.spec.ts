@@ -23,7 +23,7 @@ for (const scheme of ["dark", "light"] as const) {
       await page.screenshot({ path: name("index") });
 
       await page.getByRole("searchbox").fill("neon");
-      await expect(page.getByRole("status")).toContainText("found");
+      await expect(page.getByRole("status").filter({ hasText: "found" })).toBeVisible();
       await page.screenshot({ path: name("results") });
 
       await page.getByRole("list", { name: "Search results" }).getByRole("button").first().click();
@@ -40,7 +40,7 @@ for (const scheme of ["dark", "light"] as const) {
         await page.getByRole("radio", { name: model }).click();
         await expect(page.getByRole("radio", { name: model })).toBeChecked();
         await page.getByRole("searchbox").fill("neon");
-        await expect(page.getByRole("status")).toContainText("found");
+        await expect(page.getByRole("status").filter({ hasText: "found" })).toBeVisible();
         const slug = model.replace(" ", "").toLowerCase();
         await page.screenshot({ path: name(`${slug}-results`) });
         await page.getByRole("list", { name: "Search results" }).getByRole("button").first().click();

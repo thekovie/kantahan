@@ -1,5 +1,6 @@
+import { createHash } from "node:crypto";
 import { parseBundle, toSongs } from "./lib/catalog";
-import type { BundleV1, Manifest, Song } from "./lib/types";
+import type { BundleV1, HueKey, Manifest, ModelInfo, Song } from "./lib/types";
 
 /** Clearly synthetic songs for tests: [number, title, artist]. */
 export const SAMPLE: readonly (readonly [string, string, string])[] = [
@@ -13,10 +14,23 @@ export const SAMPLE: readonly (readonly [string, string, string])[] = [
   ["42236", "24/7, 365", "Sample Artist F"],
 ];
 
-export function makeBundle(rows: readonly (readonly [string, string, string])[] = SAMPLE): BundleV1 {
+export const MODEL_B_ROWS: readonly (readonly [string, string, string])[] = [
+  ["20001", "Beta Song One", "Beta Artist"],
+  ["20002", "Beta Song Two", "Beta Artist"],
+];
+
+/** SAMPLE with one title changed to text of the same length, so only the checksum can tell. */
+export const TAMPERED_ROWS = SAMPLE.map((row) => (row[0] === "00589" ? ([row[0], "Hurting Eachxother", row[2]] as const) : row));
+
+export const sha256 = (text: string): string => createHash("sha256").update(text).digest("hex");
+
+export function makeBundle(
+  rows: readonly (readonly [string, string, string])[] = SAMPLE,
+  model = "model-a",
+): BundleV1 {
   return parseBundle({
     schema: 1,
-    model: "model-a",
+    model,
     count: rows.length,
     releases: ["Volume 1"],
     n: rows.map((r) => r[0]),
@@ -31,16 +45,33 @@ export function makeSongs(rows: readonly (readonly [string, string, string])[] =
   return toSongs(makeBundle(rows));
 }
 
+/** A manifest entry that matches the bundle exactly (checksum and size of its JSON text). */
+export function modelEntry(slug: string, bundle: BundleV1, name: string, hue: HueKey, file = `${slug}.json`): ModelInfo {
+  const text = JSON.stringify(bundle);
+  return {
+    slug,
+    name,
+    family: "Demo family",
+    hue,
+    file,
+    sha256: sha256(text),
+    bytes: new TextEncoder().encode(text).length,
+    songs: bundle.count,
+    coverage: "Demo volume 1",
+  };
+}
+
 export function makeManifest(overrides: Partial<Manifest> = {}): Manifest {
   return {
     schema: 1,
     version: "2026.10.23",
     generatedAt: "2026-10-23T12:00:00Z",
     synthetic: true,
+    suspended: false,
     source: { label: "Synthetic demo data", url: "https://example.test/source" },
     models: [
-      { slug: "model-a", name: "Model A", family: "Demo family", hue: "magenta", file: "model-a.json", songs: SAMPLE.length, coverage: "Demo volume 1" },
-      { slug: "model-b", name: "Model B", family: "Demo family", hue: "aqua", file: "model-b.json", songs: 2, coverage: "Demo volume 1" },
+      modelEntry("model-a", makeBundle(), "Model A", "magenta"),
+      modelEntry("model-b", makeBundle(MODEL_B_ROWS, "model-b"), "Model B", "aqua"),
     ],
     ...overrides,
   };

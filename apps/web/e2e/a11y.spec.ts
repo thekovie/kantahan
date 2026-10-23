@@ -22,7 +22,7 @@ for (const scheme of ["dark", "light"] as const) {
     test("search results have no accessibility violations", async ({ page }) => {
       await page.goto("/");
       await page.getByRole("searchbox").fill("neon");
-      await expect(page.getByRole("status")).toContainText("found");
+      await expect(page.getByRole("status").filter({ hasText: "found" })).toBeVisible();
       await scan(page);
     });
 

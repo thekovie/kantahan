@@ -5,12 +5,9 @@ import { memoryLocation } from "wouter/memory-location";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import { resetStorage } from "./lib/storage";
-import { fakeFetch, makeBundle, makeManifest } from "./test-utils";
+import { MODEL_B_ROWS, fakeFetch, makeBundle, makeManifest, modelEntry } from "./test-utils";
 
-const modelB = makeBundle([
-  ["20001", "Beta Song One", "Beta Artist"],
-  ["20002", "Beta Song Two", "Beta Artist"],
-]);
+const modelB = makeBundle(MODEL_B_ROWS, "model-b");
 
 function mount(path = "/") {
   const { hook } = memoryLocation({ path });
@@ -19,6 +16,12 @@ function mount(path = "/") {
       <App />
     </Router>,
   );
+}
+
+function stubRoutes(routes: Record<string, unknown>) {
+  const impl = fakeFetch(routes);
+  vi.stubGlobal("fetch", impl);
+  return impl;
 }
 
 function stubNetwork(routes: Record<string, unknown> | "offline") {
@@ -201,5 +204,129 @@ describe("shell", () => {
     expect(screen.getByRole("navigation", { name: "Site" })).toBeInTheDocument();
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("navigation", { name: "Site" })).not.toBeInTheDocument();
+  });
+});
+
+describe("catalog updates", () => {
+  const changed = makeBundle([["00589", "Hurting Each Other", "Sample Artist A"], ["77777", "Fresh Arrival", "New Artist"]]);
+  const v2 = makeManifest({
+    version: "v2",
+    models: [modelEntry("model-a", changed, "Model A", "magenta", "v2/model-a.json"), makeManifest().models[1]!],
+  });
+  const V2_ROUTES = { ...ROUTES, "/catalog/manifest.json": v2, "/catalog/v2/model-a.json": changed };
+
+  it("swaps in new songs when asked, keeping the search box as it was", async () => {
+    stubNetwork(ROUTES);
+    const user = userEvent.setup();
+    mount();
+    const search = await screen.findByRole("searchbox");
+    await user.type(search, "arrival");
+    expect(await screen.findByRole("heading", { name: "No songs found" })).toBeInTheDocument();
+
+    stubNetwork(V2_ROUTES);
+    await user.click(screen.getByRole("button", { name: "Check for updates" }));
+    expect(await screen.findByText("Updated to v2.")).toBeInTheDocument();
+    expect(screen.getByRole("searchbox")).toHaveValue("arrival");
+    expect(await screen.findByText("Fresh Arrival")).toBeInTheDocument();
+  });
+
+  it("keeps the old songs and says so when the download is corrupt", async () => {
+    stubNetwork(ROUTES);
+    const user = userEvent.setup();
+    mount();
+    await screen.findByRole("tab", { name: /^A, 1 song/ });
+    stubNetwork({ ...V2_ROUTES, "/catalog/v2/model-a.json": makeBundle([["00589", "Hurting Each Other", "Sample Artist A"], ["77777", "Fresh Arrivbl", "New Artist"]]) });
+    await user.click(screen.getByRole("button", { name: "Check for updates" }));
+    expect(await screen.findByText(/did not match their checksum.*kept/)).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /^A, 1 song/ })).toBeInTheDocument();
+    expect(screen.getByText(/Catalog 2026.10.23/)).toBeInTheDocument();
+  });
+
+  it("says when there is no connection, and that saved songs still work", async () => {
+    stubNetwork(ROUTES);
+    const user = userEvent.setup();
+    mount();
+    await screen.findByRole("tab", { name: /^A, 1 song/ });
+    stubNetwork("offline");
+    await user.click(screen.getByRole("button", { name: "Check for updates" }));
+    expect(await screen.findByText(/No connection. Your saved songs still work./)).toBeInTheDocument();
+  });
+
+  it("shows a paused notice instead of songs, and brings them back when resumed", async () => {
+    stubNetwork(ROUTES);
+    const user = userEvent.setup();
+    mount();
+    await screen.findByRole("tab", { name: /^A, 1 song/ });
+    const paused = { ...makeManifest({ version: "v3" }), suspended: true, notice: "Paused while a request is reviewed." };
+    stubNetwork({ ...ROUTES, "/catalog/manifest.json": paused });
+    await user.click(screen.getByRole("button", { name: "Check for updates" }));
+    expect(await screen.findByRole("heading", { name: "The songbook is paused" })).toBeInTheDocument();
+    expect(screen.getByText("Paused while a request is reviewed.")).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: /^A, 1 song/ })).not.toBeInTheDocument();
+
+    stubNetwork({ ...ROUTES, "/catalog/manifest.json": makeManifest({ version: "v3" }) });
+    await user.click(screen.getByRole("button", { name: "Check again" }));
+    expect(await screen.findByRole("tab", { name: /^A, 1 song/ })).toBeInTheDocument();
+  });
+
+  it("shares one comparison between taps made while it is still running", async () => {
+    stubNetwork(ROUTES);
+    const user = userEvent.setup();
+    mount();
+    await screen.findByRole("tab", { name: /^A, 1 song/ });
+    const net = stubRoutes(V2_ROUTES);
+    const button = screen.getByRole("button", { name: "Check for updates" });
+    await Promise.all([user.click(button), user.click(button)]);
+    expect(await screen.findByText("Updated to v2.")).toBeInTheDocument();
+    expect(net.calls.filter((url) => url.endsWith("/catalog/manifest.json"))).toHaveLength(1);
+  });
+
+  it("does not let a slow model load overwrite a model picked afterwards", async () => {
+    stubNetwork(ROUTES);
+    const user = userEvent.setup();
+    const first = mount();
+    await screen.findByRole("tab", { name: /^A, 1 song/ });
+    first.unmount();
+    indexedDB.deleteDatabase("kantahan"); // start with nothing saved: every bundle comes from the network
+    resetStorage();
+    const slow = fakeFetch(ROUTES);
+    let releaseA!: () => void;
+    const gate = new Promise<void>((resolve) => (releaseA = resolve));
+    vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).endsWith("/model-a.json")) await gate;
+      return slow(input, init);
+    });
+    mount();
+    await user.click(await screen.findByRole("radio", { name: "Model B" }));
+    expect(await screen.findByRole("searchbox", { name: /Search Model B songs/ })).toBeInTheDocument();
+    releaseA();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(screen.getByRole("radio", { name: "Model B" })).toBeChecked();
+    expect(screen.getByRole("searchbox", { name: /Search Model B songs/ })).toBeInTheDocument();
+  });
+
+  it("checks on open when the last check is old, and updates quietly", async () => {
+    stubNetwork(ROUTES);
+    const first = mount();
+    await screen.findByRole("tab", { name: /^A, 1 song/ });
+    first.unmount();
+    localStorage.setItem("kantahan.lastCheck", String(Date.now() - 13 * 3600 * 1000));
+
+    const net = stubRoutes(V2_ROUTES);
+    mount();
+    expect(await screen.findByText("Updated to v2.")).toBeInTheDocument();
+    expect(net.calls.some((url) => url.endsWith("/catalog/manifest.json"))).toBe(true);
+  });
+
+  it("does not check on open when it checked recently", async () => {
+    stubNetwork(ROUTES);
+    const first = mount();
+    await screen.findByRole("tab", { name: /^A, 1 song/ });
+    first.unmount();
+
+    const net = stubRoutes(V2_ROUTES);
+    mount();
+    await screen.findByRole("tab", { name: /^A, 1 song/ });
+    expect(net.calls).toEqual([]);
   });
 });
