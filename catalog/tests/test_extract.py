@@ -1,5 +1,5 @@
 import pytest
-from pdfgen import make_pdf
+from pdfgen import make_pdf, make_two_table_pdf
 
 from kantahan_catalog.extract import (
     MAX_PAGES,
@@ -178,3 +178,30 @@ def test_word_split_across_lines_is_joined_but_a_standalone_x_is_kept(tmp_path):
     got = rows_by_number(make_pdf(tmp_path / "w.pdf", [[rows]]))
     assert got["15000"].artist == "The Chainsmokers"
     assert got["15001"].artist == "Nik Makino x Trey"
+
+
+def two_tables(first=18, second=18, start=42000):
+    rows = [(str(start + i), f"Old Song {i}", f"Art {i}") for i in range(first + second)]
+    return [rows[:first], rows[first:]]
+
+
+def test_two_table_layout_without_borders_is_read_by_where_the_codes_sit(tmp_path):
+    path = make_two_table_pdf(tmp_path / "old.pdf", [two_tables()])
+    result = extract_rows(path)
+    assert len(result.rows) == 36 and result.stray_tokens == 0
+    first, last = result.rows[0], result.rows[-1]
+    assert (first.number, first.title, first.artist) == ("42000", "Old Song 0", "Art 0")
+    assert (last.number, last.title, last.artist) == ("42035", "Old Song 35", "Art 35")
+    assert {r.table for r in result.rows} == {0, 1}
+
+
+def test_two_table_layout_over_several_pages_keeps_every_row(tmp_path):
+    pages = [two_tables(20, 20, 42000), two_tables(5, 3, 43000)]
+    result = extract_rows(make_two_table_pdf(tmp_path / "old.pdf", pages))
+    assert len(result.rows) == 48 and result.stray_tokens == 0
+
+
+def test_the_border_reader_still_wins_when_it_understands_the_document(tmp_path, pdf):
+    rows = [("15001", "Dati", "Sam Conception")]
+    result = extract_rows(pdf("a.pdf", rows))
+    assert [r.number for r in result.rows] == ["15001"]

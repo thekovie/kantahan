@@ -25,6 +25,7 @@ from .discover import (
 )
 from .fetch import Fetcher, FetchError
 from .importer import FILE_KEY, ensure_source, import_pdf
+from .mapping import apply_section_mappings
 from .publish import (
     DEFAULT_KEEP,
     PublishError,
@@ -140,6 +141,21 @@ def cmd_import(args: argparse.Namespace, out: Out, **_: Any) -> int:
             out(f"  QUARANTINED {link.label}: {reasons}")
     out("import: " + ", ".join(f"{k} {v}" for k, v in sorted(tally.items())))
     return 0
+
+
+def cmd_map(args: argparse.Namespace, out: Out, **_: Any) -> int:
+    """Join imported volumes to the machine groups that list them (the publisher's own page)."""
+    conn = db.connect(args.work / "catalog.sqlite")
+    db.migrate(conn)
+    result = apply_section_mappings(conn, load_links(args.work / "discovered.json"))
+    out(
+        f"map: added {result.added}, already mapped {result.already}, "
+        f"Reyna left to its header rule {result.strict_skipped}, "
+        f"listed but not imported {result.not_imported}"
+    )
+    for section in result.unknown_sections:
+        out(f"  WARNING: section {section!r} has no model; add it to mapping.py")
+    return 1 if result.unknown_sections else 0
 
 
 def _count(conn: sqlite3.Connection, sql: str, *params: str) -> int:
@@ -269,6 +285,8 @@ def _run_steps(
         out("WARNING: some documents could not be downloaded; continuing with what is available")
     if cmd_import(_sub(args), out):
         return 1, "import-failed", stats
+    if cmd_map(args, out):
+        return 1, "map-failed", stats
     stats["open_quarantine"] = _count(
         conn, "SELECT count(*) FROM quarantine WHERE resolved_at IS NULL"
     )
@@ -371,6 +389,7 @@ def parser() -> argparse.ArgumentParser:
                 action="store_true",
                 help="evaluate quarantined documents again (after an extractor fix)",
             )
+    sub.add_parser("map", help="join imported volumes to the machine groups that list them")
     sub.add_parser("stats", help="show database counts")
     b = sub.add_parser("build", help="build a local catalog bundle for one model")
     b.add_argument("--model", default="reyna")
@@ -401,6 +420,7 @@ COMMANDS: dict[str, Callable[..., int]] = {
     "discover": cmd_discover,
     "fetch": cmd_fetch,
     "import": cmd_import,
+    "map": cmd_map,
     "stats": cmd_stats,
     "build": cmd_build,
     "publish": cmd_publish,

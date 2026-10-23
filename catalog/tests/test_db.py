@@ -17,9 +17,9 @@ def tables(c):
 
 
 def test_migrate_applies_all_versions_in_order(conn):
-    assert db.migrate(conn) == [1, 2, 3, 4]
+    assert db.migrate(conn) == [1, 2, 3, 4, 5]
     assert {"document", "release", "song_entry", "quarantine", "catalog_version"} <= tables(conn)
-    assert db.applied_versions(conn) == [1, 2, 3, 4]
+    assert db.applied_versions(conn) == [1, 2, 3, 4, 5]
 
 
 def test_migrate_is_idempotent(conn):
@@ -36,6 +36,8 @@ def test_seed_has_reyna_model_without_variant(conn):
 
 def test_rollback_undoes_newest_first_and_can_reapply(conn):
     db.migrate(conn)
+    assert db.rollback(conn, steps=1) == [5]
+    assert conn.execute("SELECT count(*) c FROM model").fetchone()["c"] == 1
     assert db.rollback(conn, steps=1) == [4]
     assert "publication" not in tables(conn)
     assert "withdrawn_at" not in {r["name"] for r in conn.execute("PRAGMA table_info(release)")}
@@ -45,7 +47,7 @@ def test_rollback_undoes_newest_first_and_can_reapply(conn):
     assert conn.execute("SELECT count(*) c FROM model").fetchone()["c"] == 0
     assert db.rollback(conn, steps=1) == [1]
     assert "document" not in tables(conn)
-    assert db.migrate(conn) == [1, 2, 3, 4]
+    assert db.migrate(conn) == [1, 2, 3, 4, 5]
 
 
 def test_migrate_target_stops_early(conn):
