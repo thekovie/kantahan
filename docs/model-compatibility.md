@@ -20,6 +20,10 @@ Reyna, Reyna 2, Reyna 3C, Reyna SE (grouped as "Reyna /2/3C/SE") and Reyna 3 / R
 | 95 | "SD SERIES" | Not stated | **Unknown** |
 | 96 to 108 | "T-X Series" (+ "K-Box Series V. N") | T-X and K-Box, not Reyna | **Not Reyna evidence** |
 
+## What the importer did with the evidence (M1, run locally on 2026-10-23)
+
+Page-1 headers were classified automatically. 14 releases (Vol 62 to 76) are `mapped` to the single `reyna` model (3,216 rows); 29 are `held` (9,273 rows) and are never built. Mapped releases do not say which Reyna variant they target, so the model is "Reyna (variant not specified)".
+
 ## Rules for the importer
 
 - A document is associated with a model only through an explicit evidence row (`release_model.evidence`), never through the section it was found in.

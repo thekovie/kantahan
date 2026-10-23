@@ -1,6 +1,6 @@
 # Architecture
 
-> **Status: planned, not implemented.** Nothing below exists in code yet. This describes the target design from the project brief; it will be updated to match the codebase as milestones land.
+> **Status: the catalog pipeline is implemented locally (M1, `catalog/`); the web app, scheduling, publication, contact endpoint and deployment are planned.** Rows below say which is which.
 
 ## Overview
 
@@ -15,7 +15,8 @@ official PDFs --> catalog pipeline (Python + SQLite) --> versioned bundles + man
 
 | Component | Tech | Milestone |
 |---|---|---|
-| Catalog pipeline: discover, fetch, extract, normalize, validate, publish | Python, SQLite, PDF extraction | M1, M3 |
+| Catalog pipeline: discover, fetch, extract, validate, import, local build | Python, SQLite, pdfplumber | **M1, done locally** ([catalog-ingestion.md](catalog-ingestion.md)) |
+| Scheduled runs, manifest, publication | Python, cron | M3, planned |
 | Web app: model selector, search, offline, silent sync | React, TypeScript, Vite, Tailwind, service worker, IndexedDB | M2, M3 |
 | Contact endpoint for rights inquiries | small server-side SMTP relay | M5 |
 | Deployment | Docker Compose on a VPS behind an existing reverse proxy | M5 |
