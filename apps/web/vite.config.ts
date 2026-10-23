@@ -33,15 +33,9 @@ export default defineConfig({
         globIgnores: ["**/brand/og.png", "**/catalog*/**"],
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [/^\/catalog/],
-        runtimeCaching: [
-          {
-            // Catalog files change rarely and must work offline: serve the cached copy at once and
-            // refresh it in the background.
-            urlPattern: ({ url }) => url.pathname.startsWith("/catalog"),
-            handler: "StaleWhileRevalidate",
-            options: { cacheName: "kantahan-catalog", cacheableResponse: { statuses: [200] } },
-          },
-        ],
+        // No runtime caching for /catalog: the manifest must always come from the network (a stale
+        // copy could hide a pause or a rollback) and saved songs live in IndexedDB, where a catalog
+        // update replaces them in one transaction and removed ones are deleted.
       },
     }),
   ],

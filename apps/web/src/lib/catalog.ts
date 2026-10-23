@@ -9,6 +9,19 @@ export class CatalogError extends Error {
 
 const HUES: readonly HueKey[] = ["magenta", "violet", "aqua", "orange", "lime", "yellow"];
 const DIGITS = /^\d+$/;
+/** No real catalog comes close; a bigger bundle in a manifest is refused before it is downloaded. */
+export const MAX_BUNDLE_BYTES = 25 * 1024 * 1024;
+const HEX_SHA256 = /^[0-9a-f]{64}$/;
+/** "reyna.json" or "v12/reyna.json": at most one folder, no dots-only segments, no escapes. */
+const BUNDLE_PATH = /^(?:[A-Za-z0-9-]+\/)?[A-Za-z0-9-]+\.json$/;
+
+function isHttps(value: string): boolean {
+  try {
+    return new URL(value).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -65,20 +78,26 @@ export function toSongs(bundle: BundleV1): Song[] {
 
 function parseModel(raw: unknown): ModelInfo {
   if (!isRecord(raw)) throw new CatalogError("a model entry is not an object");
-  const { slug, name, family, hue, file, songs, coverage } = raw;
+  const { slug, name, family, hue, file, songs, coverage, sha256, bytes } = raw;
   if (
     typeof slug !== "string" ||
     typeof name !== "string" ||
     typeof family !== "string" ||
     typeof file !== "string" ||
     typeof coverage !== "string" ||
-    typeof songs !== "number" ||
+    !Number.isInteger(songs) ||
+    !Number.isInteger(bytes) ||
+    typeof sha256 !== "string" ||
     !HUES.includes(hue as HueKey)
   ) {
     throw new CatalogError(`model entry "${String(slug)}" is incomplete`);
   }
-  if (file.includes("/") || file.includes("..")) throw new CatalogError("a model file name is unsafe");
-  return { slug, name, family, hue: hue as HueKey, file, songs, coverage };
+  if (!BUNDLE_PATH.test(file)) throw new CatalogError("a model file name is unsafe");
+  if ((songs as number) < 1 || (bytes as number) < 1 || (bytes as number) > MAX_BUNDLE_BYTES) {
+    throw new CatalogError(`model "${slug}" has an unreasonable size`);
+  }
+  if (!HEX_SHA256.test(sha256)) throw new CatalogError(`model "${slug}" has no valid checksum`);
+  return { slug, name, family, hue: hue as HueKey, file, sha256, bytes: bytes as number, songs: songs as number, coverage };
 }
 
 export function parseManifest(raw: unknown): Manifest {
@@ -88,6 +107,8 @@ export function parseManifest(raw: unknown): Manifest {
     typeof raw["version"] !== "string" ||
     typeof raw["generatedAt"] !== "string" ||
     typeof raw["synthetic"] !== "boolean" ||
+    typeof raw["suspended"] !== "boolean" ||
+    (raw["notice"] !== undefined && typeof raw["notice"] !== "string") ||
     !isRecord(source) ||
     typeof source["label"] !== "string" ||
     typeof source["url"] !== "string" ||
@@ -95,6 +116,7 @@ export function parseManifest(raw: unknown): Manifest {
   ) {
     throw new CatalogError("manifest is incomplete");
   }
+  if (!isHttps(source["url"])) throw new CatalogError("the catalog source link must be an https address");
   const models = raw["models"].map(parseModel);
   if (models.length === 0) throw new CatalogError("manifest lists no models");
   return {
@@ -102,6 +124,8 @@ export function parseManifest(raw: unknown): Manifest {
     version: raw["version"],
     generatedAt: raw["generatedAt"],
     synthetic: raw["synthetic"],
+    suspended: raw["suspended"],
+    ...(typeof raw["notice"] === "string" ? { notice: raw["notice"] } : {}),
     source: { label: source["label"], url: source["url"] },
     models,
   };

@@ -13,6 +13,8 @@ const model = (n: number, family = "Family one"): ModelInfo => ({
   family,
   hue: "magenta",
   file: `m${n}.json`,
+  sha256: "0".repeat(64),
+  bytes: 1,
   songs: 1,
   coverage: "Demo",
 });

@@ -34,8 +34,11 @@ export interface ModelInfo {
   /** Machine family, shown next to the name so colour is never the only cue. */
   family: string;
   hue: HueKey;
-  /** Bundle file name, relative to the catalog base URL. */
+  /** Bundle path relative to the catalog base URL, for example "v12/reyna.json". */
   file: string;
+  /** SHA-256 (hex) of the exact bytes of the bundle file. */
+  sha256: string;
+  bytes: number;
   songs: number;
   /** Plain-language coverage, for example "Volumes 62 to 76". */
   coverage: string;
@@ -52,6 +55,9 @@ export interface Manifest {
   generatedAt: string;
   /** True for the demo catalog shipped with the app: not real song data. */
   synthetic: boolean;
+  /** True while the owner has paused the catalog: the app shows `notice` instead of songs. */
+  suspended: boolean;
+  notice?: string;
   source: SourceCredit;
   models: ModelInfo[];
 }

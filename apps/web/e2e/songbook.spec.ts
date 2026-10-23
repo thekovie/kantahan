@@ -24,7 +24,7 @@ test("walks the songbook index by letter", async ({ page }) => {
 test("finds songs by title and by number, keeping leading zeros", async ({ page }) => {
   const search = page.getByRole("searchbox");
   await search.fill("velvet harbor");
-  await expect(page.getByRole("status")).toContainText(/\d+ songs? found/);
+  await expect(page.getByRole("status").filter({ hasText: /\d+ songs? found/ })).toBeVisible();
 
   await page.getByRole("radio", { name: "Model C" }).click();
   await expect(page.getByRole("radio", { name: "Model C" })).toBeChecked();
@@ -65,7 +65,7 @@ test("can be used with the keyboard only", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Skip to content" })).toBeFocused();
   await page.getByRole("searchbox").focus();
   await page.keyboard.type("harbor");
-  await expect(page.getByRole("status")).toContainText("found");
+  await expect(page.getByRole("status").filter({ hasText: "found" })).toBeVisible();
   await page.keyboard.press("Tab"); // clear button
   await page.keyboard.press("Tab"); // first result
   await page.keyboard.press("Enter");

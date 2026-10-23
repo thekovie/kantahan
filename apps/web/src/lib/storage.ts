@@ -11,6 +11,8 @@ export interface StoredCatalog {
   /** Catalog version the bundle belongs to. */
   version: string;
   savedAt: string;
+  /** SHA-256 of the bundle file this copy came from; older saves have none and are fetched again. */
+  sha256?: string;
   bundle: BundleV1;
 }
 
@@ -89,5 +91,30 @@ export async function loadManifest(): Promise<Manifest | null> {
   } catch {
     await db.delete("meta", MANIFEST_KEY).catch(() => undefined);
     return null;
+  }
+}
+
+/**
+ * Replace the saved manifest and bundles in one transaction: either the whole update lands or the
+ * old catalog stays exactly as it was. Bundles of models that left the manifest are removed.
+ */
+export async function commitUpdate(
+  manifest: Manifest,
+  records: readonly StoredCatalog[],
+  dropSlugs: readonly string[],
+): Promise<boolean> {
+  const db = await open();
+  if (!db) return false;
+  try {
+    const tx = db.transaction(["catalogs", "meta"], "readwrite");
+    await Promise.all([
+      ...records.map((record) => tx.objectStore("catalogs").put(record)),
+      ...dropSlugs.map((slug) => tx.objectStore("catalogs").delete(slug)),
+      tx.objectStore("meta").put({ key: MANIFEST_KEY, manifest }),
+      tx.done,
+    ]);
+    return true;
+  } catch {
+    return false;
   }
 }

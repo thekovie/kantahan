@@ -1,7 +1,11 @@
 import "@testing-library/jest-dom/vitest";
 import "fake-indexeddb/auto";
 import { cleanup } from "@testing-library/react";
+import { webcrypto } from "node:crypto";
 import { afterEach, vi } from "vitest";
+
+// jsdom may not expose SubtleCrypto; the app verifies downloads with it.
+if (!globalThis.crypto?.subtle) Object.defineProperty(globalThis, "crypto", { value: webcrypto });
 
 afterEach(() => {
   cleanup();

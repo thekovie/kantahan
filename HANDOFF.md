@@ -4,19 +4,19 @@ Last updated: **2026-10-23**
 
 ## Current milestone
 
-**M2, mobile songbook: built and verified on branch `m2-songbook` (PR to `main` pending review).** `apps/web` is an installable offline PWA. It ships with a fake demo catalog; the real Reyna bundle can be browsed locally but is never committed. Next: M3 automatic updates.
+**M3, automatic updates: built and verified locally on branch `m3-updates` (PR pending).** M0, M1 and M2 are merged to `main`. Nothing is hosted yet: serving `work/publish/` and the cron entry come with M5. Next: M4 other models.
 
 ## Completed
 
 - **M0** source audit ([docs/source-audit.md](docs/source-audit.md)), repo, docs skeleton, logo and icon set.
-- **M1** catalog pipeline in `catalog/` (Python 3.12, SQLite, pdfplumber): migrations, discovery, polite fetcher, geometry-based PDF extractor with an overlap rule, validator, importer, local bundle builder, `kantahan-catalog` CLI; 140 tests, 98% coverage ([docs/catalog-ingestion.md](docs/catalog-ingestion.md), [docs/testing.md](docs/testing.md)). Merged to `main`.
-- **M2** web app in `apps/web` (React 19, TypeScript, Vite, Tailwind 4, vite-plugin-pwa, idb, MiniSearch, wouter):
-  - model picker, large search (title, artist, song number; leading zeros kept), browse by letter, "show more", full-size number read-out, empty/offline/error states, About, Privacy and Rights pages
-  - dark and light themes, both colorful; LED number token as the signature; fonts self-hosted
-  - saved catalog copy in IndexedDB used first; service worker precache; works offline after the first load
-  - 115 unit tests (97.8% lines), 36 Playwright tests (offline reload, keyboard-only, no sideways scroll at 320 to 1280, axe in both themes), Lighthouse mobile accessibility and best practices 100, JS 89 kB gzipped
-  - design process: PRODUCT.md, surface brief, finish review (two fix rounds), [DESIGN.md](DESIGN.md), [ADR 0003](docs/decisions/0003-m2-ui-direction.md)
-  - CI workflow `.github/workflows/ci.yml` (catalog and web jobs; not yet run on GitHub)
+- **M1** catalog pipeline in `catalog/` (Python 3.12, SQLite, pdfplumber): migrations, discovery, polite fetcher, geometry-based PDF extractor with an overlap rule, validator, importer, local bundle builder ([docs/catalog-ingestion.md](docs/catalog-ingestion.md)).
+- **M2** offline songbook PWA in `apps/web` (React 19, TypeScript, Vite, Tailwind 4, idb, MiniSearch): model picker, search, browse by letter, full-size read-out, light and dark themes, fake demo catalog ([DESIGN.md](DESIGN.md), [ADR 0003](docs/decisions/0003-m2-ui-direction.md)).
+- **M3** automatic updates ([docs/catalog-updates.md](docs/catalog-updates.md), [docs/security.md](docs/security.md)):
+  - server: `publish` (immutable `v<N>` folders, self-check, gates for conflicts and drops over 2%, atomic manifest swap, pruning), `run` (discover, fetch new, import, publish; 14 day due check; run lock; `import_run` records), `audit` (re-hash every document), `rollback`, `suspend`/`resume`, `withdraw`; migration 0004; `catalog/display.yaml` names and colours each model
+  - client: on-open check when the last one is over 12 h old and a "Check for updates" button; only changed saved models are downloaded; SHA-256, schema, model and count are verified; manifest and bundles are committed in one IndexedDB transaction; any failure keeps the old catalog; the search index is swapped without losing the search box; a paused catalog shows its notice; rollbacks are followed
+  - tests: catalog 176 (96% coverage), web 146 unit (98%) and 44 Playwright (update while searching, corrupt download, pause and resume, axe)
+  - reviewed by independent security and code reviewers; accepted findings fixed (version-folder collision, withdraw purges old versions, no service-worker caching of the catalog, size limits, single-flight checks, partial runs, manifest lock so `suspend` works during a run)
+  - real data: `publish` on the local database produced `v1` with 3,186 Reyna songs (local only)
 
 ## Results on real data (local run, 2026-10-23)
 
@@ -39,9 +39,9 @@ Last updated: **2026-10-23**
 
 ## Next recommended steps
 
-1. Review and merge the M2 PR; check the first CI run on GitHub (Playwright uses the runner's Chrome).
-2. **M3** automatic updates: scheduler, manifest with per-model hashes, atomic publication, client sync that verifies SHA-256 and swaps the catalog without interrupting a search. The manifest and bundle format the app already reads are in [docs/database-schema.md](docs/database-schema.md).
-3. M4 other models, M5 production (contact form, Docker, backups).
+1. Review and merge the M3 PR; check CI.
+2. **M4** other Platinum models: only where header evidence ties a volume to a model (see [docs/model-compatibility.md](docs/model-compatibility.md)); add each model to `display.yaml` with a hue.
+3. **M5** production: serve `work/publish/` as `/catalog/` behind the reverse proxy (cache headers: `manifest.json` short, `v*/` immutable), cron entries from [docs/catalog-updates.md](docs/catalog-updates.md), Docker, contact form, e-mail alerts, backup and restore drills, legal pages.
 
 ## Key paths
 
@@ -81,7 +81,8 @@ Details: [docs/setup-development.md](docs/setup-development.md).
 
 ## Known issues
 
-- The catalog is only read from the network when no saved copy exists; updating a saved copy arrives with M3. A device that loaded the demo catalog keeps it until storage is cleared (dev only).
+- A device that loaded the demo catalog (`demo-1`) switches to a real catalog through the normal update path only if both are served from the same URL; for development clear site data when changing catalogs.
+- `audit` finds files replaced behind a link but only by hash; the monthly cron entry is documented, not installed.
 - Search is capped at 80 results; very short queries show the first 80 in rank order, with a prompt to type more.
 - Playwright is run with Chrome only; Firefox and Safari are untested.
 - 12 rows in held volumes have uncertain titles and are left out of any build.

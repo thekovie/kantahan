@@ -42,7 +42,8 @@ _LIVE_MAPPED = (
     "FROM song_entry se JOIN release r ON r.id = se.release_id "
     "JOIN release_model rm ON rm.release_id = r.id "
     "JOIN model m ON m.id = rm.model_id "
-    "WHERE m.slug = ? AND r.status = 'mapped' AND r.superseded_by IS NULL"
+    "WHERE m.slug = ? AND r.status = 'mapped' AND r.superseded_by IS NULL "
+    "AND r.withdrawn_at IS NULL"
 )
 
 

@@ -4,7 +4,7 @@ interface StatePanelProps {
   icon: ReactNode;
   title: string;
   children: ReactNode;
-  action?: { label: string; onClick: () => void };
+  action?: { label: string; onClick: () => void; disabled?: boolean };
 }
 
 /** One shape for empty, offline and error states: what happened, what to do. */
@@ -15,7 +15,7 @@ export function StatePanel({ icon, title, children, action }: StatePanelProps) {
       <h2>{title}</h2>
       <p>{children}</p>
       {action && (
-        <button type="button" className="btn" onClick={action.onClick}>
+        <button type="button" className="btn" onClick={action.onClick} disabled={action.disabled}>
           {action.label}
         </button>
       )}
