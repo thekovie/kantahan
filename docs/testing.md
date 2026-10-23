@@ -1,6 +1,6 @@
 # Testing
 
-Catalog pipeline: **138 tests, 98% line coverage** (`pytest --cov`), `ruff` clean, `mypy --strict` clean. Web app: not started (M2).
+Catalog pipeline: **140 tests, 98% line coverage** (`pytest --cov`), `ruff` clean, `mypy --strict` clean. Web app: not started (M2).
 
 ## Policy
 
@@ -13,7 +13,7 @@ Tests first, 80%+ coverage. No test touches the network or real Platinum documen
 | `test_normalize.py` | display and matching forms, apostrophes, accents, ampersand |
 | `test_classify.py` | header family from page-1 text, only "For Reyna" maps to a model |
 | `test_db.py` | migrations up/down/idempotent/atomic, seed, leading zeros, uniqueness |
-| `test_extract.py` | rows, wrapped lines, three tables, leading zeros, partial tables, header lines, stray tokens, overprint flag, bad inputs |
+| `test_extract.py` | rows, wrapped lines, three tables, leading zeros, partial tables, header lines, stray tokens, overflow into the next row (artist and title), same-line words, mid-word wraps, unresolved overlap, page cap, ASCII digits, bad inputs |
 | `test_validate.py` | every error and warning rule |
 | `test_importer.py` | mapped/held/quarantined, dedupe by hash and across sources, canonical song linking, row-drop drift |
 | `test_build.py` | bundle contents, held releases excluded, artist withholding, re-listing collapse, conflicts, versions |

@@ -1,11 +1,10 @@
 import pytest
-from pdfgen import make_overprint_pdf, make_pdf
+from pdfgen import make_pdf
 
 from kantahan_catalog.extract import (
     MAX_PAGES,
     NUMBER_CELL,
     STRAY_TOKEN,
-    _overprinted_rows,
     extract_rows,
     table_template,
 )
@@ -80,27 +79,6 @@ def test_stray_number_outside_tables_is_counted_not_imported(tmp_path):
     assert result.stray_tokens == 1
 
 
-def test_overprinted_artist_flags_the_row_and_both_neighbours_but_not_distant_rows(tmp_path):
-    rows = [(f"1500{i}", f"Song {i}", f"Artist {i}") for i in range(6)]
-    pdf = make_overprint_pdf(tmp_path / "o.pdf", rows, extra="Nathan", row_index=2)
-    flags = {r.number: r.flags for r in extract_rows(pdf).rows}
-    assert all("overprint" in flags[n] for n in ("15001", "15002", "15003"))
-    assert not flags["15000"] and not flags["15005"]
-
-
-def test_overlap_between_words_assigned_to_different_rows_is_still_found():
-    word = {"x0": 0, "x1": 20, "top": 0, "bottom": 10}
-    other = {"x0": 5, "x1": 25, "top": 4, "bottom": 14}
-    assert _overprinted_rows({0: [word], 1: [other]}, 4) == {0, 1, 2}
-
-
-def test_overprinted_title_gets_its_own_flag(tmp_path):
-    rows = [(f"1500{i}", f"Song {i}", "Artist") for i in range(4)]
-    pdf = make_overprint_pdf(tmp_path / "t.pdf", rows, extra="Clash", row_index=1, column="title")
-    flagged = [r for r in extract_rows(pdf).rows if "title_overprint" in r.flags]
-    assert {r.number for r in flagged} >= {"15001"}
-
-
 def test_number_patterns_accept_ascii_digits_only_and_no_trailing_newline():
     assert NUMBER_CELL.fullmatch("12345") and STRAY_TOKEN.fullmatch("12345")
     assert not NUMBER_CELL.fullmatch("\uff11\uff12\uff13\uff14\uff15")
@@ -141,3 +119,62 @@ def test_non_pdf_file_is_an_extraction_error(tmp_path):
     bad.write_bytes(b"this is not a pdf")
     with pytest.raises(ExtractionError):
         extract_rows(bad)
+
+
+def rows_by_number(path):
+    return {r.number: r for r in extract_rows(path).rows}
+
+
+def test_stack_overflowing_into_the_next_row_is_given_back_to_its_own_row(tmp_path):
+    rows = [
+        ("15000", "Song 0", "A1\nA2\nA3\nA4\nA5"),  # five lines overflow into the next row
+        ("15001", "Song 1", "B1"),
+        ("15002", "Song 2", "C1"),
+    ]
+    got = rows_by_number(make_pdf(tmp_path / "o.pdf", [[rows]]))
+    assert got["15000"].artist == "A1 A2 A3 A4 A5"
+    assert got["15001"].artist == "B1"
+    assert not any(r.flags for r in got.values())
+
+
+def test_words_on_the_same_text_line_stay_together_even_if_only_one_overlaps(tmp_path):
+    rows = [
+        ("15000", "Song 0", "A1\nA2\nA3\nA4\nAa Bb"),
+        ("15001", "Song 1", "Aa"),
+        ("15002", "Song 2", "C1"),
+    ]
+    got = rows_by_number(make_pdf(tmp_path / "s.pdf", [[rows]]))
+    assert got["15000"].artist.endswith("Aa Bb")
+    assert got["15001"].artist == "Aa"
+
+
+def test_wrapped_title_overflowing_into_the_next_row_is_recovered(tmp_path):
+    rows = [
+        ("15000", "T1\nT2\nT3\nT4", "A"),
+        ("15001", "U1", "B"),
+        ("15002", "V1", "C"),
+    ]
+    got = rows_by_number(make_pdf(tmp_path / "t.pdf", [[rows]]))
+    assert got["15000"].title == "T1 T2 T3 T4"
+    assert got["15001"].title == "U1"
+    assert not any(r.flags for r in got.values())
+
+
+def test_overlap_that_cannot_be_placed_between_two_rows_stays_flagged():
+    from kantahan_catalog.extract import _assign_cell
+
+    first = {"x0": 0, "x1": 20, "top": 0.0, "bottom": 10.0, "_i": 0}
+    second = {"x0": 5, "x1": 25, "top": 2.0, "bottom": 12.0, "_i": 1}
+    rows, unresolved = _assign_cell([first, second], cy=[5.0], pitch=20.0)
+    assert unresolved == {0} and rows[0]
+
+
+def test_word_split_across_lines_is_joined_but_a_standalone_x_is_kept(tmp_path):
+    rows = [
+        ("15000", "Song 0", "The Chainsmoker\ns"),
+        ("15001", "Song 1", "Nik Makino\nx Trey"),
+        ("15002", "Song 2", "C1"),
+    ]
+    got = rows_by_number(make_pdf(tmp_path / "w.pdf", [[rows]]))
+    assert got["15000"].artist == "The Chainsmokers"
+    assert got["15001"].artist == "Nik Makino x Trey"

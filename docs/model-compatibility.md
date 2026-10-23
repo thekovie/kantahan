@@ -33,5 +33,5 @@ Page-1 headers were classified automatically. 14 releases (Vol 62 to 76) are `ma
 ## Open questions (need owner or vendor input)
 
 1. Which published volumes map to Reyna 2/3C/SE and which to Reyna 3/4?
-2. What do the Source D product descriptions say about compatible models? (Blocked by HTTP 429 on 2026-10-23.)
+2. ~~What do the Source D product descriptions say?~~ Read on 2026-10-23 (fetched slowly, one page every 45 s, five pages, no rate limiting): the pages only list "Featured Songs" and a price (PHP 595 to 750). They name no compatible models beyond the product title, and say nothing about song numbering. **For Vol 100 and Vol 108 the Reyna /2/3C/SE, Reyna 3/4 and T-X Series pages list identical featured songs**, and the Vol 108 featured songs are in the free Vol 108 PDF. That suggests the three families carry the same songs for those volumes, but not that they share song numbers. The mapping rules are unchanged.
 3. Is the T-X-R-BMB generation (Vol 77 to 81) usable on Reyna machines?

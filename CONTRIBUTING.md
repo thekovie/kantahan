@@ -6,7 +6,7 @@ Kantahan is early-stage. Read [HANDOFF.md](HANDOFF.md) first; it lists what exis
 
 - Keep the scope: a songbook only. No queueing, accounts, playback, lyrics, payments or social features.
 - Do not invent data. Song numbers, download URLs and model mappings must come from audited sources, and docs must separate verified evidence from assumptions.
-- Do not commit source PDFs or extracted song data. Rights are unresolved (see [docs/legal-and-attribution.md](docs/legal-and-attribution.md)).
+- Do not commit source PDFs or extracted song data. The catalog is built where it is served, and the source is credited (see [docs/legal-and-attribution.md](docs/legal-and-attribution.md)).
 - Do not imply affiliation with Platinum Karaoke or Vismay International Corporation.
 - Song numbers are strings. Never strip leading zeros, never merge entries across models.
 

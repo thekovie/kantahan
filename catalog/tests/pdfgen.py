@@ -30,8 +30,10 @@ def _draw_row(pdf: FPDF, edges: tuple[int, int, int, int], y: int, row: Row) -> 
     for x in edges:
         pdf.line(x, y, x, y + PITCH)
     pdf.set_font("Helvetica", size=11)
-    pdf.set_xy(edges[0] + 1, y + 5)
-    pdf.cell(edges[1] - edges[0] - 16, 10, title)
+    title_lines = title.split("\n")
+    for i, text in enumerate(title_lines):
+        pdf.set_xy(edges[0] + 1, y + PITCH / 2 - 5.5 * len(title_lines) + 11 * i)
+        pdf.cell(edges[1] - edges[0] - 16, 11, text)
     pdf.set_font("Helvetica", style="B", size=14)
     pdf.set_xy(edges[1] + 1, y + 4)
     pdf.cell(edges[2] - edges[1] - 2, 12, number)
@@ -64,32 +66,5 @@ def make_pdf(
             for i, row in enumerate(rows):
                 _draw_row(pdf, edges, TOP + i * PITCH, row)
     path.parent.mkdir(parents=True, exist_ok=True)
-    pdf.output(str(path))
-    return path
-
-
-def make_overprint_pdf(
-    path: Path, rows: Sequence[Row], extra: str, row_index: int, column: str = "artist"
-) -> Path:
-    """One table; `extra` is drawn on top of a text line of row `row_index` (artist or title)."""
-    pdf = FPDF(unit="pt", format="Letter")
-    pdf.set_auto_page_break(False)
-    pdf.add_page()
-    pdf.set_font("Helvetica", size=14)
-    pdf.set_xy(20, 30)
-    pdf.cell(300, 14, "Vol. 2 For Reyna ! 1")
-    edges = TABLES[0]
-    for i, row in enumerate(rows):
-        _draw_row(pdf, edges, TOP + i * PITCH, row)
-    top = TOP + row_index * PITCH
-    if column == "title":
-        pdf.set_font("Helvetica", size=11)
-        pdf.set_xy(edges[0] + 1, top + 5)
-        pdf.cell(edges[1] - edges[0] - 16, 10, extra)
-    else:
-        pdf.set_font("Helvetica", size=7)
-        lines = len(rows[row_index][2].split("\n"))
-        pdf.set_xy(edges[2] + 1, top + PITCH / 2 - 4 * lines)
-        pdf.cell(edges[3] - edges[2] - 2, 8, extra)
     pdf.output(str(path))
     return path

@@ -19,7 +19,7 @@ uv pip install --python .venv/bin/python -e ".[dev]"
 
 ```bash
 cd catalog
-.venv/bin/python -m pytest          # 138 tests, coverage report
+.venv/bin/python -m pytest          # 140 tests, coverage report
 .venv/bin/ruff check . && .venv/bin/ruff format --check .
 .venv/bin/mypy src                  # strict
 ```

@@ -31,7 +31,11 @@ EDGE_MERGE = 1.5  # points; borders closer than this are the same border
 HEADER_LINES = 12
 DEFAULT_PITCH = 20.0
 ROW_REACH = 0.9  # a word further than this many pitches from a number is not in its row
-OVERLAP_FRACTION = 0.3
+# Normal wrapped lines never overlap (line pitch exceeds glyph height), so even a small overlap
+# means two cells are drawn on top of each other.
+OVERLAP_FRACTION = 0.05
+BOUNDARY_REACH = 0.6  # an overlap must sit this close (in row pitches) to a row boundary
+SAME_LINE = 0.3
 
 Edges = tuple[float, float, float, float]
 
@@ -71,6 +75,11 @@ def _center(word: dict[str, Any]) -> tuple[float, float]:
     return (word["x0"] + word["x1"]) / 2, (word["top"] + word["bottom"]) / 2
 
 
+# A long word that wraps mid-word leaves one lowercase letter on the next line. "x" is excluded:
+# it is a real separator ("A x B").
+_WORD_TAIL = re.compile(r"[a-wyz]", re.ASCII)
+
+
 def _lines_text(words: list[dict[str, Any]]) -> str:
     """Join words top to bottom, left to right; stacked wrapped lines stay separate."""
     lines: list[list[dict[str, Any]]] = []
@@ -79,7 +88,12 @@ def _lines_text(words: list[dict[str, Any]]) -> str:
             lines[-1].append(w)
         else:
             lines.append([w])
-    return clean(" ".join(w["text"] for ln in lines for w in sorted(ln, key=lambda w: w["x0"])))
+    text = ""
+    for line in lines:
+        line_text = " ".join(w["text"] for w in sorted(line, key=lambda w: w["x0"]))
+        glue = "" if text and _WORD_TAIL.fullmatch(line_text) else " "
+        text += (glue if text else "") + line_text
+    return clean(text)
 
 
 def _overlapping(a: dict[str, Any], b: dict[str, Any]) -> bool:
@@ -92,6 +106,82 @@ def _overlapping(a: dict[str, Any], b: dict[str, Any]) -> bool:
         (b["x1"] - b["x0"]) * (b["bottom"] - b["top"]),
     )
     return bool(dx * dy > OVERLAP_FRACTION * smaller)
+
+
+def _x_overlap(a: dict[str, Any], b: dict[str, Any]) -> bool:
+    return bool(min(a["x1"], b["x1"]) - max(a["x0"], b["x0"]) > 0)
+
+
+def _nearest_row(word: dict[str, Any], cy: list[float], pitch: float) -> int | None:
+    y = _center(word)[1]
+    row = min(range(len(cy)), key=lambda k: abs(cy[k] - y))
+    return row if abs(cy[row] - y) <= pitch * ROW_REACH else None
+
+
+def _assign_cell(
+    words: list[dict[str, Any]], cy: list[float], pitch: float
+) -> tuple[dict[int, list[dict[str, Any]]], set[int]]:
+    """Give each word of one cell column to a row. Returns (row -> words, unresolved rows).
+
+    Text that overflows its row is drawn over the neighbour's text. Two words that overlap
+    cannot be in the same cell, and the PDF writes cells row by row, so of such a pair the
+    word written first belongs to the row above the nearest row boundary and the later one to
+    the row below it. Words on the same text line that do not overlap horizontally belong to
+    the same cell. Anything still ambiguous is returned as unresolved.
+    """
+    row_of = {id(w): _nearest_row(w, cy, pitch) for w in words}
+    placed = [w for w in words if row_of[id(w)] is not None]
+    forced: dict[int, int] = {}
+    unresolved: set[int] = set()
+    pairs = [
+        (a, b) if a["_i"] < b["_i"] else (b, a)
+        for i, a in enumerate(placed)
+        for b in placed[i + 1 :]
+        if _overlapping(a, b)
+    ]
+    for first, second in sorted(pairs, key=lambda p: (p[1]["_i"], p[0]["_i"])):
+        mid = (_center(first)[1] + _center(second)[1]) / 2
+        boundary = min(
+            range(len(cy) - 1), key=lambda j: abs((cy[j] + cy[j + 1]) / 2 - mid), default=None
+        )
+        origin = {row_of[id(first)], row_of[id(second)]}
+        if (
+            boundary is None
+            or abs((cy[boundary] + cy[boundary + 1]) / 2 - mid) > pitch * BOUNDARY_REACH
+        ):
+            unresolved |= {r for r in origin if r is not None}
+            continue
+        for word, row in ((first, boundary), (second, boundary + 1)):
+            if forced.setdefault(id(word), row) != row:
+                unresolved |= {row, forced[id(word)]}
+    for _ in range(2):
+        for w in placed:
+            if id(w) in forced:
+                continue
+            mates = {
+                forced[id(f)]
+                for f in placed
+                if id(f) in forced
+                and abs(f["top"] - w["top"]) <= SAME_LINE * (w["bottom"] - w["top"])
+                and not _x_overlap(f, w)
+            }
+            if len(mates) == 1:
+                forced[id(w)] = mates.pop()
+    cells: dict[int, list[dict[str, Any]]] = defaultdict(list)
+    for w in placed:
+        cells[forced.get(id(w), row_of[id(w)] or 0)].append(w)
+    for row, row_words in cells.items():
+        if any(_overlapping(a, b) for i, a in enumerate(row_words) for b in row_words[i + 1 :]):
+            unresolved.add(row)
+    return cells, unresolved
+
+
+def _suspect(unresolved: set[int], row_count: int) -> set[int]:
+    """An unresolved overlap makes its rows and their neighbours uncertain."""
+    out = set(unresolved)
+    for row in unresolved:
+        out.update(r for r in (row - 1, row + 1) if 0 <= r < row_count)
+    return out
 
 
 def _table_rows(
@@ -114,20 +204,19 @@ def _table_rows(
         if len(cy) > 1
         else DEFAULT_PITCH
     )
-    cells: dict[str, dict[int, list[dict[str, Any]]]] = {
-        "title": defaultdict(list),
-        "artist": defaultdict(list),
-    }
+    title_words, artist_words = [], []
     for w in words:
-        x, y = _center(w)
-        kind = "title" if e0 - 3 <= x <= e1 else "artist" if e2 < x <= e3 + 3 else ""
-        if not kind:
+        x = _center(w)[0]
+        if NUMBER_CELL.fullmatch(w["text"]) and e1 - 3 <= x <= e2 + 3:
             continue
-        nearest = min(range(len(cy)), key=lambda k: abs(cy[k] - y))
-        if abs(cy[nearest] - y) <= pitch * ROW_REACH:
-            cells[kind][nearest].append(w)
-    artist_hits = _overprinted_rows(cells["artist"], len(numbers))
-    title_hits = _overprinted_rows(cells["title"], len(numbers))
+        if e0 - 3 <= x <= e1:
+            title_words.append(w)
+        elif e2 < x <= e3 + 3:
+            artist_words.append(w)
+    titles, title_open = _assign_cell(title_words, cy, pitch)
+    artists, artist_open = _assign_cell(artist_words, cy, pitch)
+    title_hits = _suspect(title_open, len(numbers))
+    artist_hits = _suspect(artist_open, len(numbers))
     rows = []
     for i, n in enumerate(numbers):
         flags = (("overprint",) if i in artist_hits else ()) + (
@@ -136,8 +225,8 @@ def _table_rows(
         rows.append(
             RawRow(
                 number=n["text"],
-                title=_lines_text(cells["title"][i]),
-                artist=_lines_text(cells["artist"][i]),
+                title=_lines_text(titles.get(i, [])),
+                artist=_lines_text(artists.get(i, [])),
                 page=page_no,
                 table=table_no,
                 row=i,
@@ -145,23 +234,6 @@ def _table_rows(
             )
         )
     return rows, len(numbers)
-
-
-def _overprinted_rows(cell: dict[int, list[dict[str, Any]]], row_count: int) -> set[int]:
-    """Rows whose text overlaps any other word in the same column, plus both neighbours.
-
-    Overflowing text can belong to the row above or below the overlap, so both are suspect.
-    """
-    tagged = [(row, w) for row, words in cell.items() for w in words]
-    hits: set[int] = set()
-    for i, (row_a, a) in enumerate(tagged):
-        for row_b, b in tagged[i + 1 :]:
-            if _overlapping(a, b):
-                hits.update({row_a, row_b})
-    suspect = set(hits)
-    for row in hits:
-        suspect.update(r for r in (row - 1, row + 1) if 0 <= r < row_count)
-    return suspect
 
 
 def extract_rows(path: str | Path) -> DocumentExtract:
@@ -178,6 +250,8 @@ def extract_rows(path: str | Path) -> DocumentExtract:
             used = stray = 0
             for page_no, page in enumerate(pages, start=1):
                 words = page.extract_words(x_tolerance=1.5, y_tolerance=2, use_text_flow=True)
+                for position, word in enumerate(words):
+                    word["_i"] = position  # PDF write order
                 page_used = 0
                 for table_no, edges in enumerate(template):
                     table_rows, count = _table_rows(words, edges, page_no, table_no)

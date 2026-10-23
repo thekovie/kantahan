@@ -16,7 +16,7 @@ Last updated: **2026-10-23**
   - geometry-based PDF extractor with per-document table template ([docs/catalog-ingestion.md](docs/catalog-ingestion.md))
   - validator (quarantine on errors), importer (hash dedupe, mapped/held releases, canonical song linking), local bundle builder (conflicts, uncertain artists withheld)
   - CLI `kantahan-catalog` (`migrate`, `discover`, `fetch`, `import`, `stats`, `build`)
-  - 138 tests, 98% coverage, ruff and mypy --strict clean ([docs/testing.md](docs/testing.md))
+  - 140 tests, 98% coverage, ruff and mypy --strict clean ([docs/testing.md](docs/testing.md))
   - an independent code review found 15 issues; the accepted ones are fixed (duplicate-row crash, row-drop baseline after quarantine, superseded documents, partial builds overwriting the stable bundle, uncertain titles, stray tokens, URL strictness, fullwidth digits, page cap, slow-response cap, header negation, CLI input handling); see [docs/catalog-ingestion.md](docs/catalog-ingestion.md)
 
 ## Results on real data (local run, 2026-10-23)
@@ -24,28 +24,24 @@ Last updated: **2026-10-23**
 - Discovery reproduced the audit: 393 links on A (Reyna 43), B (42), C (35).
 - 43 of 43 documents extracted: 12,489 rows; 40 of 43 match an independent token count exactly, the other three are one row short because of one stray token each.
 - Import: 14 releases **mapped** to `reyna` (Vol 62 to 76, 3,216 rows), 29 **held** (9,273 rows, headers say T-X, SD, or name no family), 0 quarantined. B and C added 77 links to the same 43 documents.
-- Build: `reyna` bundle validated, **3,180 songs**, 0 conflicts, 30 identical re-listings collapsed, **519 artists withheld (16.3%)** and 6 rows left out (uncertain title) because the source PDFs overprint neighbouring text. The rule is deliberately conservative: both neighbours of any overlap are suspect.
-- Hand check: 36 rows across three layout generations were correct where not flagged. The stricter overlap rule was added after that check and has no new hand check.
+- Build: `reyna` bundle validated, **3,186 songs**, 0 conflicts, 30 identical re-listings collapsed, **0 artists withheld**, 0 rows left out. A stream-order overlap rule resolves the overprinted rows (878 rows changed vs plain nearest-row assignment; the first version of this build withheld 519 artists). 12 rows in held volumes remain flagged as uncertain titles.
+- Hand check: 36 rows across three layout generations were correct (done before the overlap rule). After the rule, changed rows were read for plausibility only; recovered words are hidden overflow text that the rendered page does not show.
 
-## Open questions and blockers
+## Open questions and decisions
 
-1. **Rights (blocks any public catalog):** no license found, terms not reviewed, no permission requested. Nothing is published; `catalog/work/` is gitignored.
-2. **Reyna variant:** which volumes belong to Reyna 2/3C/SE vs Reyna 3/4 is unknown. Source D product pages returned HTTP 429 in M0 and are still unread.
-3. **Coverage:** only Vol 62 to 76 are evidence for Reyna; Vol 77 to 108 are listed under Reyna on Source A but their headers say T-X-R-BMB, SD, T-X/K-Box or nothing. The base catalog before Vol 62 and Vol 107 are not in the archives.
-4. **Artists withheld (16.3% of Reyna songs):** needs either a reviewed override list, a smarter overlap rule, or acceptance. The row can still be found by number and title. No Vol 100 to 106 document is affected, so newer volumes are clean.
-5. **Accuracy evidence is small** (36 rows hand-checked). Enlarge before M3 automation.
+1. **Rights: decided by the owner (2026-10-23).** No permission request; credit the source (attribution text in [docs/legal-and-attribution.md](docs/legal-and-attribution.md)). This is a decision, not a legal finding; the takedown path (Rights and Removal page, contact form in M5) stays. Real catalog data still stays out of the public repo.
+2. **Reyna variant (partly answered).** Source D pages were fetched slowly and read. For Vol 100 and Vol 108 the Reyna /2/3C/SE, Reyna 3/4 and T-X pages list identical featured songs, but say nothing about song numbering or compatibility. Mapping rules are unchanged: only "For Reyna" headers (Vol 62 to 76) map to the `reyna` model.
+3. **Coverage:** only Vol 62 to 76 are evidence for Reyna; Vol 77 to 108 are listed under Reyna on Source A but their headers say T-X-R-BMB, SD, T-X/K-Box or nothing. The base catalog before Vol 62 and Vol 107 are not in the archives. Whether the Vol 77 to 108 numbering also works on Reyna machines is unknown.
+4. **Accuracy evidence is small** (36 rows hand-checked). Enlarge before M3 automation.
 
 ## Outstanding tasks
 
-- Retry Source D product pages slowly and record compatibility text.
-- Review Platinum/Vismay terms, `agents.md`, MediaFire terms; draft a permission request.
-- Decide on artist overrides.
+- Optional: read the Platinum/Vismay terms and `agents.md` to know what is being accepted.
 
 ## Next recommended steps
 
-1. Owner reviews the M1 PR and answers the questions above.
-2. **M2** mobile songbook: run `impeccable init`/`shape` and the other design skills first, then build `apps/web` against a **synthetic** seed bundle (the real bundle must stay local). Bundle format is in [docs/database-schema.md](docs/database-schema.md).
-3. M3 updates (scheduler, manifest, publication gate on rights).
+1. **M2** mobile songbook: run `impeccable init`/`shape` and the other design skills first, then build `apps/web` against a **synthetic** seed bundle (the real bundle must stay local). Bundle format is in [docs/database-schema.md](docs/database-schema.md).
+2. M3 updates (scheduler, manifest, publication).
 
 ## Key paths
 
@@ -73,7 +69,7 @@ Details: [docs/setup-development.md](docs/setup-development.md).
 
 ## Known issues
 
-- Overprinted artist text in older volumes (see above).
+- 12 rows in held volumes have uncertain titles and are left out of any build.
 - `import_run` table is created but unused until M3.
 - The 43 audited PDFs and the local database exist only on the developer machine (`catalog/work/`); recreate with the commands above.
 - Package installs stalled twice during the M0 session (cause not diagnosed).

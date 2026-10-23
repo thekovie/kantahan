@@ -33,17 +33,27 @@ The audited PDFs draw up to three tables per page. Each row is `Title | icon | n
 | Rows vs an independent count of 5-digit tokens in the PDF text (PDFKit, taken during the M0 audit) | 40 of 43 documents match exactly; Vol 72, 81 and 94 each have one fewer row, which is the single stray token outside the tables that the extractor excludes (the `12345` page furniture in Vol 72 and 94) |
 | Malformed numbers, duplicate numbers within a document, empty titles | 0 |
 | Rows with an empty artist cell | 13 |
-| Rows with possibly overprinted artist text (artist uncertain) | 1,267 (10.1%), none in Vol 100 to 106 |
-| Rows with possibly overprinted title text | 167 (1.3%), all in volumes that are not Reyna evidence except 6 rows in Vol 70, 71 |
-| Hand-checked sample | 36 rows from Vol 62, 95 and 108 (three layout generations), compared with the rendered pages: number, title and artist correct on every row that is not flagged; one flagged row confirmed garbled |
+| Rows still flagged as uncertain after the overlap rule below | 12 of 12,489 (0.1%): uncertain titles in Vol 77, 88 and 91, none in a Reyna release |
+| Rows changed by the overlap rule compared with plain nearest-row assignment | 878 (7.0%); no document left unresolved except those 12 rows |
+| Hand-checked sample | 36 rows from Vol 62, 95 and 108 (three layout generations) compared with the rendered pages, checked **before** the overlap rule was added; after it, a sample of changed rows was read for plausibility but not compared against the page images (the recovered words are the text layer's hidden overflow lines, which the page does not show) |
 
 The sample is small. It supports "the extractor reads the audited layouts correctly", not a precise error rate. M3 should add a larger hand-checked set before relying on automatic publication.
 
-### The overprint defect
+### The overprint defect and the overlap rule
 
-In many older volumes the artist text of one row overflows onto the next row and the two are drawn on top of each other (for example "Nathan" over "Mabuhay"). Which row an overflowing word belongs to cannot be recovered from geometry or stream order; a dynamic-programming split was tried and was worse than nearest-row assignment. The extractor therefore looks at **every pair of words in a column**, including words assigned to different rows, and treats any overlap as suspect for both rows and both of their neighbours. Artist overlaps set `overprint`, title overlaps set `title_overprint`.
+In many older volumes the text of one row overflows into the next row and the two are drawn on top of each other (for example "Nathan" over "Mabuhay"); a long title or artist can wrap onto a third or fourth line that is covered by the next row. Plain nearest-row assignment puts the overflowing words in the wrong row or drops them.
 
-The importer stores the raw text. The builder keeps number and title but **withholds the artist** (`u = 1`) for `overprint` rows, and **leaves out** `title_overprint` rows entirely. For the Reyna bundle that is **519 of 3,180 songs (16.3%) without an artist** and 6 rows left out. This is deliberately conservative: neighbours of an overlap are suspect even when they are fine. A reviewed override list is the way to recover them and is a possible later step.
+`_assign_cell` in `extract.py` resolves this with three facts about the documents:
+
+1. Two words that overlap cannot be in the same cell (wrapped lines never overlap; line pitch is larger than glyph height).
+2. The PDF writes cells row by row, so of two overlapping words the **one written first belongs to the row above** the nearest row boundary and the later one to the row below. The overlap must sit close to a boundary (within 0.6 of a row pitch) or it is left unresolved.
+3. Words on the same text line that do not overlap horizontally belong to the same cell, so a word that only partly overlaps travels with its line.
+
+Anything still ambiguous (an overlap that cannot be placed at a boundary, or words still overlapping inside one row) is **unresolved**: the row and its neighbours are flagged (`overprint` for artist, `title_overprint` for title). Flagged artists are withheld from bundles and flagged titles leave the row out.
+
+How this was chosen: a dynamic-programming split of the word stream into rows was tried first and was worse than nearest-row assignment (it shifted words between rows). The stream-order rule fixed the known bad rows ("Anak Dalita" now reads "Mabuhay Singers", "Best Song Ever" reads "One Direction", "Dati" reads "Sam Conception & Tippy Dos") and also recovered wrapped title lines that nearest-row assignment had lost ("Would I Lie To" now "Would I Lie To You"). For the Reyna bundle the effect is **519 artists withheld before, 0 after**.
+
+Known limits: the rule assumes the PDF writes cells row by row (true for every audited document; a different generation could break it, which would show up as unresolved rows or odd text); some recovered text is still cut off in the source itself (for example "Ariana Grande Ft. Nathan", where the PDF has no "Sykes"); and a mid-word wrap leaves one lowercase letter on the next line, which is glued back on (a standalone "x" is kept as a separator).
 
 ## Validation rules (implemented)
 
