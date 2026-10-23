@@ -1,3 +1,5 @@
+<p align="center"><img src="apps/web/public/brand/icon-192.png" alt="Kantahan logo" width="96" height="96"></p>
+
 # Kantahan
 
 Offline-first digital karaoke songbook. Pick your machine model, then search by song title, artist, or song number.
@@ -28,6 +30,7 @@ Details: [docs/architecture.md](docs/architecture.md).
 | [docs/model-compatibility.md](docs/model-compatibility.md) | Model family and volume mapping, with evidence |
 | [docs/catalog-ingestion.md](docs/catalog-ingestion.md) | Extraction approach and validation rules |
 | [docs/legal-and-attribution.md](docs/legal-and-attribution.md) | Rights status and disclaimers |
+| [docs/design.md](docs/design.md) | Brand, logo and UI constraints |
 | [docs/decisions/](docs/decisions/README.md) | Architecture decision records |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute |
 | [CHANGELOG.md](CHANGELOG.md) | Release notes |

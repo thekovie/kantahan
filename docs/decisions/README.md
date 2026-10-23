@@ -5,3 +5,4 @@ One short file per decision: context, decision, consequences. Number sequentiall
 | ADR | Title | Status |
 |---|---|---|
 | [0001](0001-project-name.md) | Project name: Kantahan | Accepted |
+| [0002](0002-brand-identity.md) | Brand identity: K with mic | Accepted |

@@ -11,6 +11,7 @@ Last updated: **2026-10-23**
 - Project named **Kantahan** ([ADR 0001](docs/decisions/0001-project-name.md)); public repo `thekovie/kantahan`.
 - Documentation skeleton; unimplemented docs carry "planned, not implemented" banners.
 - Source audit of Sources A to F, Reyna-first: [docs/source-audit.md](docs/source-audit.md), [docs/catalog-sources.md](docs/catalog-sources.md), [docs/model-compatibility.md](docs/model-compatibility.md), [docs/catalog-ingestion.md](docs/catalog-ingestion.md).
+- Brand identity: logo concept B (K with mic) chosen by the owner; SVG and PNG icon set, maskable icon and social image in `apps/web/public/brand/` ([docs/design.md](docs/design.md), [ADR 0002](docs/decisions/0002-brand-identity.md)). Standalone wordmark deferred until the display font is chosen.
 - Machine-readable registries: [catalog/sources.yaml](catalog/sources.yaml), [catalog/discovered-reyna-source-a.json](catalog/discovered-reyna-source-a.json) (43 documents: URL, size, SHA-256, header classification; no song data).
 
 ## Key findings (details in the audit)
@@ -34,7 +35,6 @@ Last updated: **2026-10-23**
 - Retry Source D product pages slowly (one request per minute) and record compatibility text.
 - Review Platinum/Vismay terms of service, the site's `agents.md`, and MediaFire terms for automated retrieval.
 - Draft a permission request to Platinum Karaoke / Vismay.
-- Logo and icon concepts (planned in the project plan, section 2b): not started.
 
 ## Known issues
 
@@ -44,7 +44,7 @@ Last updated: **2026-10-23**
 ## Next recommended steps
 
 1. Owner reviews [docs/source-audit.md](docs/source-audit.md) and answers section 9 (permission request, M1 locally, coverage messaging).
-2. Pick the logo concept, then M1: SQLite schema and migrations, importer, extractor spike (pdfplumber vs pdfminer vs PyMuPDF) with synthetic fixtures and hand-checked rows from Vol 62 to 76.
+2. M1: SQLite schema and migrations, importer, extractor spike (pdfplumber vs pdfminer vs PyMuPDF) with synthetic fixtures and hand-checked rows from Vol 62 to 76.
 3. M2 UI starts only after M1; run the design skills first (see the plan).
 
 ## Key paths
@@ -73,4 +73,4 @@ No tests exist. Policy: tests first, 80%+ coverage (see [docs/testing.md](docs/t
 
 ## Recent changes
 
-- 2026-10-23: repo created, documentation skeleton and M0 audit added.
+- 2026-10-23: repo created, documentation skeleton and M0 audit added; logo and icon set added.
