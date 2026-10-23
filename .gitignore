@@ -1,0 +1,24 @@
+node_modules/
+dist/
+.venv/
+__pycache__/
+*.pyc
+.env
+.env.*
+!.env.example
+*.sqlite
+*.sqlite-journal
+*.db
+
+# Catalog source documents and generated catalog data are never committed:
+# redistribution rights are unresolved (see docs/legal-and-attribution.md).
+catalog/work/
+catalog/releases/
+catalog/downloads/
+*.pdf
+
+.DS_Store
+.idea/
+.vscode/
+coverage/
+.coverage
