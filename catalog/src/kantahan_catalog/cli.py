@@ -7,7 +7,7 @@ import hashlib
 import re
 import sqlite3
 import sys
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Collection, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -184,14 +184,18 @@ def _publish_dir(args: argparse.Namespace) -> Path:
 
 
 def _do_publish(
-    args: argparse.Namespace, out: Out, conn: sqlite3.Connection, allow_drop: bool
+    args: argparse.Namespace,
+    out: Out,
+    conn: sqlite3.Connection,
+    allow_drop: bool | Collection[str],
+    keep: int | None = None,
 ) -> str:
     result = publish(
         conn,
         _publish_dir(args),
         load_display(args.display),
-        keep=args.keep,
-        allow_drop=allow_drop or args.allow_drop,
+        keep=args.keep if keep is None else keep,
+        allow_drop=True if args.allow_drop else allow_drop,
     )
     for note in result.skipped:
         out(f"  skipped {note}")
@@ -218,13 +222,14 @@ def cmd_rollback(args: argparse.Namespace, out: Out, **_: Any) -> int:
 
 
 def cmd_suspend(args: argparse.Namespace, out: Out, **_: Any) -> int:
+    # No run lock on purpose: pausing must work while a long `run` is still fetching. The manifest
+    # lock inside set_suspended orders it against a publish that is about to swap the manifest.
     conn = db.connect(args.work / "catalog.sqlite")
     db.migrate(conn)
     suspend = args.command == "suspend"
-    with runner.run_lock(args.work):
-        set_suspended(
-            conn, _publish_dir(args), suspend, getattr(args, "notice", None) if suspend else None
-        )
+    set_suspended(
+        conn, _publish_dir(args), suspend, getattr(args, "notice", None) if suspend else None
+    )
     out("catalog suspended: apps will hide it" if suspend else "catalog resumed")
     return 0
 
@@ -233,10 +238,11 @@ def cmd_withdraw(args: argparse.Namespace, out: Out, **_: Any) -> int:
     conn = db.connect(args.work / "catalog.sqlite")
     db.migrate(conn)
     with runner.run_lock(args.work):
-        withdraw_release(conn, label=args.release, release_id=args.release_id)
+        models = withdraw_release(conn, label=args.release, release_id=args.release_id)
         out("release withdrawn; publishing a catalog without it")
         try:
-            _do_publish(args, out, conn, allow_drop=True)
+            # Only the new version stays on disk: older ones still contain the withdrawn release.
+            _do_publish(args, out, conn, allow_drop=frozenset(models), keep=1)
         except PublishError as exc:
             out(f"error: {exc}")
             out("the release stays withdrawn, but the live catalog still contains it;")
@@ -254,20 +260,22 @@ def _run_steps(
     args: argparse.Namespace, out: Out, fetcher: Fetcher, conn: sqlite3.Connection
 ) -> tuple[int, str, dict[str, Any]]:
     stats: dict[str, Any] = {}
-    steps: tuple[tuple[str, Callable[..., int]], ...] = (
-        ("discover", cmd_discover),
-        ("fetch", cmd_fetch),
-        ("import", cmd_import),
-    )
-    for name, step in steps:
-        if step(_sub(args), out, fetcher=fetcher):
-            return 1, f"{name}-failed", stats
+    if cmd_discover(_sub(args), out, fetcher=fetcher):
+        return 1, "discover-failed", stats
+    # One dead link must not hold back every new volume: publish what could be downloaded, but
+    # report the run as partial (non-zero exit, retried tomorrow) so the failure stays visible.
+    stats["fetch_failed"] = bool(cmd_fetch(_sub(args), out, fetcher=fetcher))
+    if stats["fetch_failed"]:
+        out("WARNING: some documents could not be downloaded; continuing with what is available")
+    if cmd_import(_sub(args), out):
+        return 1, "import-failed", stats
     stats["open_quarantine"] = _count(
         conn, "SELECT count(*) FROM quarantine WHERE resolved_at IS NULL"
     )
     if stats["open_quarantine"]:
         out(f"WARNING: {stats['open_quarantine']} document(s) in quarantine; they add no songs")
-    return 0, _do_publish(args, out, conn, allow_drop=False), stats
+    outcome = _do_publish(args, out, conn, allow_drop=False)
+    return (1, "partial", stats) if stats["fetch_failed"] else (0, outcome, stats)
 
 
 def cmd_run(args: argparse.Namespace, out: Out, fetcher: Fetcher, **_: Any) -> int:
@@ -298,9 +306,18 @@ def cmd_run(args: argparse.Namespace, out: Out, fetcher: Fetcher, **_: Any) -> i
 def cmd_audit(args: argparse.Namespace, out: Out, fetcher: Fetcher, **_: Any) -> int:
     conn = db.connect(args.work / "catalog.sqlite")
     db.migrate(conn)
+    try:
+        links = _section_links(_sub(args))
+    except FileNotFoundError:
+        out("error: no discovered links yet; run `discover` first")
+        return 1
     with runner.run_lock(args.work):
         run_id = runner.start_run(conn, "audit")
-        result = runner.audit_links(conn, fetcher, _section_links(_sub(args)))
+        try:
+            result = runner.audit_links(conn, fetcher, links)
+        except BaseException:
+            runner.finish_run(conn, run_id, "error", {})
+            raise
         drift = bool(result.changed or result.failed)
         runner.finish_run(
             conn,

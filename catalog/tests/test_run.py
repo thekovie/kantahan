@@ -115,16 +115,48 @@ def test_two_runs_cannot_overlap(tmp_path):
         pass
 
 
-def test_a_failed_fetch_publishes_nothing_and_exits_nonzero(world):
+def test_a_failed_fetch_with_nothing_else_publishes_nothing(world):
     run, work, pages, _ = world
     pages[PDF_URL] = b"not a pdf"
     code, text = run("run", "--manual")
-    assert code == 1 and "FAILED" in text
+    assert code == 1 and "FAILED" in text and "nothing to publish" in text
     assert not (work / "publish" / "manifest.json").exists()
-    outcome = (
-        db.connect(work / "catalog.sqlite").execute("SELECT outcome FROM import_run").fetchone()
-    )
-    assert outcome[0] == "fetch-failed"
+
+
+def test_one_dead_link_does_not_block_a_new_volume_but_the_run_is_partial(world):
+    run, work, pages, _ = world
+    assert run("run", "--manual")[0] == 0
+    dead = "https://www.mediafire.com/file/key002/Gone.pdf/file"
+    pages["https://platinumkaraoke.com/cdn/shop/t/50/assets/songlist-update-data.js?v=1"] = (
+        'const songList=[{product:"REYNA SERIES",volumes:[{volume:1,link:"'
+        + PDF_URL
+        + '"},{volume:2,link:"'
+        + dead
+        + '"}]}],x=1;'
+    ).encode()
+    pages[dead] = b"<html>gone</html>"
+    code, text = run("run", "--manual")
+    assert code == 1 and "continuing with what is available" in text
+    conn = db.connect(work / "catalog.sqlite")
+    last = conn.execute("SELECT outcome FROM import_run ORDER BY id DESC").fetchone()[0]
+    assert last == "partial"
+    assert runner.is_due(conn, 14) is True  # a partial scheduled run is not a success: retry soon
+
+
+def test_suspend_works_while_a_run_holds_the_lock(world):
+    run, work, _, _ = world
+    run("run", "--manual")
+    with runner.run_lock(work):
+        assert run("suspend", "--notice", "Paused.")[0] == 0
+        assert manifest(work)["suspended"] is True
+        assert run("resume")[0] == 0
+        assert run("rollback", "v1")[0] == 1  # rollback still waits its turn
+
+
+def test_audit_without_discovery_says_what_to_do(world):
+    run, _, _, _ = world
+    code, text = run("audit")
+    assert code == 1 and "run `discover` first" in text
 
 
 def test_audit_reports_a_document_that_changed_behind_its_link(world, tmp_path):

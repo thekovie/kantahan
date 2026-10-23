@@ -1,9 +1,11 @@
 import hashlib
 import json
+import shutil
 
 import pytest
 from conftest import sample_rows
 
+from kantahan_catalog import publish as publish_module
 from kantahan_catalog.importer import import_pdf
 from kantahan_catalog.publish import (
     Display,
@@ -171,7 +173,7 @@ def test_withdrawn_release_leaves_the_next_build(conn, pdf, tmp_path):
     add(conn, pdf("a.pdf", sample_rows(15000, 100)), 1)
     add(conn, pdf("b.pdf", sample_rows(16000, 50)), 2)
     pub(conn, tmp_path)
-    assert withdraw_release(conn, label="Volume 2") == 1
+    assert withdraw_release(conn, label="Volume 2") == ["reyna"]
     assert pub(conn, tmp_path, allow_drop=True).version == "v2"
     assert read_manifest(tmp_path)["models"][0]["songs"] == 100
 
@@ -195,3 +197,127 @@ def test_display_file_is_validated(tmp_path):
         "models:\n  reyna: {name: Reyna, family: Reyna series, hue: magenta}\n"
     )
     assert load_display(path).models["reyna"].hue == "magenta"
+
+
+def test_an_existing_version_folder_is_never_deleted_by_a_failed_publish(loaded, pdf, tmp_path):
+    pub(loaded, tmp_path)
+    loaded.execute("DELETE FROM publication")  # as if the database came from an older backup
+    loaded.execute("DELETE FROM sqlite_sequence WHERE name = 'publication'")
+    add(loaded, pdf("b.pdf", sample_rows(16000, 50)), 2)
+    with pytest.raises(PublishError, match="already exists") as err:
+        pub(loaded, tmp_path)
+    assert err.value.blocked
+    assert (tmp_path / "v1" / "reyna.json").exists()
+    assert read_manifest(tmp_path)["version"] == "v1"
+
+
+def test_display_only_changes_are_published(loaded, tmp_path):
+    pub(loaded, tmp_path)
+    renamed = Display(
+        DISPLAY.source_label,
+        DISPLAY.source_url,
+        {"reyna": ModelDisplay(name="Reyna 2", family="Reyna series", hue="aqua")},
+    )
+    result = publish(loaded, tmp_path, renamed)
+    assert result.outcome == "published" and result.version == "v2"
+    assert read_manifest(tmp_path)["models"][0]["hue"] == "aqua"
+
+
+def test_leftover_staging_folders_are_removed(loaded, tmp_path):
+    (tmp_path / ".staging-999").mkdir()
+    (tmp_path / ".staging-999" / "reyna.json").write_text("{}")
+    pub(loaded, tmp_path)
+    assert not (tmp_path / ".staging-999").exists()
+
+
+def test_withdrawn_content_cannot_come_back_through_rollback(conn, pdf, tmp_path):
+    add(conn, pdf("a.pdf", sample_rows(15000, 100)), 1)
+    add(conn, pdf("b.pdf", sample_rows(16000, 50)), 2)
+    pub(conn, tmp_path)  # v1 holds both volumes
+    withdraw_release(conn, label="Volume 2")
+    pub(conn, tmp_path, allow_drop=True, keep=1)  # v2 without it; v1 is pruned
+    assert not (tmp_path / "v1").exists()
+    with pytest.raises(PublishError, match="no such version v1"):
+        rollback(conn, tmp_path, "v1")
+
+
+def test_rollback_refuses_a_restored_version_that_predates_a_withdrawal(conn, pdf, tmp_path):
+    add(conn, pdf("a.pdf", sample_rows(15000, 100)), 1)
+    add(conn, pdf("b.pdf", sample_rows(16000, 50)), 2)
+    pub(conn, tmp_path)
+    backup = tmp_path.parent / (tmp_path.name + "-backup")
+    shutil.copytree(tmp_path / "v1", backup)
+    withdraw_release(conn, label="Volume 2")
+    pub(conn, tmp_path, allow_drop=True)
+    shutil.copytree(backup, tmp_path / "v1")  # someone puts the old folder back by hand
+    with pytest.raises(PublishError, match="still contains a release that was withdrawn"):
+        rollback(conn, tmp_path, "v1")
+
+
+def test_version_names_must_match_exactly(loaded, tmp_path):
+    pub(loaded, tmp_path)
+    with pytest.raises(PublishError, match="not a version"):
+        rollback(loaded, tmp_path, "v1\n")
+
+
+def test_display_file_rejects_odd_shapes(tmp_path):
+    path = tmp_path / "display.yaml"
+    for body, message in [
+        (
+            "source: {label: L, url: 'http://x.test'}\nmodels:\n  reyna: {name: R, family: F, hue: aqua}\n",
+            "https",
+        ),
+        ("source: {label: L, url: 'https://x.test'}\nmodels:\n  reyna: just text\n", "mapping"),
+        (
+            f"source: {{label: L, url: 'https://x.test'}}\nmodels:\n  reyna: {{name: {'x' * 90}, family: F, hue: aqua}}\n",
+            "name",
+        ),
+    ]:
+        path.write_text(body)
+        with pytest.raises(PublishError, match=message):
+            load_display(path)
+
+
+def test_overlong_notice_is_refused(loaded, tmp_path):
+    pub(loaded, tmp_path)
+    with pytest.raises(PublishError, match="too long"):
+        set_suspended(loaded, tmp_path, True, notice="x" * 501)
+
+
+def test_withdraw_may_only_shrink_the_models_that_lost_the_release(conn, pdf, tmp_path):
+    add(conn, pdf("a.pdf", sample_rows(15000, 100)), 1)
+    add(conn, pdf("b.pdf", sample_rows(16000, 50)), 2)
+    pub(conn, tmp_path)
+    models = withdraw_release(conn, label="Volume 2")
+    assert pub(conn, tmp_path, allow_drop=frozenset(models), keep=1).outcome == "published"
+    assert not (tmp_path / "v1").exists()  # the old version still held the withdrawn songs
+
+
+def test_a_later_publish_removes_old_versions_that_hold_withdrawn_songs(conn, pdf, tmp_path):
+    add(conn, pdf("a.pdf", sample_rows(15000, 100)), 1)
+    add(conn, pdf("b.pdf", sample_rows(16000, 50)), 2)
+    pub(conn, tmp_path)
+    withdraw_release(
+        conn, label="Volume 2"
+    )  # the follow-up publish "failed": the old folder remains
+    assert (tmp_path / "v1").exists()
+    add(conn, pdf("c.pdf", sample_rows(17000, 10)), 3)
+    pub(conn, tmp_path, allow_drop=True)
+    assert not (tmp_path / "v1").exists() and (tmp_path / "v2").exists()
+
+
+def test_a_pause_set_during_a_publish_is_not_lost(loaded, pdf, tmp_path, monkeypatch):
+    pub(loaded, tmp_path)
+    add(loaded, pdf("b.pdf", sample_rows(16000, 50)), 2)
+    real = publish_module._build_all
+
+    def build_then_pause(*args, **kwargs):
+        built = real(*args, **kwargs)
+        set_suspended(loaded, tmp_path, True, notice="Paused mid-publish.")  # lands before the swap
+        return built
+
+    monkeypatch.setattr(publish_module, "_build_all", build_then_pause)
+    assert pub(loaded, tmp_path).version == "v2"
+    manifest = read_manifest(tmp_path)
+    assert manifest["suspended"] is True and manifest["notice"] == "Paused mid-publish."
+    assert json.loads((tmp_path / "v2" / "manifest.json").read_text())["suspended"] is True

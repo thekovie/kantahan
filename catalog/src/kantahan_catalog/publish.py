@@ -14,12 +14,15 @@ carries the SHA-256 of the exact bytes so the app can verify what it downloaded.
 
 from __future__ import annotations
 
+import fcntl
 import hashlib
 import json
 import os
 import re
 import shutil
 import sqlite3
+from collections.abc import Collection, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -33,8 +36,10 @@ SCHEMA = 1
 MANIFEST = "manifest.json"
 HUES = ("magenta", "violet", "aqua", "orange", "lime", "yellow")
 DEFAULT_KEEP = 5
+MAX_TEXT = 80  # names and families shown on chips
+MAX_NOTICE = 500
 DEFAULT_MAX_DROP = 0.02  # a model may lose at most this share of its songs without --allow-drop
-_VERSION = re.compile(r"^v(\d+)$")
+_VERSION = re.compile(r"v(\d+)")
 _SLUG = re.compile(r"^[a-z0-9-]+$")
 _DIGITS = re.compile(r"^\d+$")
 
@@ -75,20 +80,31 @@ def load_display(path: str | Path) -> Display:
         data = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
         source = data["source"]
         raw_models = data["models"]
+        source_label, source_url = str(source["label"]), str(source["url"])
     except (OSError, KeyError, TypeError, yaml.YAMLError) as exc:
         raise PublishError(f"cannot read display file {path}: {exc}") from exc
+    if not isinstance(raw_models, dict) or not isinstance(source, dict):
+        raise PublishError("display file: 'source' and 'models' must be mappings")
+    if not str(source.get("url", "")).startswith("https://"):
+        raise PublishError("display file: source url must start with https://")
     models: dict[str, ModelDisplay] = {}
     for slug, entry in raw_models.items():
+        if not isinstance(entry, dict):
+            raise PublishError(f"model {slug}: entry must be a mapping")
         if not _SLUG.match(str(slug)):
             raise PublishError(f"model slug {slug!r} must be lowercase letters, digits and hyphens")
         if entry.get("hue") not in HUES:
             raise PublishError(f"model {slug}: hue must be one of {', '.join(HUES)}")
-        if not entry.get("name") or not entry.get("family"):
-            raise PublishError(f"model {slug}: name and family are required")
+        for field in ("name", "family"):
+            value = entry.get(field)
+            if not isinstance(value, str) or not value.strip() or len(value) > MAX_TEXT:
+                raise PublishError(
+                    f"model {slug}: {field} is required (at most {MAX_TEXT} characters)"
+                )
         models[slug] = ModelDisplay(entry["name"], entry["family"], entry["hue"])
     if not models:
         raise PublishError("display file lists no models")
-    return Display(str(source["label"]), str(source["url"]), models)
+    return Display(source_label, source_url, models)
 
 
 def _stamp(now: datetime | None) -> str:
@@ -100,9 +116,28 @@ def _canonical(manifest: dict[str, Any]) -> bytes:
 
 
 def _write_atomic(path: Path, payload: bytes) -> None:
+    """Write beside the target, flush to disk, then rename: readers see the old or the new file."""
     tmp = path.with_name(path.name + ".part")
-    tmp.write_bytes(payload)
+    with tmp.open("wb") as handle:
+        handle.write(payload)
+        handle.flush()
+        os.fsync(handle.fileno())
     os.replace(tmp, path)
+
+
+@contextmanager
+def _manifest_lock(out: Path) -> Iterator[None]:
+    """Short lock around reading and replacing manifest.json (held on the folder itself).
+
+    Publish, rollback, suspend and resume all rewrite the manifest from what is there now, so
+    they take turns; this is what lets `suspend` work while a long `run` is still fetching.
+    """
+    fd = os.open(out, os.O_RDONLY)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        yield
+    finally:
+        os.close(fd)
 
 
 def _swap_manifest(out_dir: Path, manifest: dict[str, Any]) -> bytes:
@@ -155,7 +190,9 @@ def _live_version(out_dir: Path) -> str | None:
 
 def _prune(out_dir: Path, keep: int) -> None:
     versions = sorted(
-        (int(m[1]), p) for p in out_dir.iterdir() if p.is_dir() and (m := _VERSION.match(p.name))
+        (int(m[1]), p)
+        for p in out_dir.iterdir()
+        if p.is_dir() and (m := _VERSION.fullmatch(p.name))
     )
     live = _live_version(out_dir)
     for _, path in versions[: max(len(versions) - keep, 0)]:
@@ -163,14 +200,28 @@ def _prune(out_dir: Path, keep: int) -> None:
             shutil.rmtree(path)
 
 
+def _purge_withdrawn(conn: sqlite3.Connection, out: Path) -> None:
+    """Delete every version that still holds a withdrawn release, except the live one."""
+    floor, live = _withdrawn_floor(conn), _live_version(out)
+    for path in out.iterdir():
+        match = _VERSION.fullmatch(path.name)
+        if path.is_dir() and match and int(match[1]) <= floor and path.name != live:
+            shutil.rmtree(path)
+
+
 def _gate(
-    previous: dict[str, Any] | None, songs: dict[str, int], max_drop: float, allow_drop: bool
+    previous: dict[str, Any] | None,
+    songs: dict[str, int],
+    max_drop: float,
+    allow_drop: bool | Collection[str],
 ) -> None:
-    if previous is None or allow_drop:
+    if previous is None or allow_drop is True:
         return
     problems = []
     for model in previous["models"]:
         slug, before = model["slug"], int(model["songs"])
+        if not isinstance(allow_drop, bool) and slug in allow_drop:
+            continue
         if slug not in songs:
             problems.append(f"{slug} would disappear from the catalog")
         elif songs[slug] < before * (1 - max_drop):
@@ -189,14 +240,15 @@ def publish(
     *,
     keep: int = DEFAULT_KEEP,
     max_drop: float = DEFAULT_MAX_DROP,
-    allow_drop: bool = False,
+    allow_drop: bool | Collection[str] = False,
     now: datetime | None = None,
 ) -> PublishResult:
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     previous = read_manifest(out)
+    for leftover in out.glob(".staging-*"):  # a crashed run; the folder is served, so remove it
+        shutil.rmtree(leftover, ignore_errors=True)
     staging = out / f".staging-{os.getpid()}"
-    shutil.rmtree(staging, ignore_errors=True)
     staging.mkdir()
     try:
         return _publish(conn, out, staging, display, previous, keep, max_drop, allow_drop, now)
@@ -235,7 +287,7 @@ def _publish(
     previous: dict[str, Any] | None,
     keep: int,
     max_drop: float,
-    allow_drop: bool,
+    allow_drop: bool | Collection[str],
     now: datetime | None,
 ) -> PublishResult:
     payloads, skipped = _build_all(conn, staging, display)
@@ -244,7 +296,24 @@ def _publish(
     _gate(previous, songs, max_drop, allow_drop)
 
     digests = {slug: hashlib.sha256(p).hexdigest() for slug, p in payloads.items()}
-    if previous and {m["slug"]: m["sha256"] for m in previous["models"]} == digests:
+    shown = {
+        slug: (
+            digests[slug],
+            display.models[slug].name,
+            display.models[slug].family,
+            display.models[slug].hue,
+            _coverage(bundles[slug]["releases"]),
+        )
+        for slug in payloads
+    }
+    if (
+        previous
+        and {
+            m["slug"]: (m["sha256"], m["name"], m["family"], m["hue"], m["coverage"])
+            for m in previous["models"]
+        }
+        == shown
+    ):
         return PublishResult("unchanged", str(previous["version"]), songs, tuple(skipped))
 
     with conn:
@@ -253,6 +322,17 @@ def _publish(
         ).lastrowid
     version = f"v{pub_id}"
     target = out / version
+    if (
+        target.exists()
+    ):  # ids restart after restoring an old database; never touch a published folder
+        with conn:
+            conn.execute("UPDATE publication SET status = 'failed' WHERE id = ?", (pub_id,))
+        raise PublishError(
+            f"{version} already exists in {out}; the database may have been restored from an "
+            "older backup. Move the folder away or publish from the current database.",
+            blocked=True,
+        )
+    moved = False
     try:
         for slug, payload in payloads.items():
             (staging / f"{slug}.json").write_bytes(payload)
@@ -288,9 +368,18 @@ def _publish(
             if hashlib.sha256(on_disk).hexdigest() != digests[slug]:
                 raise PublishError(f"{slug}: written bundle does not match its hash")
         os.replace(staging, target)
-        raw = _swap_manifest(out, manifest)
+        moved = True
+        with _manifest_lock(out):  # carry over a pause that was set while this publish ran
+            current = read_manifest(out)
+            manifest["suspended"] = bool(current and current.get("suspended"))
+            manifest.pop("notice", None)
+            if current and current.get("notice"):
+                manifest["notice"] = current["notice"]
+            (target / MANIFEST).write_bytes(_canonical(manifest))
+            raw = _swap_manifest(out, manifest)
     except Exception:
-        shutil.rmtree(target, ignore_errors=True)
+        if moved:
+            shutil.rmtree(target, ignore_errors=True)
         with conn:
             conn.execute("UPDATE publication SET status = 'failed' WHERE id = ?", (pub_id,))
         raise
@@ -301,6 +390,7 @@ def _publish(
         )
         conn.execute("UPDATE catalog_version SET status = 'published' WHERE status = 'validated'")
     _prune(out, keep)
+    _purge_withdrawn(conn, out)
     return PublishResult("published", version, songs, tuple(skipped))
 
 
@@ -314,27 +404,47 @@ def _log(
         )
 
 
+def _withdrawn_floor(conn: sqlite3.Connection) -> int:
+    """Highest version number published before the latest withdrawal (0 when none)."""
+    rows = conn.execute(
+        "SELECT version FROM publication_event WHERE action = 'withdraw'"
+    ).fetchall()
+    return max((int(r[0][1:]) for r in rows if r[0]), default=0)
+
+
 def rollback(
     conn: sqlite3.Connection, out_dir: str | Path, version: str, now: datetime | None = None
 ) -> None:
     """Point the live manifest at an older version after re-checking its files."""
     out = Path(out_dir)
-    if not _VERSION.match(version):
+    if not _VERSION.fullmatch(version):
         raise PublishError(f"{version!r} is not a version like v3")
     saved = out / version / MANIFEST
     if not saved.exists():
         raise PublishError(f"no such version {version} in {out}")
+    floor = _withdrawn_floor(conn)
+    if int(version[1:]) <= floor:
+        raise PublishError(
+            f"{version} still contains a release that was withdrawn (versions up to v{floor}); "
+            "publish a new version instead",
+            blocked=True,
+        )
     manifest: dict[str, Any] = json.loads(saved.read_text("utf-8"))
     for model in manifest["models"]:
-        payload = (out / model["file"]).read_bytes()
+        path = (out / model["file"]).resolve()
+        if not path.is_relative_to(out.resolve()):
+            raise PublishError(f"{version}: a bundle path leaves the publish folder")
+        payload = path.read_bytes()
         if hashlib.sha256(payload).hexdigest() != model["sha256"]:
             raise PublishError(f"{version}/{model['slug']}: hash does not match the manifest")
         check_bundle(payload, model["slug"])
-    current = read_manifest(out)
-    manifest["suspended"] = bool(current and current.get("suspended"))
-    if current and current.get("notice"):
-        manifest["notice"] = current["notice"]
-    _swap_manifest(out, manifest)
+    with _manifest_lock(out):
+        current = read_manifest(out)
+        manifest["suspended"] = bool(current and current.get("suspended"))
+        manifest.pop("notice", None)
+        if current and current.get("notice"):
+            manifest["notice"] = current["notice"]
+        _swap_manifest(out, manifest)
     _log(conn, "rollback", version, f"from {current['version'] if current else 'none'}", now)
 
 
@@ -347,14 +457,19 @@ def set_suspended(
 ) -> None:
     """Hide (or show again) the catalog in every app that checks in, without touching bundles."""
     out = Path(out_dir)
-    manifest = read_manifest(out)
-    if manifest is None:
+    if not out.is_dir():
         raise PublishError(f"nothing is published in {out}")
-    manifest["suspended"] = suspended
-    manifest.pop("notice", None)
-    if suspended and notice:
-        manifest["notice"] = notice
-    _swap_manifest(out, manifest)
+    if notice and len(notice) > MAX_NOTICE:
+        raise PublishError(f"notice is too long (at most {MAX_NOTICE} characters)")
+    with _manifest_lock(out):
+        manifest = read_manifest(out)
+        if manifest is None:
+            raise PublishError(f"nothing is published in {out}")
+        manifest["suspended"] = suspended
+        manifest.pop("notice", None)
+        if suspended and notice:
+            manifest["notice"] = notice
+        _swap_manifest(out, manifest)
     _log(conn, "suspend" if suspended else "resume", str(manifest["version"]), notice or "", now)
 
 
@@ -364,8 +479,8 @@ def withdraw_release(
     label: str | None = None,
     release_id: int | None = None,
     now: datetime | None = None,
-) -> int:
-    """Mark live releases so they are left out of every later build. Returns how many."""
+) -> list[str]:
+    """Leave one live release out of every later build. Returns the models it was built into."""
     if (label is None) == (release_id is None):
         raise PublishError("give either a release label or a release id")
     where, param = ("label = ?", label) if label is not None else ("id = ?", release_id)
@@ -377,8 +492,17 @@ def withdraw_release(
     if len(rows) > 1:
         ids = ", ".join(f"#{r['id']}" for r in rows)
         raise PublishError(f"{len(rows)} releases are labelled {param!r} ({ids}); use --release-id")
+    models = [
+        r[0]
+        for r in conn.execute(
+            "SELECT m.slug FROM release_model rm JOIN model m ON m.id = rm.model_id "
+            "WHERE rm.release_id = ? ORDER BY m.slug",
+            (rows[0]["id"],),
+        )
+    ]
     stamp = _stamp(now)
     with conn:
         conn.execute("UPDATE release SET withdrawn_at = ? WHERE id = ?", (stamp, rows[0]["id"]))
-    _log(conn, "withdraw", None, f"release #{rows[0]['id']} {rows[0]['label']}", now)
-    return 1
+    floor = conn.execute("SELECT max(id) FROM publication WHERE status = 'published'").fetchone()[0]
+    _log(conn, "withdraw", f"v{floor or 0}", f"release #{rows[0]['id']} {rows[0]['label']}", now)
+    return models
