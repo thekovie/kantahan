@@ -1,0 +1,23 @@
+# Keep real catalog data, secrets and build output out of every image build context.
+.git
+.github
+**/.venv
+**/node_modules
+**/dist
+**/coverage
+**/.coverage
+**/__pycache__
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/test-results
+**/playwright-report
+.impeccable
+catalog/work
+**/catalog-local
+apps/web/public/catalog
+**/*.pdf
+**/*.sqlite
+**/.env
+**/.env.*
+!**/.env.example

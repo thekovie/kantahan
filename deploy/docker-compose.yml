@@ -1,0 +1,69 @@
+# Kantahan production stack. Run from this folder: docker compose up -d
+# Copy .env.example to .env first and fill it in (see docs/deployment.md).
+name: kantahan
+
+services:
+  # The app and the published catalog, plus a proxy for /api to the contact service.
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/web/Dockerfile
+    image: kantahan-web:local
+    restart: unless-stopped
+    # Bound to the host's loopback by default: put your reverse proxy in front (docs/deployment.md).
+    ports:
+      - "${WEB_BIND:-127.0.0.1:8080}:8080"
+    depends_on:
+      contact:
+        condition: service_healthy
+    volumes:
+      - catalog-publish:/usr/share/nginx/html/catalog:ro
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+
+  # Relays rights and correction requests by e-mail. Not published to the host.
+  contact:
+    build:
+      context: ..
+      dockerfile: deploy/contact/Dockerfile
+    image: kantahan-contact:local
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # Only the web container can reach this service, and it sets X-Real-IP itself.
+      TRUST_PROXY_HEADERS: "true"
+    expose:
+      - "8000"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+
+  # The catalog job. Never started by `up`; run it on demand or from cron:
+  #   docker compose run --rm ingest run          (discover, fetch, import, publish)
+  #   docker compose run --rm ingest backup --to /backups
+  ingest:
+    profiles: ["jobs"]
+    build:
+      context: ..
+      dockerfile: deploy/ingest/Dockerfile
+    image: kantahan-ingest:local
+    volumes:
+      - catalog-work:/data/work
+      - catalog-publish:/data/publish
+      - ${BACKUP_DIR:-./backups}:/backups
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+
+volumes:
+  # The live catalog: written by `ingest`, read by `web`.
+  catalog-publish: {}
+  # The database and the downloaded documents (private; never served).
+  catalog-work: {}
