@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import fcntl
 import json
+import shutil
 import sqlite3
 import tempfile
 from collections.abc import Iterator, Sequence
@@ -39,6 +40,14 @@ def run_lock(work: Path) -> Iterator[None]:
             yield
         finally:
             fcntl.flock(handle, fcntl.LOCK_UN)
+
+
+def free_bytes(path: Path) -> int:
+    """Free space on the volume holding `path` (or the nearest folder above it that exists)."""
+    probe = path
+    while not probe.exists() and probe != probe.parent:
+        probe = probe.parent
+    return shutil.disk_usage(probe).free
 
 
 def _stamp(now: datetime | None) -> str:

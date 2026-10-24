@@ -5,6 +5,7 @@ All notable changes are documented here. Format follows [Keep a Changelog](https
 ## [Unreleased]
 
 ### Added
+- Disk safety: the scheduled `run` refuses to download when less than 1 GB is free (`--min-free-mb`), cron job logs rotate past 5 MB, and the deployment guide has a measured disk budget with the one unbounded item (Docker build cache) called out.
 - **All machines** view: one search over every machine's songs. Rows are never merged across machines; each row names its machine, so the same number on two machines shows as two labelled rows. The sign, the chip and the read-out follow the song's machine, and a machine that cannot be loaded is named while the others still show. See [ADR 0007](docs/decisions/0007-all-machines-view.md).
 
 ### Changed
