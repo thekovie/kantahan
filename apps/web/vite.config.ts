@@ -60,7 +60,7 @@ export default defineConfig({
       manifest: {
         name: "Kantahan",
         short_name: "Kantahan",
-        description: "Offline karaoke songbook: find any song number by title, artist or number.",
+        description: "Offline karaoke songbook for machines in the Philippines: find any song number by title, artist or number. More machines coming soon.",
         theme_color: "#0B1B2B",
         background_color: "#F4F6F9",
         display: "standalone",

@@ -4,7 +4,8 @@ export function Privacy() {
       <h1>Privacy</h1>
       <p>
         Kantahan has no accounts, no ads, no analytics and no tracking. Searching happens on your phone, so what you
-        search for is never sent anywhere.
+        search for is never sent anywhere. This stays true for every machine that is added later, including the more
+        local karaoke machines that are coming soon.
       </p>
 
       <h2>What is saved on your phone</h2>

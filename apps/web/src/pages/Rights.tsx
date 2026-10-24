@@ -40,6 +40,10 @@ export function Rights() {
         </a>
         . Kantahan is independent and is not affiliated with Platinum Karaoke or Vismay International Corporation.
       </p>
+      <p>
+        More local karaoke machines are coming soon. Their song lists will be credited here in the same way, and
+        correction and removal requests cover them too.
+      </p>
     </article>
   );
 }

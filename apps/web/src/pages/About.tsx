@@ -5,8 +5,18 @@ export function About() {
     <article className="prose">
       <h1>About Kantahan</h1>
       <p>
-        Kantahan is a songbook for Platinum Karaoke machines. Choose your machine, search by song title, artist or song
-        number, then key the number into your remote. Once the songs are saved on your phone it works without a signal.
+        Kantahan is a songbook for karaoke machines in the Philippines. Today it covers Platinum Karaoke machines, and
+        support for more local karaoke machines is coming soon. Choose your machine, search by song title, artist or
+        song number, then key the number into your remote. Once the songs are saved on your phone it works without a
+        signal.
+      </p>
+
+      <h2>More machines are coming soon</h2>
+      <p>
+        Kantahan is built to hold several machines side by side. More karaoke machines sold in the Philippines will be
+        added as their official song lists are checked, and each one gets its own songbook, because song numbers differ
+        from machine to machine. Until then only the machines named on the home screen are covered. There is no date or
+        list of brands to announce yet.
       </p>
 
       <h2>What to trust, and what to check</h2>
@@ -23,7 +33,7 @@ export function About() {
           Platinum Karaoke song list updates
         </a>
         . Kantahan is independent. It is not affiliated with, endorsed by or sponsored by Platinum Karaoke or Vismay
-        International Corporation. Their names are used only to say which machines the numbers are for.
+        International Corporation. Their names are used only to say which machines the numbers are for. Songs for machines added later will name their own source here.
       </p>
 
       <h2>What it does not do</h2>

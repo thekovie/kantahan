@@ -22,6 +22,8 @@ Kantahan is a digital songbook that replaces the printed song-list binder. Pick 
 
 ## Positioning
 
+**Direction (owner, 2026-10-24):** Kantahan is for local Philippine karaoke machines in general. Platinum Karaoke is the only source today; more local machines are planned and the app says so ("coming soon") on About, Privacy, Rights and in the footer, without naming brands or dates. New machines are added only from their official song lists, each as its own model.
+
 The song number is per machine model. A neighbouring songbook app that ignores the model shows numbers that are wrong on the user's machine; Kantahan keeps model-specific numbering and never claims a song exists on a machine because it exists on another. It works fully offline and updates its catalog quietly in the background.
 
 ## Operating Context
