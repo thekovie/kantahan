@@ -17,6 +17,7 @@ catalog, which the web server must be able to read.
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import re
 import shutil
@@ -30,8 +31,8 @@ from typing import Any
 from .publish import (
     PublishError,
     _manifest_lock,
-    _swap_manifest,
     _withdrawn_floor,
+    _write_atomic,
     check_bundle,
     read_manifest,
 )
@@ -332,17 +333,16 @@ def _read_live_manifest(folder: Path) -> dict[str, Any] | None:
         return None
 
 
-def _pick_manifest(staged: Path, restorable: list[str], bound: int) -> dict[str, Any] | None:
-    """With nothing live: the backup's manifest if it may come back, else the newest version's."""
+def _pick_manifest(staged: Path, restorable: list[str], bound: int) -> Path | None:
+    """With nothing live: the backup's manifest if allowed back, else the newest version's."""
     backed_up = _read_live_manifest(staged)
     if backed_up is not None:
         version = str(backed_up["version"])
         if _version_number(version) > bound and version in restorable:
-            return backed_up
+            return staged / "manifest.json"
     for name in reversed(restorable):
-        own = _read_live_manifest(staged / name)
-        if own is not None:
-            return own
+        if _read_live_manifest(staged / name) is not None:
+            return staged / name / "manifest.json"
     return None
 
 
@@ -387,16 +387,18 @@ def _restore(
         else:
             restorable.append(name)
 
-    candidate = None if live else _pick_manifest(staged, restorable, bound)
-    if candidate is not None:
+    candidate_file = None if live else _pick_manifest(staged, restorable, bound)
+    candidate_bytes = candidate_file.read_bytes() if candidate_file else None
+    if candidate_file is not None:
+        candidate = json.loads(candidate_bytes or b"{}")
         _check_manifest_files(candidate, staged / str(candidate["version"]))
 
     aside = work / f"before-restore-{stamp}"
     for name in restorable:
         _copy_version(staged / name, publish_dir / name)
-    if candidate is not None:
-        with _manifest_lock(publish_dir):
-            _swap_manifest(publish_dir, candidate)
+    if candidate_bytes is not None:
+        with _manifest_lock(publish_dir):  # the saved file, byte for byte
+            _write_atomic(publish_dir / "manifest.json", candidate_bytes)
     current_db = work / DB_NAME
     kept = False
     if current_db.exists():

@@ -44,6 +44,7 @@ echo "== build and start"
 cleanup_stack() { dc down --volumes --remove-orphans >/dev/null 2>&1; }
 cleanup_stack # a leftover stack would carry old rate-limit counters and volumes
 dc build web contact ingest >/dev/null || { echo "build failed"; exit 1; }
+dc run --rm --no-deps -T --entrypoint nginx web -t >/dev/null 2>&1 || { echo "the web server configuration is invalid:"; dc run --rm --no-deps -T --entrypoint nginx web -t; exit 1; }
 dc up -d --wait web contact smtp-sink >/dev/null || { echo "start failed"; dc logs | tail -20; exit 1; }
 dc run --rm -T --entrypoint python ingest - < test/seed_catalog.py >/dev/null
 
@@ -106,6 +107,18 @@ check "restore asks for confirmation" restore_asks
 check "restore succeeds with --yes" dc run --rm -T ingest restore "/backups/$NEWEST" --yes
 AFTER=$(curl -s $BASE/catalog/manifest.json | shasum | cut -c1-12)
 check "the restored catalog is identical" test "$BEFORE" = "$AFTER"
+
+echo "== resilience and hidden files"
+dc run --rm -T --entrypoint sh ingest -c 'cp /data/publish/manifest.json /data/publish/.probe && cp /data/publish/manifest.json /data/publish/manifest.json.part' >/dev/null
+check "a hidden file in the catalog folder is never served" test "$(status_of $BASE/catalog/.probe)" = 404
+check "a half-written file is never served" test "$(status_of $BASE/catalog/manifest.json.part)" = 404
+not_cached_404() { ! header_of "$BASE/catalog/v99/missing.json" | grep -qi 'immutable'; }
+check "a missing versioned file is a 404 that is not cached" bash -c "test \"\$(curl -s -o /dev/null -w '%{http_code}' $BASE/catalog/v99/missing.json)\" = 404 && ! curl -sI $BASE/catalog/v99/missing.json | grep -qi immutable"
+dc stop contact >/dev/null 2>&1
+check "the site stays up when the contact service is down" test "$(status_of $BASE/)" = 200
+check "only the form's endpoint fails then" bash -c "test \"\$(curl -s -o /dev/null -w '%{http_code}' -X POST $BASE/api/contact -H 'Content-Type: application/json' -H 'Origin: $BASE' -d '{}')\" -ge 500"
+dc start contact >/dev/null 2>&1
+check "the form works again once it is back" bash -c "for i in 1 2 3 4 5 6 7 8 9 10; do test \"\$(curl -s -o /dev/null -w '%{http_code}' $BASE/api/health)\" = 200 && exit 0; sleep 2; done; exit 1"
 
 echo
 if [ "$failures" -eq 0 ]; then echo "smoke test passed"; else echo "$failures check(s) failed"; fi

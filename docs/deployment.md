@@ -63,6 +63,14 @@ Then open your site. Until the first catalog is published the app says the songs
 
 The proxy must terminate HTTPS and forward to `web`. It must **append the visitor's address to `X-Forwarded-For`** (every common proxy does by default) so the rate limit counts visitors, not the proxy. Keep `WEB_BIND` on `127.0.0.1` (or a private network): if the web port were reachable directly from the internet, a visitor could spoof that header.
 
+Supported layouts, and what goes wrong otherwise:
+
+- **The proxy reaches `web` from a private or loopback address** (same host, or a private network): works as described. The web container trusts `X-Forwarded-For` only from private ranges (`10/8`, `172.16/12`, `192.168/16`, loopback, IPv6 unique-local) and takes the right-most address that is not one of those.
+- **The proxy is on a public address** (a CDN, or a load balancer on another host): its address is not trusted, so every visitor looks like one address and one bot can use up the form's limit for everyone. Add that proxy's address range as a `set_real_ip_from` line in `deploy/web/nginx.conf` and rebuild.
+- **Docker Desktop, or `WEB_BIND=0.0.0.0`:** connections can arrive from the Docker gateway (a private address, so trusted), which lets a visitor forge the header. Use these only on a development machine.
+
+IPv6 visitors are grouped by their /64 network (one person can use any address in it), both by nginx and by the contact service.
+
 **Caddy**
 
 ```
@@ -122,7 +130,7 @@ MAILTO=you@example.net
 | Publish without fetching | `docker compose run --rm ingest publish` |
 | Look at the live version | `curl -s https://kantahan.example/catalog/manifest.json` |
 | Roll back a bad version | `docker compose run --rm ingest rollback v7` (temporary: the next publish builds from the database again) |
-| Logs | `docker compose logs -f web contact`, and `/var/log/kantahan/ingest-*.log` for cron jobs |
+| Logs | `docker compose logs -f web contact` (rotated: 3 files of 10 MB each per container), and `/var/log/kantahan/ingest-*.log` for cron jobs |
 | Disk use | `docker system df -v` (the catalog keeps its newest 5 versions) |
 
 Base images are not updated automatically: rebuild now and then (`docker compose build --pull && docker compose up -d`).
@@ -150,9 +158,16 @@ docker compose run --rm ingest restore /backups/kantahan-20261101T023000Z       
 docker compose run --rm ingest restore /backups/kantahan-20261101T023000Z --yes
 ```
 
-Restore checks the sums and the database first, refuses unsafe archive members, keeps what it replaces under `before-restore-<time>/` in the work volume (never in the served folder), and swaps the manifest in last. **A restored database may predate withdrawals made later**: look at them again before publishing, and `suspend` first if in doubt.
+Restore is built so that it cannot undo a takedown. Before replacing anything it reads the live server's withdrawn releases, event log, publication counter, live manifest and pause, and carries them into the restored database. Then:
 
-**Restore drill** (do it once on a new server, and after big changes): back up, remove the published files, restore, and confirm the site serves the same manifest and that `publish` then says `unchanged`. `deploy/test/smoke.sh` runs this drill on every CI build with synthetic data.
+- it refuses any version folder at or below the last withdrawal or the live version (they may still contain withdrawn songs), and never replaces a folder that is already being served;
+- when something is already live it leaves the live manifest, and its pause, exactly as it is; on a bare server it uses the backup's manifest byte for byte, after re-checking every bundle against its checksum;
+- it checks the backup's sums and database, refuses unsafe archive members and archives that are too large, stages everything under the work volume (never in the served folder), and keeps what it replaces in `before-restore-<time>/` there (private, mode 600);
+- the restored database is swapped in last, so a failure earlier leaves the old one untouched.
+
+If the current database cannot be read (the usual reason to restore), takedowns made after the backup cannot be carried over, and the command says so. In that case `suspend` first and check recent withdrawals by hand before publishing.
+
+**Restore drill** (do it once on a new server, and after big changes): back up, remove the published files, restore, and confirm the site serves the same manifest and that `publish` then says `unchanged`. `deploy/test/smoke.sh` runs this drill on every CI build with synthetic data, and the unit tests cover the takedown cases (a withdrawal and a pause made after the backup both survive a restore).
 
 ## Security notes
 

@@ -321,3 +321,13 @@ def test_a_backup_whose_manifest_does_not_match_its_bundles_is_refused_on_a_bare
     with pytest.raises(BackupError, match="does not match"):
         restore_backup(path, work, out, now=T0)
     assert not (out / "manifest.json").exists()
+
+
+def test_a_bare_server_gets_the_saved_manifest_back_byte_for_byte(site, tmp_path):
+    work, out = site
+    raw = (out / "manifest.json").read_bytes()
+    path = make_backup(work, out, tmp_path / "backups", now=T0)
+    shutil.rmtree(out)
+    out.mkdir()
+    restore_backup(path, work, out, now=T0)
+    assert (out / "manifest.json").read_bytes() == raw
