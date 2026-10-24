@@ -36,32 +36,57 @@ The owner decided (2026-10-23) not to ask for permission and to credit the sourc
 ## What you need
 
 - Docker Engine with Compose v2 (`docker compose version`), at least 5 GB of free disk (see [Disk use](#disk-use); a 60 GB server is far more than enough), and outbound internet access for the catalog job.
-- A domain with HTTPS handled by a reverse proxy (Caddy, Traefik or nginx; examples below).
+- A domain with HTTPS handled by a reverse proxy (Coolify does this for you, see [Deploying with Coolify](#deploying-with-coolify); otherwise Caddy, Traefik or nginx, examples below).
 - An SMTP account that can send mail (a mail provider's relay, or a local relay). Port 587 with STARTTLS is the default.
 
-## First-time setup
+## First-time setup (plain Docker)
+
+Using Coolify? Skip to [Deploying with Coolify](#deploying-with-coolify).
 
 ```bash
 git clone https://github.com/thekovie/kantahan.git && cd kantahan/deploy
 cp .env.example .env && chmod 600 .env      # then edit it: see configuration.md
-mkdir -p backups && sudo chown 10001:10001 backups   # the catalog job runs as uid 10001 and writes backups here
 docker compose build
-docker compose up -d                         # web and contact
-docker compose ps                            # both should become "healthy"
+docker compose up -d                         # web, contact, and the idle catalog job container
+docker compose ps                            # web and contact should become "healthy"
 ```
 
 Build the first catalog. It downloads about 800 MB politely (one request every few seconds) and takes roughly an hour; it can be interrupted and resumed:
 
 ```bash
-docker compose run --rm ingest run --manual
-docker compose run --rm ingest stats          # what was imported
+docker compose exec ingest kc run --manual    # `kc` is the short name of the catalog tool inside the job container
+docker compose exec ingest kc stats           # what was imported
 ```
+
+`docker compose run --rm ingest run --manual` does the same in a throwaway container.
 
 Then open your site. Until the first catalog is published the app says the songs did not load.
 
+## Deploying with Coolify
+
+Coolify gives you the proxy, the certificates, the environment screen and scheduled tasks, so nothing outside the repository is needed. The stack is shaped for it: no `.env` file, no published ports, and a catalog job container that stays running for scheduled tasks to use. (This was checked against Coolify's documentation and the compose file is exercised by the smoke test; it has not been deployed on a live Coolify server, so tell me if a screen differs in your version.)
+
+1. **New resource.** Add the Git repository (`thekovie/kantahan`, branch `main`) and choose the **Docker Compose** build pack. Set **Base Directory** to `/deploy` and **Docker Compose Location** to `/docker-compose.yml`. (The compose file builds from `..`, the repository root; with the base directory set to `/deploy` the compose file's folder and the base directory are the same place, so it resolves the same either way.)
+2. **Environment variables.** Coolify reads the compose file and lists the variables. These block the deploy until they have a value: `ALLOWED_ORIGINS` (the exact address people open, such as `https://kantahan.example`, no trailing slash), `CONTACT_TO`, `SMTP_HOST` and `SMTP_FROM`. Add `SMTP_USER` and `SMTP_PASSWORD` if your mail relay needs a login, and mark the password as a secret. The rest have defaults ([configuration.md](configuration.md)). Do not set `COMPOSE_FILE` or `WEB_BIND`: they are only for plain Docker.
+3. **Domain.** In the resource's **Domains**, for the `web` service enter `https://kantahan.example:8080`. The `:8080` tells Coolify's proxy which container port to send traffic to. Give `contact` and `ingest` no domain. Do not publish ports: Coolify warns that a published port bypasses its proxy.
+4. **Deploy.** Coolify uses the images' own health checks (`web` answers `/healthz`, `contact` answers `/api/health`). The visitor's address reaches the web container through Coolify's proxy from a private Docker address, so the form's rate limit counts real visitors. If you put Cloudflare's proxy in front of Coolify, read the proxy layouts under [Reverse proxy](#reverse-proxy).
+5. **First catalog.** Open the resource's **Terminal**, choose the `ingest` container and run `kc run --manual`. It downloads about 800 MB politely and takes roughly an hour. If the terminal disconnects, run it again: it skips what it already has. Until it finishes the app says the songs did not load.
+6. **Scheduled tasks.** In **Scheduled Tasks** add these, each with **Container name** `ingest` (the compose service name). Coolify runs them inside that container and uses the server's timezone. The default timeout is 300 seconds, too short for a catalog pass, so set the timeouts below.
+
+   | Name | Command | Frequency | Timeout |
+   |---|---|---|---|
+   | Catalog run | `kc run` | `15 3 * * *` | `36000` |
+   | Source audit | `kc audit` | `45 3 1 * *` | `36000` |
+   | Backup | `kc backup --to /backups --keep 14` | `30 2 * * *` | `600` |
+
+   The run decides for itself whether it is due (every 14 days) and stops with exit 2 when less than 1 GB of disk is free. Failures show under **Recent executions** (exit 1: an error or a partly done run; exit 2: a safety gate or the disk guard stopped it).
+7. **Takedowns and other admin jobs** run from the same Terminal: `kc suspend --notice "..."`, `kc withdraw --release "Volume 64"`, `kc resume` ([Takedown](#takedown-pause-remove-resume)).
+8. **Backups** are written to the `catalog-backups` volume, which stays on the server. Copy them off it now and then: find the volume with `docker volume ls | grep catalog-backups`, then `docker run --rm -v <that volume>:/b -v "$PWD":/out alpine tar czf /out/kantahan-backups.tgz -C /b .` and download the file.
+9. **Updates.** A push to `main` redeploys (enable automatic deploy or use the webhook). The catalog, database and backups are in volumes, so they survive redeploys. Base images are not refreshed automatically: redeploy without the build cache now and then. Coolify's server settings can also clean unused Docker images and build cache on a schedule; turn that on (the build cache is the one thing that grows without a limit, see [Disk use](#disk-use)).
+
 ## Reverse proxy
 
-The proxy must terminate HTTPS and forward to `web`. It must **append the visitor's address to `X-Forwarded-For`** (every common proxy does by default) so the rate limit counts visitors, not the proxy. Keep `WEB_BIND` on `127.0.0.1` (or a private network): if the web port were reachable directly from the internet, a visitor could spoof that header.
+The proxy must terminate HTTPS and forward to `web`. It must **append the visitor's address to `X-Forwarded-For`** (every common proxy does by default) so the rate limit counts visitors, not the proxy. Keep `WEB_BIND` on `127.0.0.1` (or a private network; it applies to plain Docker only): if the web port were reachable directly from the internet, a visitor could spoof that header.
 
 Supported layouts, and what goes wrong otherwise:
 
@@ -172,12 +197,14 @@ Phones that already hold the old songs replace them at their next update; until 
 
 ## Backup and restore
 
-`backup` writes a folder `kantahan-<time>/` holding a consistent copy of the database (safe while a run is writing), a tar of the published catalog and SHA-256 sums, and prunes to the newest 14. Downloaded PDFs are not included; they can be fetched again. Keep the backup folder (`BACKUP_DIR`, default `deploy/backups`) on another disk or copy it off the server.
+`backup` writes a folder `kantahan-<time>/` holding a consistent copy of the database (safe while a run is writing), a tar of the published catalog and SHA-256 sums, and prunes to the newest 14. Downloaded PDFs are not included; they can be fetched again. Backups go to the `catalog-backups` Docker volume; copy them off the server now and then (command below).
 
 ```bash
-docker compose run --rm ingest backup --to /backups --keep 14
-docker compose run --rm ingest restore /backups/kantahan-20261101T023000Z          # explains, changes nothing
-docker compose run --rm ingest restore /backups/kantahan-20261101T023000Z --yes
+docker compose exec ingest kc backup --to /backups --keep 14
+docker compose exec ingest kc restore /backups/kantahan-20261101T023000Z          # explains, changes nothing
+docker compose exec ingest kc restore /backups/kantahan-20261101T023000Z --yes
+# copy the backups off the server (the volume is named after the compose project):
+docker run --rm -v kantahan_catalog-backups:/b -v "$PWD":/out alpine tar czf /out/kantahan-backups.tgz -C /b .
 ```
 
 Restore is built so that it cannot undo a takedown. Before replacing anything it reads the live server's withdrawn releases, event log, publication counter, live manifest and pause, and carries them into the restored database. Then:

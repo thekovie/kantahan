@@ -7,9 +7,6 @@ cd "$(dirname "$0")/.."
 
 PROJECT=kantahan-smoke
 BASE=http://localhost:18080
-BACKUPS="$(mktemp -d)"
-chmod 777 "$BACKUPS" # the job runs as uid 10001 and must be able to write here, as on a real server
-export BACKUP_DIR="$BACKUPS"
 [ -f .env ] || cp .env.example .env
 COMPOSE=(docker compose -p "$PROJECT" -f docker-compose.yml -f test/compose.test.yml)
 dc() { "${COMPOSE[@]}" "$@"; }
@@ -24,9 +21,7 @@ has_header() { header_of "${@:2}" | grep -qiE "$1"; }
 status_of() { curl -sS -o /dev/null -w '%{http_code}' "$@"; }
 post() { curl -sS -o /dev/null -w '%{http_code}' -X POST "$BASE/api/contact" -H 'Content-Type: application/json' -H "Origin: $1" -d "$2"; }
 cleanup() {
-  dc run --rm -T --entrypoint sh ingest -c 'find /backups -mindepth 1 -delete' >/dev/null 2>&1 # private files
   dc down --volumes --remove-orphans >/dev/null 2>&1
-  rm -r -f "$BACKUPS"
 }
 trap cleanup EXIT
 
@@ -47,8 +42,20 @@ cleanup_stack() { dc down --volumes --remove-orphans >/dev/null 2>&1; }
 cleanup_stack # a leftover stack would carry old rate-limit counters and volumes
 dc build web contact ingest >/dev/null || { echo "build failed"; exit 1; }
 dc run --rm --no-deps -T --entrypoint nginx web -t >/dev/null 2>&1 || { echo "the web server configuration is invalid:"; dc run --rm --no-deps -T --entrypoint nginx web -t; exit 1; }
-dc up -d --wait web contact smtp-sink >/dev/null || { echo "start failed"; dc logs | tail -20; exit 1; }
+dc up -d --wait web contact smtp-sink ingest >/dev/null || { echo "start failed"; dc logs | tail -20; exit 1; }
 dc run --rm -T --entrypoint python ingest - < test/seed_catalog.py >/dev/null
+
+echo "== deploying without a .env file (how Coolify does it)"
+BASE_COMPOSE=(docker compose --env-file /dev/null -f docker-compose.yml)
+REQUIRED=(ALLOWED_ORIGINS=https://kantahan.example CONTACT_TO=owner@example.net SMTP_HOST=smtp.example.net "SMTP_FROM=Kantahan <contact@kantahan.example>")
+renders_with_only_the_required() { env -i PATH="$PATH" HOME="$HOME" "${REQUIRED[@]}" "${BASE_COMPOSE[@]}" config -q; }
+refuses_without_them() { out=$(env -i PATH="$PATH" HOME="$HOME" "${BASE_COMPOSE[@]}" config -q 2>&1); [ $? -ne 0 ] && echo "$out" | grep -qE "ALLOWED_ORIGINS|CONTACT_TO|SMTP_HOST|SMTP_FROM"; }
+publishes_no_port() { ! env -i PATH="$PATH" HOME="$HOME" "${REQUIRED[@]}" "${BASE_COMPOSE[@]}" config | grep -q "published:"; }
+check "the stack renders from environment variables alone" renders_with_only_the_required
+check "a missing required setting is named and stops the deploy" refuses_without_them
+check "the compose file publishes no host port" publishes_no_port
+check "the catalog job container stays running, ready for scheduled tasks" test -n "$(dc ps -q --status running ingest)"
+check "a job runs inside it with the short kc command" dc exec -T ingest kc migrate
 
 echo "== web: headers and caching"
 check "home is served" test "$(status_of $BASE/)" = 200
@@ -101,7 +108,7 @@ echo "== backup and restore drill (in containers)"
 dc run --rm -T ingest migrate >/dev/null
 check "a backup is written" dc run --rm -T ingest backup --to /backups
 check "the backup folder has its three files" backup_has_files
-NEWEST=$(ls "$BACKUPS" | head -1)
+NEWEST=$(dc run --rm -T --entrypoint sh ingest -c 'ls /backups | head -1' | tr -d "[:space:]")
 BEFORE=$(curl -s $BASE/catalog/manifest.json | shasum | cut -c1-12)
 dc run --rm -T --entrypoint sh ingest -c 'find /data/publish -mindepth 1 -delete' >/dev/null
 check "the catalog is really gone" test "$(status_of $BASE/catalog/manifest.json)" = 404

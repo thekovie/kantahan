@@ -9,7 +9,6 @@ services:
     expose:
       - "2525"
   contact:
-    env_file: !reset []
     environment:
       ALLOWED_ORIGINS: http://localhost:18080
       CONTACT_TO: owner-private@example.net
@@ -21,5 +20,5 @@ services:
     depends_on:
       - smtp-sink
   web:
-    ports: !override
+    ports:
       - "127.0.0.1:18080:8080"

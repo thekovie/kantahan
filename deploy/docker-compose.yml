@@ -1,5 +1,9 @@
-# Kantahan production stack. Run from this folder: docker compose up -d
-# Copy .env.example to .env first and fill it in (see docs/deployment.md).
+# Kantahan production stack.
+#   Coolify: Docker Compose build pack, Base Directory /deploy, Docker Compose Location /docker-compose.yml.
+#            Fill in the variables Coolify shows (docs/deployment.md, "Deploying with Coolify").
+#   Plain Docker: copy .env.example to .env, fill it in, then `docker compose up -d` from this folder.
+# No port is published here (a proxy reaches `web` over the Docker network); plain Docker adds one through
+# compose.hostport.yml, which .env.example loads.
 name: kantahan
 
 # Container logs rotate, so bot traffic cannot fill the disk.
@@ -17,9 +21,9 @@ services:
       dockerfile: deploy/web/Dockerfile
     image: kantahan-web:local
     restart: unless-stopped
-    # Bound to the host's loopback by default: put your reverse proxy in front (docs/deployment.md).
-    ports:
-      - "${WEB_BIND:-127.0.0.1:8080}:8080"
+    # The proxy (Coolify's, Traefik, Caddy) forwards to port 8080 over the Docker network.
+    expose:
+      - "8080"
     # Not "healthy": the site must stay up even if the contact service cannot start (for example after a
     # wrong mail setting). Only the form is affected then.
     depends_on:
@@ -43,10 +47,22 @@ services:
       dockerfile: deploy/contact/Dockerfile
     image: kantahan-contact:local
     restart: unless-stopped
-    env_file: .env
+    # Listed one by one (not env_file) so a Git-based deploy needs no .env file and Coolify shows each as a field.
     environment:
       # Only the web container can reach this service, and it sets X-Real-IP itself.
       TRUST_PROXY_HEADERS: "true"
+      # The exact address people open, no trailing slash; other origins are refused.
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:?set ALLOWED_ORIGINS to the site address, for example https://kantahan.example}
+      CONTACT_TO: ${CONTACT_TO:?set CONTACT_TO to the address that receives requests}
+      SMTP_HOST: ${SMTP_HOST:?set SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURITY: ${SMTP_SECURITY:-starttls}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:?set SMTP_FROM, for example Kantahan <contact@kantahan.example>}
+      RATE_PER_IP_HOUR: ${RATE_PER_IP_HOUR:-5}
+      RATE_GLOBAL_HOUR: ${RATE_GLOBAL_HOUR:-60}
+      MAX_MESSAGE_CHARS: ${MAX_MESSAGE_CHARS:-2000}
     expose:
       - "8000"
     read_only: true
@@ -58,19 +74,22 @@ services:
     pids_limit: 128
     logging: *logging
 
-  # The catalog job. Never started by `up`; run it on demand or from cron:
-  #   docker compose run --rm ingest run          (discover, fetch, import, publish)
-  #   docker compose run --rm ingest backup --to /backups
+  # The catalog job. It idles; jobs run inside it with the short `kc` command:
+  #   docker compose exec ingest kc run            (discover, fetch, import, publish)
+  #   docker compose exec ingest kc backup --to /backups
+  # In Coolify these are Scheduled Tasks on the `ingest` container. `docker compose run --rm ingest run` also works.
   ingest:
-    profiles: ["jobs"]
     build:
       context: ..
       dockerfile: deploy/ingest/Dockerfile
     image: kantahan-ingest:local
+    restart: unless-stopped
+    command: ["idle"]
+    init: true
     volumes:
       - catalog-work:/data/work
       - catalog-publish:/data/publish
-      - ${BACKUP_DIR:-./backups}:/backups
+      - catalog-backups:/backups
     read_only: true
     tmpfs:
       - /tmp
@@ -85,3 +104,5 @@ volumes:
   catalog-publish: {}
   # The database and the downloaded documents (private; never served).
   catalog-work: {}
+  # Backups written by `kc backup` (the image creates this folder owned by the job's user, so it just works).
+  catalog-backups: {}

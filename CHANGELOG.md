@@ -4,6 +4,9 @@ All notable changes are documented here. Format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Changed
+- Deployment is shaped for Coolify (and simpler for plain Docker): no `.env` file is needed (the contact service's settings are listed in the compose file, required ones block the deploy), no host port is published by default (plain Docker adds one through `compose.hostport.yml`, loaded from `COMPOSE_FILE` in `.env`), the catalog job container idles and takes short commands (`kc run`, `kc backup`) so scheduled tasks can run inside it, and backups use a volume that needs no permission fix. Smoke test covers all of it. See [ADR 0008](docs/decisions/0008-coolify-ready-deployment.md).
+
 ### Added
 - "More local karaoke machines are coming soon" on the About, Privacy and Rights pages, in the footer and in the page description. No brand names or dates are promised.
 - Disk safety: the scheduled `run` refuses to download when less than 1 GB is free (`--min-free-mb`), cron job logs rotate past 5 MB, and the deployment guide has a measured disk budget with the one unbounded item (Docker build cache) called out.

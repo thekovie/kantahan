@@ -4,7 +4,7 @@
 
 ## Contact service
 
-Read by the `contact` container from `deploy/.env`. The service refuses to start when a required setting is missing or malformed, and says which.
+Read by the `contact` container from environment variables: the Environment Variables screen in Coolify, or `deploy/.env` for plain Docker. The service refuses to start when a required setting is missing or malformed, and says which.
 
 | Variable | Required | Default | Meaning |
 |---|---|---|---|
@@ -24,8 +24,10 @@ Read by the `contact` container from `deploy/.env`. The service refuses to start
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `WEB_BIND` | `127.0.0.1:8080` | Where the web container listens on the host. Keep it on loopback or a private network. |
-| `BACKUP_DIR` | `./backups` | Host folder mounted at `/backups` in the ingest job. |
+| `COMPOSE_FILE` | `docker-compose.yml:compose.hostport.yml` (in `.env.example`) | Plain Docker only: adds the host port. Leave it out in Coolify. |
+| `WEB_BIND` | `127.0.0.1:8080` | Plain Docker only: where the web container listens on the host. Keep it on loopback or a private network. |
+
+Backups go to the `catalog-backups` volume, mounted at `/backups` in the ingest job.
 
 ## Catalog job
 
