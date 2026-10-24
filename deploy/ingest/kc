@@ -1,0 +1,13 @@
+#!/bin/sh
+# Entry point of the ingest image: the catalog tool with this stack's paths filled in.
+#   kc run --manual     a catalog pass (what a scheduled task or `docker compose exec ingest kc run` calls)
+#   kc backup --to /backups --keep 14
+#   kc idle             do nothing and stay running, so a scheduler (Coolify's Scheduled Tasks, or
+#                       `docker compose exec`) has a container to run jobs in
+if [ "${1:-}" = "idle" ]; then
+  exec sleep infinity
+fi
+exec kantahan-catalog \
+  --work /data/work --out /data/publish \
+  --sources /app/sources.yaml --display /app/display.yaml --reviewed /app/reviewed.yaml \
+  "$@"

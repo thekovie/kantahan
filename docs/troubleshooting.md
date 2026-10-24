@@ -14,6 +14,9 @@
 - **`run` exits 1 with "partial":** some source links did not download; the rest was published. Look for `FAILED` lines in `/var/log/kantahan/ingest-run.log`. It is retried the next day.
 - **`run` exits 2:** a safety gate refused to publish (too many conflicting numbers, or a big drop in songs). The live catalog is unchanged. Read the message; `--allow-drop` is for intentional removals only.
 - **Browser console shows a Content-Security-Policy error after you changed the app:** a new script, style source or font came from somewhere the policy forbids. Keep resources on the site, or widen the policy deliberately in `deploy/web/security-headers.conf` and run the smoke test.
-- **`docker compose` says a bind path for `/backups` is missing or not writable:** create `deploy/backups` (or set `BACKUP_DIR`) and give it to uid 10001: `sudo chown 10001:10001 deploy/backups`. If Docker created it, it belongs to root and the job cannot write to it.
+- **A backup cannot be written:** `/backups` is the `catalog-backups` volume, which the image creates owned by the job's user (uid 10001). If you replaced it with a host folder, give that folder to uid 10001: `sudo chown 10001:10001 <folder>`; Docker creates missing host folders owned by root.
+- **Coolify refuses to deploy and names a variable:** that variable is required and empty. Set `ALLOWED_ORIGINS`, `CONTACT_TO`, `SMTP_HOST` and `SMTP_FROM` in the resource's Environment Variables.
+- **A scheduled task is skipped or reports no container:** the task's Container name must be the compose service name `ingest`, and the resource must be running (the `ingest` container idles on purpose).
+- **Coolify shows "No Available Server" for the site:** the domain needs the port suffix, `https://your.domain:8080`, for the `web` service.
 - **`restore` says "checksum mismatch":** the backup folder is damaged or incomplete; use an older one.
 - **`unknown source') 'x'; call ensure_source first`:** register the source (the CLI does this for the sources it imports from).

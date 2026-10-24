@@ -11,3 +11,4 @@ One short file per decision: context, decision, consequences. Number sequentiall
 | [0005](0005-production-deployment.md) | Production deployment | Accepted |
 | [0006](0006-wayfinding-ui.md) | Interface reroll: Metro Wayfinding | Accepted |
 | [0007](0007-all-machines-view.md) | An all-machines view that never merges machines | Accepted |
+| [0008](0008-coolify-ready-deployment.md) | A deployment shaped for Coolify | Accepted |

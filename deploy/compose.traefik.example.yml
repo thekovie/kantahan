@@ -1,9 +1,9 @@
 # Join an existing Traefik instead of publishing a port. Copy, edit the host name and the network
 # and certificate resolver names to match your Traefik, then:
 #   docker compose -f docker-compose.yml -f compose.traefik.example.yml up -d
+# (naming the files with -f replaces COMPOSE_FILE from .env, so no host port is published)
 services:
   web:
-    ports: !reset []
     networks:
       - default
       - proxy

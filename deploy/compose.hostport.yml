@@ -1,0 +1,8 @@
+# Optional overlay for plain Docker (no Coolify, no proxy container): publish the web container on the
+# host, on loopback by default, for a reverse proxy running on the same machine to forward to.
+# It is loaded through COMPOSE_FILE in .env (see .env.example), so `docker compose up -d` just works.
+# Coolify routes to the container through its own network: do not use this file there.
+services:
+  web:
+    ports:
+      - "${WEB_BIND:-127.0.0.1:8080}:8080"
