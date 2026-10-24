@@ -178,6 +178,25 @@ describe("shell", () => {
     expect(screen.getByRole("button", { name: "Switch to the light theme" })).toBeInTheDocument();
   });
 
+  it("says on every page that more local karaoke machines are coming soon", async () => {
+    stubNetwork(ROUTES);
+    const user = userEvent.setup();
+    mount();
+    // The footer is on every page, including the songbook.
+    expect(await within(await screen.findByRole("contentinfo")).findByText(/More karaoke machines from the Philippines are coming soon/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Menu" }));
+    await user.click(within(screen.getByRole("navigation", { name: "Site" })).getByRole("link", { name: "About" }));
+    const main = within(screen.getByRole("main"));
+    expect(await main.findByRole("heading", { name: "More machines are coming soon" })).toBeInTheDocument();
+    expect(main.getByText(/support for more local karaoke machines is coming soon/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Menu" }));
+    await user.click(within(screen.getByRole("navigation", { name: "Site" })).getByRole("link", { name: "Privacy" }));
+    expect(await screen.findByText(/including the more\s+local karaoke machines that are coming soon/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Menu" }));
+    await user.click(within(screen.getByRole("navigation", { name: "Site" })).getByRole("link", { name: "Rights and removal" }));
+    expect(await screen.findByText(/More local karaoke machines are coming soon\./)).toBeInTheDocument();
+  });
+
   it("reaches the About, Privacy and Rights pages from the menu", async () => {
     stubNetwork(ROUTES);
     const user = userEvent.setup();

@@ -2,7 +2,7 @@
 
 # Kantahan
 
-Offline-first digital karaoke songbook. Pick your machine model, then search by song title, artist, or song number.
+Offline-first digital karaoke songbook. Pick your machine model, then search by song title, artist, or song number. Today it covers Platinum Karaoke machines; support for more local Philippine karaoke machines is coming soon.
 
 > **Status: early development (M5 done locally).** The catalog pipeline (`catalog/`), publishing with automatic updates, and the offline songbook app (`apps/web`) exist and run locally; the app ships with a clearly fake demo catalog, and no real catalog data is published. See [HANDOFF.md](HANDOFF.md) for exactly what exists and what is next.
 
