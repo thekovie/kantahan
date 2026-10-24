@@ -1,6 +1,6 @@
 # Testing
 
-Catalog pipeline: **198 tests, 96% line coverage** (`pytest --cov`), `ruff` clean, `mypy --strict` clean. Web app: **148 unit and integration tests (98% line coverage), 44 Playwright end-to-end tests** (mobile Pixel 7 and desktop 1440 wide, including axe scans), `tsc --strict` clean.
+Catalog pipeline: **226 tests, 96% line coverage** (`pytest --cov`), `ruff` clean, `mypy --strict` clean. Contact service: **46 tests, 97% line coverage**. Web app: **178 unit and integration tests (98% line coverage), 58 Playwright end-to-end tests** (mobile Pixel 7 and desktop 1440 wide, including axe scans), `tsc --strict` clean.
 
 ## Policy
 
@@ -33,6 +33,21 @@ Tests first, 80%+ coverage. No test touches the network or real Platinum documen
 | End to end | Playwright with the installed Chrome, against the production build (`npm run build && npm run preview`) | letter browsing, title and number search, read-out dialog and its digit size, no horizontal scroll at 320/390/768/1280, theme and model persistence, offline reload, keyboard-only journey, update while searching (new songs appear, search kept, saved after reload), corrupt download refused, pause and resume, axe WCAG 2.2 AA scans in both themes on index, results, read-out and static pages |
 
 `SCREENSHOTS=1 npx playwright test e2e/screenshots.spec.ts` captures review screenshots into `.impeccable/review/` (gitignored). Lighthouse on the production build (mobile): accessibility 100, best practices 100.
+
+## Contact service (`server/contact/tests/`)
+
+| File | Covers |
+|---|---|
+| `test_contact.py` | a valid request is mailed with the right headers, the destination never appears in a response, optional fields, per-field validation without echo (header-injection attempts included), multi-line messages, the honeypot, per-address and overall rate limits, the trusted-proxy address, Origin and content-type checks, body size cap, methods, a mail failure is generic and leaks nothing, logs hold no personal data, response headers, settings loading and validation |
+| `test_mailer.py` | the three SMTP modes with a fake `smtplib`, and the entry point refusing to start without settings |
+
+## Deployment (`deploy/test/smoke.sh`, needs Docker)
+
+Builds the three images and runs the stack with a throwaway SMTP sink and synthetic data: security headers and the policy, caching rules per path, SPA fallback, the contact path through nginx to a mailbox (accepted, wrong origin, trap, invalid, rate limit, destination hidden, logs clean), a real browser (`stack-e2e.mjs`: no policy violation, no console error, catalog loads and searches, the inline boot script ran, the service worker registers, a request sent from the page arrives), container hardening (non-root, read-only filesystem, unpublished contact port, read-only catalog volume) and the backup and restore drill. Runs in CI on every pull request.
+
+## Quality gates (measured 2026-10-24 on the production images)
+
+Lighthouse mobile (simulated slow 4G, first visit): performance 91 to 92, accessibility 100, best practices 100, SEO 100; desktop 100 for all four. `npm audit` and `pip-audit` report no known vulnerabilities in runtime dependencies (re-checked weekly in CI).
 
 ## Real-data checks (manual, not in CI)
 

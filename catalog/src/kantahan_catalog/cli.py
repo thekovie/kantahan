@@ -186,6 +186,7 @@ def _count(conn: sqlite3.Connection, sql: str, *params: str) -> int:
 
 def cmd_stats(args: argparse.Namespace, out: Out, **_: Any) -> int:
     conn = db.connect(args.work / "catalog.sqlite")
+    db.migrate(conn)  # a brand-new install has no tables yet
     documents = _count(conn, "SELECT count(*) FROM document")
     open_quarantine = _count(conn, "SELECT count(*) FROM quarantine WHERE resolved_at IS NULL")
     out(f"documents: {documents} (open quarantine records {open_quarantine})")
@@ -204,6 +205,7 @@ def cmd_stats(args: argparse.Namespace, out: Out, **_: Any) -> int:
 
 def cmd_build(args: argparse.Namespace, out: Out, **_: Any) -> int:
     conn = db.connect(args.work / "catalog.sqlite")
+    db.migrate(conn)  # a brand-new install has no tables yet
     try:
         result = build_bundle(conn, args.model, args.work / "releases")
     except BuildError as exc:

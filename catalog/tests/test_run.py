@@ -244,3 +244,11 @@ def test_restoring_a_missing_backup_fails_clearly(world, tmp_path):
     run, _, _, _ = world
     code, text = run("restore", str(tmp_path / "nope"), "--yes")
     assert code == 1 and "not a backup" in text
+
+
+def test_a_brand_new_install_can_run_stats_and_build_without_crashing(world):
+    run, work, _, _ = world
+    code, text = run("stats")
+    assert code == 0 and "documents: 0" in text
+    code, text = run("build")
+    assert code == 1 and "no mapped releases" in text

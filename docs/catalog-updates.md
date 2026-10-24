@@ -1,6 +1,6 @@
 # Catalog updates
 
-> **Status: implemented (M3) and exercised locally; hosting and the cron entry are set up in M5.**
+> **Status: implemented (M3) and exercised locally; the Docker deployment and cron wrapper are in [deployment.md](deployment.md) (M5).**
 
 How a new Platinum volume reaches a phone, and how the owner can undo or pause it.
 
@@ -69,14 +69,15 @@ v<N>/manifest.json    the manifest as published, used by rollback
 
 ### Scheduling
 
-The scheduler is the host's cron. It starts the job daily; the job decides whether a pass is due, so a failed run is retried the next day. Example (set up with the deployment in M5):
+The scheduler is the host's cron. It starts the job daily; the job decides whether a pass is due, so a failed run is retried the next day. With the Docker deployment the entries use `deploy/scripts/cron-job.sh`, which logs each job and prints only failures (so cron's `MAILTO` mails real problems); see [deployment.md](deployment.md).
 
 ```cron
-15 3 * * *  cd /srv/kantahan/catalog && .venv/bin/kantahan-catalog run >> /var/log/kantahan-run.log 2>&1
-45 3 1 * *  cd /srv/kantahan/catalog && .venv/bin/kantahan-catalog audit >> /var/log/kantahan-audit.log 2>&1
+15 3 * * *    /srv/kantahan/deploy/scripts/cron-job.sh run
+45 3 1 * *    /srv/kantahan/deploy/scripts/cron-job.sh audit
+30 2 * * *    /srv/kantahan/deploy/scripts/cron-job.sh backup --to /backups --keep 14
 ```
 
-Alerts are log lines and exit codes for now (a non-zero exit, `WARNING: n document(s) in quarantine`). E-mail alerts arrive with the M5 mail settings.
+Alerts are exit codes and log lines (`run` exits 1 for an error or a partly done run, 2 when a gate refused; `WARNING: n document(s) in quarantine`). There is no separate alerting service.
 
 ## Client side (`apps/web`)
 

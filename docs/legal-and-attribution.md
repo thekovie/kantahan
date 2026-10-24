@@ -36,8 +36,12 @@ Wherever catalog data is shown (About page, catalog info panel):
 - The repository is public and holds code and documentation only. Source PDFs and extracted song data are **not committed** (enforced by `.gitignore`); the catalog is built on the machine that serves it.
 - Whether and when to serve a real catalog publicly is the owner's call at deployment time. Development and tests use synthetic data.
 - The crawler identifies itself, respects robots.txt, uses a very low request rate and backs off on HTTP 429. It does not bypass logins, rate limits or anti-bot systems.
-- The Rights and Removal page and contact form (M5) must work before a real catalog goes public; until the form exists, the page lists the repository issue tracker.
+- The Rights and Removal page and its contact form must work before a real catalog goes public (M5: the form is built and tested; the deployment checklist in [deployment.md](deployment.md) makes you try it, and the pause, first). The page also offers the public issue tracker.
 
-## Planned for M5 (not implemented)
+## What exists for takedowns (M5)
 
-About page, independent-affiliation disclaimer, privacy notice, and a Rights and Removal page with a bot-resistant contact form. A developer-controlled process to withdraw releases or suspend the service, with no public shutdown endpoint.
+- About page and an independence disclaimer in the footer of every page.
+- A privacy notice that states exactly what the contact form collects, who receives it and how long it stays ([Privacy page](../apps/web/src/pages/Privacy.tsx)).
+- A Rights and removal page with a contact form (honeypot, rate limits, validated input) that e-mails the owner, plus the public issue tracker.
+- Owner-run commands, with no public endpoint: `suspend` (hides the songs in every app at its next check), `withdraw` (leaves a release out of all later builds and deletes older published versions that contain it) and `rollback` (refuses versions that predate a withdrawal). The takedown runbook is in [deployment.md](deployment.md).
+- Songs already saved on a phone are replaced at that phone's next update, or hidden at once by `suspend`.

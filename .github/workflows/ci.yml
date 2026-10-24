@@ -49,3 +49,38 @@ jobs:
         with:
           name: playwright-traces
           path: apps/web/test-results
+
+  contact:
+    name: Contact service
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server/contact
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv venv --python 3.12 .venv
+      - run: uv pip install --python .venv/bin/python -e ".[dev]"
+      - run: .venv/bin/ruff check .
+      - run: .venv/bin/ruff format --check .
+      - run: .venv/bin/mypy src
+      - run: .venv/bin/python -m pytest --cov-fail-under=80
+
+  deployment:
+    name: Deployment smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      # The browser check in the smoke test uses Playwright from the web app.
+      - run: npm ci
+        working-directory: apps/web
+      # Builds the three images and checks headers, caching, mail delivery through nginx, container
+      # hardening, the policy in a real browser, and the backup and restore drill (synthetic data).
+      - run: deploy/test/smoke.sh
+

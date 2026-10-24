@@ -4,19 +4,20 @@ Last updated: **2026-10-23**
 
 ## Current milestone
 
-**M4, other Platinum machine groups: built and verified locally on branch `m4-models` (PR pending).** M0 to M3 are merged to `main`. All 12 machine groups now have models and bundles locally (about 62,000 songs; Reyna unchanged at 3,186). Nothing is hosted yet. Next: M5 production readiness.
+**M5, production readiness: built and verified locally on branch `m5-production` (PR pending).** M0 to M4 are merged to `main`. The full stack (web, contact, ingest) builds as Docker images and passes a smoke test, but **nothing is hosted yet**: deploying needs a VPS, a domain, a reverse proxy and an SMTP account, which are the owner's to provide ([docs/deployment.md](docs/deployment.md)). The project is feature-complete against the brief.
 
 ## Completed
 
-- **M0** source audit, repo, logo. **M1** catalog pipeline ([docs/catalog-ingestion.md](docs/catalog-ingestion.md)). **M2** offline songbook PWA ([DESIGN.md](DESIGN.md)). **M3** versioned publishing, rollback, suspend, verified automatic updates ([docs/catalog-updates.md](docs/catalog-updates.md), [docs/security.md](docs/security.md)).
-- **M4** machine groups ([docs/model-compatibility.md](docs/model-compatibility.md), [ADR 0004](docs/decisions/0004-machine-group-models.md)):
-  - owner rule (2026-10-24): each Source A section is a model; a volume belongs to every section that lists it ("listed under ... on the publisher's page"); **Reyna stays on its header rule** (Vol 62 to 76)
-  - migration 0005 seeds the models; `map` step (also run by `run`); `import --reimport`; `reviewed.yaml` for the two "Kid Songs" lists with blank artists
-  - extractor reads the older two-table layouts per page (codes position, cuts, borrowed measurements) and merged artist cells; identical output for every document the border reader handled (compared row by row, 11 sections)
-  - build: same title with different artist text keeps the song and withholds the artist; title conflicts are left out and a model publishes while they are at most 5% of its numbers (the manifest carries `excluded`, the app says so)
-  - app: shows how many numbers were left out; the 12-model picker is the grouped dropdown from M2
-  - tests: catalog 198 (96%), web 148 unit (98%) and 44 Playwright
-  - local data: 363 files (815 MB) fetched, 295 documents, 292 releases, 3 documents still quarantined
+- **M0** source audit, repo, logo. **M1** catalog pipeline. **M2** offline songbook PWA ([DESIGN.md](DESIGN.md)). **M3** versioned publishing and verified automatic updates ([docs/catalog-updates.md](docs/catalog-updates.md)). **M4** twelve machine-group models ([docs/model-compatibility.md](docs/model-compatibility.md), [ADR 0004](docs/decisions/0004-machine-group-models.md)).
+- **M5** ([ADR 0005](docs/decisions/0005-production-deployment.md), [docs/security.md](docs/security.md)):
+  - **contact service** (`server/contact`, FastAPI): validated JSON, honeypot, per-address (5/h) and overall (60/h) limits, Origin and content-type checks, header-injection safe mail, destination address and SMTP credentials only in the environment, nothing stored or logged about visitors; 46 tests
+  - **contact form** on the Rights and removal page (messages per field, clear rate-limit/outage/offline states, keyboard and screen-reader friendly, axe-clean in both themes); the Privacy page states exactly what is collected
+  - **deployment** (`deploy/`): web image (nginx: strict CSP with a hashed inline boot script, HSTS, per-path caching, `/api` proxy, request limit), contact image, on-demand ingest image; non-root, read-only filesystems, no capabilities; compose file, `.env.example`, Traefik example; cron wrapper (`scripts/cron-job.sh`)
+  - **backup and restore** commands (SQLite online backup, checksums, safe extraction, manifest swapped last, what is replaced is kept outside the served folder), drilled in a test and in the Docker smoke test
+  - **smoke test** (`deploy/test/smoke.sh`, in CI): more than 40 checks on the real images with synthetic data, including a real browser under the policy
+  - **performance**: inline boot script (theme + early manifest download on a first visit), lazy text pages, 2 KB wordmark font subset; Lighthouse on the production images: mobile 91-92 performance and 100 elsewhere, desktop 100 everywhere
+  - CI: contact job, deployment job, weekly dependency audit (`npm audit`, `pip-audit`: clean)
+  - tests: catalog 226 (96%), contact 46 (97%), web 178 unit (98%) and 58 Playwright
 
 ## Results on real data (local run, 2026-10-23)
 
@@ -39,9 +40,10 @@ Last updated: **2026-10-23**
 
 ## Next recommended steps
 
-1. Review and merge the M4 PR; check CI.
-2. Optional data work: the 3 quarantined HDD documents (2015 Oct and Nov have 3 and 4 digit numbers; 2021 March lists one number twice), a hand check of more rows from the older layouts (only rendered-page spot checks so far), and the open Reyna questions below.
-3. **M5** production: serve `work/publish/` as `/catalog/` behind the reverse proxy (cache headers: `manifest.json` short, `v*/` immutable), cron entries from [docs/catalog-updates.md](docs/catalog-updates.md), Docker, contact form, e-mail alerts, backup and restore drills, legal pages.
+1. Review and merge the M5 PR; check CI (the deployment job builds three images and takes several minutes).
+2. **Deploy** when ready: follow [docs/deployment.md](docs/deployment.md) (needs a VPS, domain, reverse proxy, SMTP account). Do the "before a real catalog goes public" checklist first: try the form, try `suspend`, take one backup and one restore.
+3. Optional data work: the 3 quarantined HDD documents (2015 Oct and Nov have 3 and 4 digit numbers; 2021 March lists one number twice), a hand check of more rows from the older layouts (only rendered-page spot checks so far), and the open Reyna questions below.
+4. Not planned but possible: a third-party bot challenge if the form is abused, an alerting service instead of cron mail, automatic base-image rebuilds, a hand check of more rows from the older layouts.
 
 ## Key paths
 
@@ -82,12 +84,14 @@ Details: [docs/setup-development.md](docs/setup-development.md).
 ## Known issues
 
 - A device that loaded the demo catalog (`demo-1`) switches to a real catalog through the normal update path only if both are served from the same URL; for development clear site data when changing catalogs.
-- `audit` finds files replaced behind a link but only by hash; the monthly cron entry is documented, not installed.
+- `audit` finds files replaced behind a link but only by hash (about 800 MB of downloads); the cron entries are documented, not installed anywhere.
 - Search is capped at 80 results; very short queries show the first 80 in rank order, with a prompt to type more.
 - Title conflicts (a number with different titles in different volumes) are left out per model: T-X 205, Flute/Piano 183, P-Series 13, HDD 5, KS-100 2, Home 40 1. Whether the machines really share numbering across volumes is the publisher's statement, not verified.
 - Playwright is run with Chrome only; Firefox and Safari are untested.
 - 12 rows in held volumes have uncertain titles and are left out of any build.
-- `import_run` table is created but unused until M3.
+- **Not tested against real infrastructure:** the stack is verified with Docker locally and a throwaway SMTP sink. A real reverse proxy (does it append `X-Forwarded-For`?), a real SMTP provider and a real domain are first exercised at deployment; the checklist in docs/deployment.md covers them.
+- Contact rate-limit counts are per process and reset on restart; base images are rebuilt by hand; alerts depend on cron mail on the host.
+- The first catalog build on a server downloads about 800 MB and takes roughly an hour.
 - The 43 audited PDFs and the local database exist only on the developer machine (`catalog/work/`); recreate with the commands above.
 - Package installs stalled twice during the M0 session (cause not diagnosed).
 
