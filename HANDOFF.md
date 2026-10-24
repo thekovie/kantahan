@@ -13,11 +13,12 @@ Last updated: **2026-10-23**
   - **contact service** (`server/contact`, FastAPI): validated JSON, honeypot, per-address (5/h) and overall (60/h) limits, Origin and content-type checks, header-injection safe mail, destination address and SMTP credentials only in the environment, nothing stored or logged about visitors; 46 tests
   - **contact form** on the Rights and removal page (messages per field, clear rate-limit/outage/offline states, keyboard and screen-reader friendly, axe-clean in both themes); the Privacy page states exactly what is collected
   - **deployment** (`deploy/`): web image (nginx: strict CSP with a hashed inline boot script, HSTS, per-path caching, `/api` proxy, request limit), contact image, on-demand ingest image; non-root, read-only filesystems, no capabilities; compose file, `.env.example`, Traefik example; cron wrapper (`scripts/cron-job.sh`)
-  - **backup and restore** commands (SQLite online backup, checksums, safe extraction, manifest swapped last, what is replaced is kept outside the served folder), drilled in a test and in the Docker smoke test
+  - **backup and restore** commands (SQLite online backup, checksums, safe extraction, private files); restore carries takedowns over (withdrawals, event log, publication counter, pause), refuses version folders that may hold withdrawn songs and never replaces a served folder; drilled in tests and in the Docker smoke test
   - **smoke test** (`deploy/test/smoke.sh`, in CI): more than 40 checks on the real images with synthetic data, including a real browser under the policy
   - **performance**: inline boot script (theme + early manifest download on a first visit), lazy text pages, 2 KB wordmark font subset; Lighthouse on the production images: mobile 91-92 performance and 100 elsewhere, desktop 100 everywhere
+  - an independent security review found no critical issue and one high (restore could undo a takedown); that and the medium findings are fixed (see the `fix:` commits)
   - CI: contact job, deployment job, weekly dependency audit (`npm audit`, `pip-audit`: clean)
-  - tests: catalog 226 (96%), contact 46 (97%), web 178 unit (98%) and 58 Playwright
+  - tests: catalog 237 (95%), contact 64 (98%), web 178 unit (98%) and 58 Playwright; smoke test 45 checks
 
 ## Results on real data (local run, 2026-10-23)
 

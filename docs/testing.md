@@ -1,6 +1,6 @@
 # Testing
 
-Catalog pipeline: **226 tests, 96% line coverage** (`pytest --cov`), `ruff` clean, `mypy --strict` clean. Contact service: **46 tests, 97% line coverage**. Web app: **178 unit and integration tests (98% line coverage), 58 Playwright end-to-end tests** (mobile Pixel 7 and desktop 1440 wide, including axe scans), `tsc --strict` clean.
+Catalog pipeline: **237 tests, 95% line coverage** (`pytest --cov`), `ruff` clean, `mypy --strict` clean. Contact service: **64 tests, 98% line coverage**. Web app: **178 unit and integration tests (98% line coverage), 58 Playwright end-to-end tests** (mobile Pixel 7 and desktop 1440 wide, including axe scans), `tsc --strict` clean.
 
 ## Policy
 
@@ -38,12 +38,13 @@ Tests first, 80%+ coverage. No test touches the network or real Platinum documen
 
 | File | Covers |
 |---|---|
-| `test_contact.py` | a valid request is mailed with the right headers, the destination never appears in a response, optional fields, per-field validation without echo (header-injection attempts included), multi-line messages, the honeypot, per-address and overall rate limits, the trusted-proxy address, Origin and content-type checks, body size cap, methods, a mail failure is generic and leaks nothing, logs hold no personal data, response headers, settings loading and validation |
+| `test_contact.py` | a valid request is mailed with the right headers, the destination never appears in a response, optional fields, per-field validation without echo (header-injection attempts included), multi-line messages, the honeypot, per-address and overall rate limits, the trusted-proxy address, Origin and content-type checks, body size cap, methods, a mail failure is generic and leaks nothing, logs hold no personal data, response headers, Origin and type checked before the body is read, a chunked oversized body stopped while streaming, exact media type, Unicode separators and lone surrogates, IPv6 /64 grouping, settings loading and validation |
+| `test_ratelimit.py` | idle visitors are forgotten, tracked visitors have a hard ceiling, limit and wait time |
 | `test_mailer.py` | the three SMTP modes with a fake `smtplib`, and the entry point refusing to start without settings |
 
 ## Deployment (`deploy/test/smoke.sh`, needs Docker)
 
-Builds the three images and runs the stack with a throwaway SMTP sink and synthetic data: security headers and the policy, caching rules per path, SPA fallback, the contact path through nginx to a mailbox (accepted, wrong origin, trap, invalid, rate limit, destination hidden, logs clean), a real browser (`stack-e2e.mjs`: no policy violation, no console error, catalog loads and searches, the inline boot script ran, the service worker registers, a request sent from the page arrives), container hardening (non-root, read-only filesystem, unpublished contact port, read-only catalog volume) and the backup and restore drill. Runs in CI on every pull request.
+Builds the three images and runs the stack with a throwaway SMTP sink and synthetic data: security headers and the policy, caching rules per path, SPA fallback, the contact path through nginx to a mailbox (accepted, wrong origin, trap, invalid, rate limit, destination hidden, logs clean), a real browser (`stack-e2e.mjs`: no policy violation, no console error, catalog loads and searches, the inline boot script ran, the service worker registers, a request sent from the page arrives), container hardening (non-root, read-only filesystem, unpublished contact port, read-only catalog volume) the backup and restore drill, hidden and half-written files never served, a missing versioned file is a 404 that is not cached, and the site staying up while the contact service is down. Runs in CI on every pull request.
 
 ## Quality gates (measured 2026-10-24 on the production images)
 
