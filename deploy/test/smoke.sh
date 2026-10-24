@@ -24,6 +24,7 @@ has_header() { header_of "${@:2}" | grep -qiE "$1"; }
 status_of() { curl -sS -o /dev/null -w '%{http_code}' "$@"; }
 post() { curl -sS -o /dev/null -w '%{http_code}' -X POST "$BASE/api/contact" -H 'Content-Type: application/json' -H "Origin: $1" -d "$2"; }
 cleanup() {
+  dc run --rm -T --entrypoint sh ingest -c 'find /backups -mindepth 1 -delete' >/dev/null 2>&1 # private files
   dc down --volumes --remove-orphans >/dev/null 2>&1
   rm -r -f "$BACKUPS"
 }
@@ -37,7 +38,8 @@ no_published_port() { [ -z "$(docker port "$(dc ps -q contact)" 2>/dev/null)" ];
 destination_hidden() { ! { curl -s "$BASE/"; curl -s "$BASE/rights"; curl -s "$BASE$JS"; } | grep -q owner-private; }
 server_version_hidden() { ! curl -sI "$BASE/" | grep -iE '^server: nginx/'; }
 manifest_is_seeded() { curl -s "$BASE/catalog/manifest.json" | grep -q '"version": "v1"'; }
-backup_has_files() { [ "$(find "$BACKUPS" -type f \( -name catalog.sqlite -o -name publish.tar.gz -o -name checksums.sha256 \) | wc -l)" -eq 3 ]; }
+# Backups are private to the job's user, so look from inside the container.
+backup_has_files() { [ "$(dc run --rm -T --entrypoint sh ingest -c 'find /backups -type f | wc -l' | tr -d "[:space:]")" = 3 ]; }
 restore_asks() { dc run --rm -T ingest restore "/backups/$NEWEST" >/dev/null 2>&1; [ $? -eq 2 ]; }
 
 echo "== build and start"
