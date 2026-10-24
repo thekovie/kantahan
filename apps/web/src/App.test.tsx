@@ -42,6 +42,8 @@ const ROUTES = {
 
 beforeEach(() => {
   document.documentElement.setAttribute("data-theme", "dark");
+  // Most tests are about one machine; a first visit (no saved choice) is tested on its own below.
+  localStorage.setItem("kantahan.model", "model-a");
 });
 afterEach(async () => {
   vi.unstubAllGlobals();
@@ -435,5 +437,39 @@ describe("all machines", () => {
     mount();
     await screen.findByRole("tablist", { name: "Songs by first letter" });
     expect(screen.queryByRole("radio", { name: "All machines" })).not.toBeInTheDocument();
+  });
+});
+
+describe("first visit", () => {
+  it("opens on All machines when no machine was chosen before", async () => {
+    localStorage.removeItem("kantahan.model");
+    stubNetwork(ROUTES);
+    const user = userEvent.setup();
+    mount();
+    expect(await screen.findByRole("radio", { name: "All machines" })).toBeChecked();
+    await user.type(await screen.findByRole("searchbox", { name: /Search all machines/ }), "beta song one");
+    expect(within(await screen.findByRole("button", { name: /Beta Song One/ })).getByText("Model B")).toBeInTheDocument();
+  });
+
+  it("still remembers a machine chosen after that", async () => {
+    localStorage.removeItem("kantahan.model");
+    stubNetwork(ROUTES);
+    const user = userEvent.setup();
+    const first = mount();
+    await user.click(await screen.findByRole("radio", { name: "Model B" }));
+    expect(localStorage.getItem("kantahan.model")).toBe("model-b");
+    first.unmount();
+    mount();
+    expect(await screen.findByRole("radio", { name: "Model B" })).toBeChecked();
+  });
+
+  it("opens on the only machine when there is just one", async () => {
+    localStorage.removeItem("kantahan.model");
+    const manifest = makeManifest();
+    stubNetwork({ ...ROUTES, "/catalog/manifest.json": { ...manifest, models: [manifest.models[0]!] } });
+    mount();
+    expect(await screen.findByRole("tablist", { name: "Songs by first letter" })).toBeInTheDocument();
+    expect(screen.queryByRole("radio")).not.toBeInTheDocument();
+    expect(screen.getByRole("searchbox", { name: /Search Model A songs/ })).toBeInTheDocument();
   });
 });

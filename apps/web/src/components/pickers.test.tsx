@@ -57,6 +57,8 @@ describe("ModelPicker", () => {
     const many = [1, 2, 3, 4, 5, 6].map((n) => model(n, n > 3 ? "Family two" : "Family one"));
     render(<Picker models={many} />);
     const select = screen.getByRole("combobox", { name: "Machine model" });
+    // The arrow is drawn by us (not the browser) so it can have its own spacing from the edge.
+    expect(document.querySelector(".select-wrap .select__icon")).toBeInTheDocument();
     expect(screen.getByRole("group", { name: "Family two" })).toBeInTheDocument();
     await user.selectOptions(select, "Model 5");
     expect(select).toHaveValue("m5");

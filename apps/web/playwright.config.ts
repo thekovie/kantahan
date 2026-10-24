@@ -6,7 +6,16 @@ export default defineConfig({
   testDir: "e2e",
   fullyParallel: true,
   reporter: "list",
-  use: { baseURL: "http://localhost:4173", trace: "retain-on-failure" },
+  use: {
+    baseURL: "http://localhost:4173",
+    trace: "retain-on-failure",
+    // Most tests are about one machine, so they start on Model A. A first visit (nothing chosen, which opens on
+    // All machines) is tested with an empty storage state in boot.spec.ts and chooser.spec.ts.
+    storageState: {
+      cookies: [],
+      origins: [{ origin: "http://localhost:4173", localStorage: [{ name: "kantahan.model", value: "demo-a" }] }],
+    },
+  },
   webServer: {
     command: "npm run build && npm run preview",
     url: "http://localhost:4173",

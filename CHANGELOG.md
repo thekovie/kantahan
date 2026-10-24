@@ -5,6 +5,7 @@ All notable changes are documented here. Format follows [Keep a Changelog](https
 ## [Unreleased]
 
 ### Changed
+- A first visit now opens on **All machines** (a remembered choice is kept; a single machine is shown as is). The machine dropdown (used when there are more than five machines) draws its own arrow with proper spacing instead of the browser's, which sat against the edge.
 - Fix: the first Coolify deploy failed with `lstat /artifacts/deploy: no such file or directory` because the build context assumed a different base directory. The context is now `${BUILD_ROOT:-.}` (repository root under Coolify with Base Directory `/`; `.env` sets it for plain Docker), the guide says Base Directory `/` and Location `/deploy/docker-compose.yml`, and the smoke test builds an image the way Coolify runs compose.
 - Deployment is shaped for Coolify (and simpler for plain Docker): no `.env` file is needed (the contact service's settings are listed in the compose file, required ones block the deploy), no host port is published by default (plain Docker adds one through `compose.hostport.yml`, loaded from `COMPOSE_FILE` in `.env`), the catalog job container idles and takes short commands (`kc run`, `kc backup`) so scheduled tasks can run inside it, and backups use a volume that needs no permission fix. Smoke test covers all of it. See [ADR 0008](docs/decisions/0008-coolify-ready-deployment.md).
 
