@@ -1,34 +1,26 @@
+import type { CSSProperties } from "react";
+
 interface NumberTokenProps {
   /** The song number as text; leading zeros are part of it. */
   number: string;
   /** Larger variant for the read-out. */
   large?: boolean;
-  /** Light the digits up one after another (once, for the read-out). */
-  tick?: boolean;
 }
 
 /**
- * The song number as a seven-segment display: a dark tile, faint unlit segments behind, lit digits
- * in the model's colour (set by a `hue-*` class on an ancestor). Read aloud as separate digits.
+ * The song number as heavy plain figures. Read aloud as separate digits, so "00589" is not heard as a
+ * quantity. The visible text is hidden from assistive technology to avoid saying it twice.
  */
-export function NumberToken({ number, large = false, tick = false }: NumberTokenProps) {
+export function NumberToken({ number, large = false }: NumberTokenProps) {
   const digits = [...number];
-  const classes = ["led", large ? "led--large" : "", tick ? "led--tick" : ""].filter(Boolean).join(" ");
   return (
     <span
-      className={classes}
+      className={large ? "num num--large" : "num"}
       role="img"
       aria-label={`Song number ${digits.join(" ")}`}
-      data-ghost={digits.map(() => "8").join("")}
-      style={{ "--n": digits.length } as React.CSSProperties}
+      style={{ "--n": digits.length } as CSSProperties}
     >
-      <span className="led__digits" aria-hidden="true">
-        {digits.map((digit, i) => (
-          <span key={i} className="led__digit" style={{ "--i": i } as React.CSSProperties}>
-            {digit}
-          </span>
-        ))}
-      </span>
+      <span aria-hidden="true">{number}</span>
     </span>
   );
 }

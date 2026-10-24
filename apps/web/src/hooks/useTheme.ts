@@ -14,7 +14,7 @@ export function useTheme() {
     };
     apply();
     if (pref !== "system") return;
-    const query = window.matchMedia?.("(prefers-color-scheme: light)");
+    const query = window.matchMedia?.("(prefers-color-scheme: dark)");
     query?.addEventListener("change", apply);
     return () => query?.removeEventListener("change", apply);
   }, [pref]);

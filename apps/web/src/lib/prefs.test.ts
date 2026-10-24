@@ -41,12 +41,12 @@ describe("resolveTheme", () => {
     expect(resolveTheme("dark")).toBe("dark");
   });
 
-  it("follows the system setting and defaults to dark", () => {
+  it("follows the system setting and defaults to light", () => {
     vi.stubGlobal("matchMedia", () => ({ matches: true }));
-    expect(resolveTheme("system")).toBe("light");
+    expect(resolveTheme("system")).toBe("dark");
     vi.stubGlobal("matchMedia", () => ({ matches: false }));
-    expect(resolveTheme("system")).toBe("dark");
+    expect(resolveTheme("system")).toBe("light");
     vi.stubGlobal("matchMedia", undefined);
-    expect(resolveTheme("system")).toBe("dark");
+    expect(resolveTheme("system")).toBe("light");
   });
 });

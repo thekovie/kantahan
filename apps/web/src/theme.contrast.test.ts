@@ -15,8 +15,8 @@ function block(selector: string): Record<string, string> {
   return vars;
 }
 
-const dark = block(":root");
-const light = { ...dark, ...block(':root[data-theme="light"]') };
+const light = block(":root");
+const dark = { ...light, ...block(':root[data-theme="dark"]') };
 
 function luminance(hex: string): number {
   const channel = (offset: number) => {
@@ -31,8 +31,8 @@ function ratio(a: string, b: string): number {
   return (hi + 0.05) / (lo + 0.05);
 }
 
-const themes = { dark, light } as const;
-const HUES = ["magenta", "violet", "aqua", "orange", "lime", "yellow"] as const;
+const themes = { light, dark } as const;
+const HUES = ["red", "blue", "teal", "orange", "green", "yellow"] as const;
 
 describe.each(Object.entries(themes))("%s theme contrast (WCAG AA)", (_name, t) => {
   const v = (key: string): string => {
@@ -57,12 +57,8 @@ describe.each(Object.entries(themes))("%s theme contrast (WCAG AA)", (_name, t) 
     expect(ratio(v(fg), v(bg))).toBeGreaterThanOrEqual(4.5);
   });
 
-  it.each(HUES)("lit %s digits on the LED tile are at least 4.5:1", (hue) => {
-    expect(ratio(v(`led-${hue}`), v("tile"))).toBeGreaterThanOrEqual(4.5);
-  });
-
-  it.each(HUES)("selected %s chip text is at least 4.5:1", (hue) => {
-    expect(ratio(v("chip-ink"), v(`led-${hue}`))).toBeGreaterThanOrEqual(4.5);
+  it.each(HUES)("text on the %s line colour is at least 4.5:1", (hue) => {
+    expect(ratio(v(`on-hue-${hue}`), v(`hue-${hue}`))).toBeGreaterThanOrEqual(4.5);
   });
 
   it.each([
@@ -70,8 +66,8 @@ describe.each(Object.entries(themes))("%s theme contrast (WCAG AA)", (_name, t) 
     ["line-strong", "surface"],
     ["focus", "bg"],
     ["focus", "surface"],
-    ["error", "bg"],
-    ["error", "surface"],
+    ["brand", "bg"],
+    ["select", "bg"],
   ])("interface part %s on %s is at least 3:1", (fg, bg) => {
     expect(ratio(v(fg), v(bg))).toBeGreaterThanOrEqual(3);
   });

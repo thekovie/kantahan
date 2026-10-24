@@ -8,18 +8,18 @@ interface SongListProps {
   label: string;
 }
 
-/** Song rows: the number token leads, title and artist follow. A row opens the read-out. */
+/** Song rows: title and artist on the left, the number at the end, like a page number in an index. A row opens the read-out. */
 export function SongList({ songs, onOpen, label }: SongListProps) {
   return (
     <ul className="songs" aria-label={label}>
       {songs.map((song) => (
         <li key={song.id}>
           <button type="button" className="song" onClick={() => onOpen(song)}>
-            <NumberToken number={song.number} />
             <span>
               <span className="song__title">{song.title}</span>
               {song.artistKnown && <span className="song__artist">{song.artist}</span>}
             </span>
+            <NumberToken number={song.number} />
           </button>
         </li>
       ))}
