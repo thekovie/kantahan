@@ -44,6 +44,7 @@ The owner decided (2026-10-23) not to ask for permission and to credit the sourc
 ```bash
 git clone https://github.com/thekovie/kantahan.git && cd kantahan/deploy
 cp .env.example .env && chmod 600 .env      # then edit it: see configuration.md
+mkdir -p backups && sudo chown 10001:10001 backups   # the catalog job runs as uid 10001 and writes backups here
 docker compose build
 docker compose up -d                         # web and contact
 docker compose ps                            # both should become "healthy"

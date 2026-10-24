@@ -8,6 +8,7 @@ cd "$(dirname "$0")/.."
 PROJECT=kantahan-smoke
 BASE=http://localhost:18080
 BACKUPS="$(mktemp -d)"
+chmod 777 "$BACKUPS" # the job runs as uid 10001 and must be able to write here, as on a real server
 export BACKUP_DIR="$BACKUPS"
 [ -f .env ] || cp .env.example .env
 COMPOSE=(docker compose -p "$PROJECT" -f docker-compose.yml -f test/compose.test.yml)
