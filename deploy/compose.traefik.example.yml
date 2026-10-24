@@ -1,0 +1,20 @@
+# Join an existing Traefik instead of publishing a port. Copy, edit the host name and the network
+# and certificate resolver names to match your Traefik, then:
+#   docker compose -f docker-compose.yml -f compose.traefik.example.yml up -d
+services:
+  web:
+    ports: !reset []
+    networks:
+      - default
+      - proxy
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: proxy
+      traefik.http.routers.kantahan.rule: Host(`kantahan.example`)
+      traefik.http.routers.kantahan.entrypoints: websecure
+      traefik.http.routers.kantahan.tls.certresolver: letsencrypt
+      traefik.http.services.kantahan.loadbalancer.server.port: "8080"
+
+networks:
+  proxy:
+    external: true

@@ -1,3 +1,5 @@
+import { ContactForm } from "../components/ContactForm";
+
 export function Rights() {
   return (
     <article className="prose">
@@ -7,21 +9,21 @@ export function Rights() {
         remove it. A request does not need a reason beyond what you want changed.
       </p>
 
-      <h2>How to ask</h2>
-      <p>
-        Open an issue at{" "}
-        <a href="https://github.com/thekovie/kantahan/issues" rel="noreferrer noopener" target="_blank">
-          github.com/thekovie/kantahan/issues
-        </a>
-        . Issues there are public, so leave out personal details such as phone numbers or home addresses. A private contact
-        form is planned.
-      </p>
+      <h2>Send a request</h2>
       <p>Please include:</p>
       <ul>
         <li>the machine model and the song number (or the title and artist),</li>
         <li>what should change, or that the entry should be removed,</li>
         <li>if you are a rights holder, which work and what your connection to it is.</li>
       </ul>
+      <ContactForm />
+      <p>
+        Prefer a public record? You can also open an issue at{" "}
+        <a href="https://github.com/thekovie/kantahan/issues" rel="noreferrer noopener" target="_blank">
+          github.com/thekovie/kantahan/issues
+        </a>
+        . Issues there are visible to everyone, so leave out personal details such as phone numbers or home addresses.
+      </p>
 
       <h2>What happens next</h2>
       <p>

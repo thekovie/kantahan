@@ -32,3 +32,6 @@ coverage/
 .impeccable/review/
 .impeccable/mocks/
 .impeccable/build/
+
+# Local deployment state
+deploy/backups/

@@ -194,12 +194,12 @@ describe("shell", () => {
     expect(screen.getByRole("link", { name: /github.com\/thekovie\/kantahan\/issues/ })).toBeInTheDocument();
   });
 
-  it("renders the privacy page and a not-found page", () => {
+  it("renders the privacy page and a not-found page", async () => {
     stubNetwork(ROUTES);
     mount("/privacy");
-    expect(screen.getByRole("heading", { name: "Privacy" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Privacy" })).toBeInTheDocument();
     mount("/nope");
-    expect(screen.getByRole("heading", { name: "Page not found" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Page not found" })).toBeInTheDocument();
   });
 
   it("closes the menu with Escape", async () => {

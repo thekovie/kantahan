@@ -1,0 +1,1 @@
+"""Contact endpoint for Kantahan."""

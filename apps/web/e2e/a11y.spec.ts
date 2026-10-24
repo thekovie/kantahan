@@ -35,6 +35,15 @@ for (const scheme of ["dark", "light"] as const) {
       await scan(page);
     });
 
+    test("the contact form has no accessibility violations, including with its errors showing", async ({ page }) => {
+      await page.goto("/rights");
+      await expect(page.getByRole("form", { name: "Contact form" })).toBeVisible();
+      await scan(page);
+      await page.getByRole("button", { name: "Send message" }).click();
+      await expect(page.getByText("Choose what this is about.")).toBeVisible();
+      await scan(page);
+    });
+
     test("the static pages have no accessibility violations", async ({ page }) => {
       for (const path of ["/about", "/privacy", "/rights"]) {
         await page.goto(path);

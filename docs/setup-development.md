@@ -57,6 +57,27 @@ Publishing and scheduled runs (M3), all under `catalog/work/`:
 
 Fetching downloads about 49 MB the first time. The site rate-limits automated requests, so do not lower the delay or run fetches in parallel.
 
+## Contact service
+
+```bash
+cd server/contact
+uv venv --python 3.12 .venv && uv pip install --python .venv/bin/python -e ".[dev]"
+.venv/bin/python -m pytest && .venv/bin/ruff check . && .venv/bin/mypy src
+```
+
+To try the form against a local app, run the service with a throwaway mail sink (`deploy/test/smtp_sink.py` prints what it receives) and start the app's dev server, which proxies `/api` to port 8000:
+
+```bash
+python3 deploy/test/smtp_sink.py &                       # listens on 2525
+cd server/contact && SMTP_HOST=localhost SMTP_PORT=2525 SMTP_SECURITY=none \
+  SMTP_FROM=dev@example.org CONTACT_TO=owner@example.net ALLOWED_ORIGINS=http://localhost:5173 \
+  .venv/bin/uvicorn kantahan_contact.main:app --port 8000
+```
+
+## Deployment checks
+
+`deploy/test/smoke.sh` (needs Docker and `npm ci` in `apps/web`) builds the images and checks the whole stack against synthetic data; see [deployment.md](deployment.md).
+
 ## Web app
 
 Needs Node 22 and an installed Google Chrome (the end-to-end tests use it).

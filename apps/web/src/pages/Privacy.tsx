@@ -22,10 +22,25 @@ export function Privacy() {
       </p>
 
       <h2>Contacting us</h2>
+      <p>The form on the Rights and removal page collects only what you type into it:</p>
+      <ul>
+        <li>what the message is about and the message itself,</li>
+        <li>optionally a machine and song, your name and your e-mail address.</li>
+      </ul>
       <p>
-        A private contact form for rights requests is planned. This page will say exactly what it stores before the form
-        goes live. Until then, requests go through the public issue tracker described under Rights and removal, so do not
-        put personal details in them.
+        The server relays this to the project owner by e-mail and does not keep a copy: it is not saved in a database
+        and not written to logs. The e-mail then sits in the owner&apos;s mailbox and with the mail provider. It is kept
+        as long as it takes to handle your request and any follow-up, and you can ask for it to be deleted. It is not
+        shared, sold or used for anything else.
+      </p>
+      <p>
+        To limit abuse, the server counts messages per network address for an hour, in memory only. The count is not
+        logged and disappears when the service restarts. A hidden field in the form catches automated bots; people
+        never see or fill it.
+      </p>
+      <p>
+        You can also open a public issue on GitHub instead. Anything written there is public, so keep personal details
+        out of it.
       </p>
     </article>
   );

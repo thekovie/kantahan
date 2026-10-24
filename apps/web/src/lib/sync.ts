@@ -35,7 +35,7 @@ async function runCheck(deps: LoadDeps): Promise<SyncResult> {
   const saved = await loadManifest();
   let fresh: Manifest;
   try {
-    fresh = await fetchManifest(deps);
+    fresh = await fetchManifest(deps, { fresh: true });
   } catch (error) {
     return failure(error);
   }

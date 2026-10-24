@@ -50,6 +50,9 @@ describe.each(Object.entries(themes))("%s theme contrast (WCAG AA)", (_name, t) 
     ["text-muted", "surface-2"],
     ["on-brand", "brand"],
     ["on-select", "select"],
+    ["error", "bg"],
+    ["error", "surface"],
+    ["error", "surface-2"],
   ])("body text %s on %s is at least 4.5:1", (fg, bg) => {
     expect(ratio(v(fg), v(bg))).toBeGreaterThanOrEqual(4.5);
   });
@@ -67,6 +70,8 @@ describe.each(Object.entries(themes))("%s theme contrast (WCAG AA)", (_name, t) 
     ["line-strong", "surface"],
     ["focus", "bg"],
     ["focus", "surface"],
+    ["error", "bg"],
+    ["error", "surface"],
   ])("interface part %s on %s is at least 3:1", (fg, bg) => {
     expect(ratio(v(fg), v(bg))).toBeGreaterThanOrEqual(3);
   });

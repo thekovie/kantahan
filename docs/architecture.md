@@ -1,6 +1,6 @@
 # Architecture
 
-> **Status: the catalog pipeline (M1, `catalog/`) and the songbook web app (M2, `apps/web`) are implemented; automatic updates, publication, the contact endpoint and deployment are planned.** Rows below say which is which.
+> **Status: the catalog pipeline (`catalog/`), the songbook web app (`apps/web`), automatic updates, the contact service (`server/contact/`) and the Docker deployment (`deploy/`) are implemented and tested locally. Nothing is hosted yet.** Rows below say which is which.
 
 ## Overview
 
@@ -18,8 +18,8 @@ official PDFs --> catalog pipeline (Python + SQLite) --> versioned bundles + man
 | Catalog pipeline: discover, fetch, extract, validate, import, local build | Python, SQLite, pdfplumber | **M1, done locally** ([catalog-ingestion.md](catalog-ingestion.md)) |
 | Scheduled runs, manifest, publication, rollback, suspend | Python, SQLite, cron | **M3, done locally** ([catalog-updates.md](catalog-updates.md)) |
 | Web app: model selector, search, offline use | React, TypeScript, Vite, Tailwind, service worker, IndexedDB, MiniSearch | **M2, done** (update check on open and on demand: M3) |
-| Contact endpoint for rights inquiries | small server-side SMTP relay | M5 |
-| Deployment | Docker Compose on a VPS behind an existing reverse proxy | M5 |
+| Contact endpoint for rights inquiries | FastAPI relaying validated requests by SMTP ([security.md](security.md)) | **M5, done locally** |
+| Deployment | Docker Compose: nginx web image, contact image, on-demand ingest job, behind your reverse proxy ([deployment.md](deployment.md)) | **M5, done locally** |
 
 ## Principles
 

@@ -1,0 +1,25 @@
+# Smoke-test overlay (see deploy/test/smoke.sh): a throwaway SMTP sink instead of a real mail
+# provider, and settings that point the contact service at it.
+services:
+  smtp-sink:
+    image: python:3.12-slim
+    volumes:
+      - ./test/smtp_sink.py:/smtp_sink.py:ro
+    command: ["python", "-u", "/smtp_sink.py"]
+    expose:
+      - "2525"
+  contact:
+    env_file: !reset []
+    environment:
+      ALLOWED_ORIGINS: http://localhost:18080
+      CONTACT_TO: owner-private@example.net
+      SMTP_HOST: smtp-sink
+      SMTP_PORT: "2525"
+      SMTP_SECURITY: none
+      SMTP_FROM: Kantahan <contact@kantahan.example>
+      RATE_PER_IP_HOUR: "4"
+    depends_on:
+      - smtp-sink
+  web:
+    ports: !override
+      - "127.0.0.1:18080:8080"
