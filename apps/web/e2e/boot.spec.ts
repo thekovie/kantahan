@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
-test.use({ serviceWorkers: "block" });
+// A first visit: nothing saved, so no machine chosen yet (the app opens on All machines).
+test.use({ serviceWorkers: "block", storageState: { cookies: [], origins: [] } });
 
 // The page's inline boot script starts the manifest download on a first visit so it overlaps with the
 // scripts loading; the app must use that download (one request, not two), and a returning visitor,
@@ -12,13 +13,13 @@ test("a first visit downloads the manifest once, and opening the app again does 
   });
 
   await page.goto("/");
-  await expect(page.getByRole("radio", { name: "Model A" })).toBeChecked();
+  await expect(page.getByRole("radio", { name: "All machines" })).toBeChecked();
   await page.waitForTimeout(500);
   expect(manifestRequests).toHaveLength(1);
 
   manifestRequests.length = 0;
   await page.reload();
-  await expect(page.getByRole("radio", { name: "Model A" })).toBeChecked();
+  await expect(page.getByRole("radio", { name: "All machines" })).toBeChecked();
   await page.waitForTimeout(500);
   expect(manifestRequests).toHaveLength(0);
 

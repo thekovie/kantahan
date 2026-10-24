@@ -164,7 +164,8 @@ export function useCatalog(deps?: LoadDeps) {
         }
         manifestRef.current = manifest;
       }
-      await show(manifest, slug ?? readModel(), false, () => cancelled);
+      // A first visit (nothing chosen yet) starts on every machine; one machine alone falls back to itself.
+      await show(manifest, slug ?? readModel() ?? ALL_MODELS, false, () => cancelled);
     })();
     return () => {
       cancelled = true;

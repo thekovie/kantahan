@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 import type { KeyboardEvent } from "react";
 import { ALL_MODELS, type ModelInfo } from "../lib/types";
 
@@ -54,7 +54,7 @@ export function ModelPicker({ models, value, onChange }: ModelPickerProps) {
 function ModelSelect({ models, value, onChange }: ModelPickerProps) {
   const families = [...new Set(models.map((m) => m.family))];
   return (
-    <div>
+    <div className="select-wrap">
       <label htmlFor="model-select" className="sr-only">
         Machine model
       </label>
@@ -72,6 +72,7 @@ function ModelSelect({ models, value, onChange }: ModelPickerProps) {
           </optgroup>
         ))}
       </select>
+      <ChevronDown className="select__icon" size={24} aria-hidden="true" />
     </div>
   );
 }

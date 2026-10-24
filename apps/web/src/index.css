@@ -348,14 +348,32 @@ h3 {
   display: none;
 }
 
+.select-wrap {
+  position: relative;
+  margin-top: 0.75rem;
+}
 .select {
   width: 100%;
   min-height: 3.25rem;
-  margin-top: 0.75rem;
-  padding: 0 1rem;
+  /* The browser's own arrow sits hard against the edge; draw ours so it has room (see .select__icon). */
+  appearance: none;
+  padding: 0 3.25rem 0 1rem;
   border: 2px solid var(--line-strong);
   border-radius: 0.75rem;
   background: var(--surface);
+  font-weight: 600;
+  text-overflow: ellipsis;
+}
+.select:hover {
+  background: var(--surface-2);
+}
+.select__icon {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  translate: 0 -50%;
+  color: var(--text-muted);
+  pointer-events: none;
 }
 
 /* ---- search ---- */
