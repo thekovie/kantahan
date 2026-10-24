@@ -7,10 +7,12 @@ destination address, SMTP details, the message, the visitor's address) is logged
 
 from __future__ import annotations
 
+import ipaddress
 import json
 import logging
 import re
 import time
+import unicodedata
 from collections.abc import Awaitable, Callable
 from typing import Any
 
@@ -20,7 +22,7 @@ from starlette.concurrency import run_in_threadpool
 
 from .mailer import Form, Sender, build_message
 from .ratelimit import SlidingWindow
-from .settings import ADDRESS, Settings
+from .settings import Settings
 
 log = logging.getLogger("kantahan.contact")
 MAX_BODY_BYTES = 16 * 1024
@@ -30,8 +32,14 @@ MIN_MESSAGE_CHARS = 10
 MAX_NAME_CHARS = 80
 MAX_REFERENCE_CHARS = 200
 MAX_EMAIL_CHARS = 254
-_LINE_BREAK_OR_CONTROL = re.compile(r"[\x00-\x1f\x7f]")
-_CONTROL_EXCEPT_NEWLINE = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
+# Visitor addresses are checked conservatively (ASCII, one plain address); the field is optional.
+VISITOR_ADDRESS = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$")
+# Control characters, line and paragraph separators, and surrogates.
+_BREAKS = ("Cc", "Zl", "Zp", "Cs")
+
+
+def _has_breaks(text: str, allow: str = "") -> bool:
+    return any(unicodedata.category(c) in _BREAKS and c not in allow for c in text)
 
 
 def _reply(status: int, payload: dict[str, Any], headers: dict[str, str] | None = None) -> Response:
@@ -43,7 +51,7 @@ def _fail(status: int, error: str, **extra: Any) -> Response:
 
 
 def _single_line(value: Any, limit: int) -> str | None:
-    if not isinstance(value, str) or len(value) > limit or _LINE_BREAK_OR_CONTROL.search(value):
+    if not isinstance(value, str) or len(value) > limit or _has_breaks(value):
         raise ValueError
     return value.strip() or None
 
@@ -58,10 +66,13 @@ def _validate(data: dict[str, Any], limit: int) -> tuple[Form | None, dict[str, 
     if not isinstance(message, str):
         fields["message"] = "Write a message."
     else:
-        cleaned = _CONTROL_EXCEPT_NEWLINE.sub(
-            "", message.replace("\r\n", "\n").replace("\r", "\n")
-        ).strip()
-        if len(cleaned) < MIN_MESSAGE_CHARS:
+        text = message.replace("\r\n", "\n").replace("\r", "\n")
+        # Keep line breaks and tabs; drop other control characters and separators that a mail reader
+        # could show as line breaks. A lone surrogate cannot be encoded at all, so it is refused.
+        cleaned = "".join(c for c in text if not _has_breaks(c, allow="\n\t")).strip()
+        if any(unicodedata.category(c) == "Cs" for c in text):
+            fields["message"] = "This message has characters that are not allowed."
+        elif len(cleaned) < MIN_MESSAGE_CHARS:
             fields["message"] = f"Write at least {MIN_MESSAGE_CHARS} characters."
         elif len(cleaned) > limit:
             fields["message"] = f"Keep it under {limit} characters."
@@ -80,7 +91,7 @@ def _validate(data: dict[str, Any], limit: int) -> tuple[Form | None, dict[str, 
         except ValueError:
             fields[name] = "This field has characters that are not allowed or is too long."
             continue
-        if name == "email" and parsed[name] and not ADDRESS.match(parsed[name] or ""):
+        if name == "email" and parsed[name] and not VISITOR_ADDRESS.match(parsed[name] or ""):
             fields["email"] = "Enter a valid e-mail address, or leave it empty."
     if fields:
         return None, fields
@@ -104,11 +115,18 @@ def create_app(
         return response
 
     def client_key(request: Request) -> str:
+        address = request.client.host if request.client else "unknown"
         if settings.trust_proxy_headers:
-            forwarded = request.headers.get("x-real-ip", "").strip()
-            if forwarded:
-                return forwarded
-        return request.client.host if request.client else "unknown"
+            address = request.headers.get("x-real-ip", "").strip() or address
+        try:
+            parsed = ipaddress.ip_address(address)
+        except ValueError:
+            return address
+        if isinstance(
+            parsed, ipaddress.IPv6Address
+        ):  # one visitor can use any address in their /64
+            return str(ipaddress.ip_network(f"{parsed}/64", strict=False))
+        return str(parsed)
 
     @app.get("/api/health")
     async def health() -> Response:
@@ -116,16 +134,14 @@ def create_app(
 
     @app.post("/api/contact")
     async def contact(request: Request) -> Response:
-        announced = request.headers.get("content-length", "")
-        if announced.isdigit() and int(announced) > MAX_BODY_BYTES:
-            return _reject(413, "too_large")
-        body = await request.body()
-        if len(body) > MAX_BODY_BYTES:
-            return _reject(413, "too_large")
         if request.headers.get("origin") not in settings.allowed_origins:
             return _reject(403, "forbidden")
-        if not request.headers.get("content-type", "").lower().startswith("application/json"):
+        media_type = request.headers.get("content-type", "").split(";")[0].strip().lower()
+        if media_type != "application/json":
             return _reject(415, "unsupported")
+        announced = request.headers.get("content-length", "")
+        if announced.isascii() and announced.isdigit() and int(announced) > MAX_BODY_BYTES:
+            return _reject(413, "too_large")
         key = client_key(request)
         wait = max(per_ip.check(key), overall.check("all"))
         if wait:
@@ -133,6 +149,14 @@ def create_app(
             return _reply(429, {"ok": False, "error": "rate_limited"}, {"Retry-After": str(wait)})
         per_ip.record(key)
         overall.record("all")
+        chunks: list[bytes] = []
+        size = 0
+        async for chunk in request.stream():  # stops reading as soon as the cap is passed
+            size += len(chunk)
+            if size > MAX_BODY_BYTES:
+                return _reject(413, "too_large")
+            chunks.append(chunk)
+        body = b"".join(chunks)
         try:
             data = json.loads(body)
         except ValueError:

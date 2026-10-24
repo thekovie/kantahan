@@ -209,3 +209,83 @@ def test_plain_http_origin_is_allowed_only_for_localhost_development():
 def test_the_logger_name_is_stable():
     assert logging.getLogger("kantahan.contact").name == "kantahan.contact"
     assert make_settings().contact_to.endswith("example.net") and ORIGIN
+
+
+def test_the_body_is_not_read_for_a_request_from_another_origin_or_type(make_client, valid):
+    client = make_client()
+    huge = "x" * 200_000
+    assert (
+        client.post(URL, content=huge, headers={"Origin": "https://evil.example"}).status_code
+        == 403
+    )
+    assert client.post(URL, content=huge, headers={"Content-Type": "text/plain"}).status_code == 415
+
+
+def test_a_chunked_oversized_body_is_stopped_while_it_is_read(client):
+    def chunks():
+        for _ in range(100):
+            yield b"x" * 1024
+
+    response = client.post(URL, content=chunks(), headers={"Content-Type": "application/json"})
+    assert response.status_code == 413
+
+
+@pytest.mark.parametrize("kind", ["application/jsonx", "application/json-anything", "text/json"])
+def test_the_content_type_must_be_json_exactly(client, valid, kind):
+    assert (
+        client.post(URL, content=json.dumps(valid), headers={"Content-Type": kind}).status_code
+        == 415
+    )
+
+
+def test_json_with_a_charset_parameter_is_fine(client, valid):
+    headers = {"Content-Type": "application/json; charset=utf-8"}
+    assert client.post(URL, content=json.dumps(valid), headers=headers).status_code == 202
+
+
+@pytest.mark.parametrize(
+    "patch",
+    [
+        {"name": "Ana Bcc: x"},
+        {"name": "Ana\x85Bcc: x"},
+        {"reference": "a b"},
+        {"name": "lone \ud800 surrogate"},
+        {"email": 'a"b,c@x.co'},
+        {"email": "a b@x.co"},
+        {"email": "ünï@x.co"},
+    ],
+)
+def test_unusual_line_breaks_surrogates_and_odd_addresses_are_rejected_not_relayed(
+    client, sent, valid, patch
+):
+    # json.dumps escapes a lone surrogate as \\ud800, which is how a browser sends it.
+    response = client.post(
+        URL, content=json.dumps({**valid, **patch}), headers={"Content-Type": "application/json"}
+    )
+    assert response.status_code == 422 and sent == []
+
+
+def test_a_message_with_unicode_separators_or_surrogates_is_cleaned_or_refused(client, sent, valid):
+    cleaned = {**valid, "message": "A message with a   separator   and a \x85 mark inside it."}
+    assert client.post(URL, json=cleaned).status_code == 202
+    body = sent[0].get_content()
+    assert " " not in body and " " not in body and "\x85" not in body
+    broken = {**valid, "message": "A message with a lone \ud800 surrogate inside it."}
+    posted = client.post(
+        URL, content=json.dumps(broken), headers={"Content-Type": "application/json"}
+    )
+    assert posted.status_code == 422
+
+
+def test_visitors_on_one_ipv6_network_share_one_limit(make_client, valid):
+    client = make_client(rate_per_ip_hour=1, trust_proxy_headers=True)
+    first = client.post(URL, json=valid, headers={"X-Real-IP": "2001:db8:1:2:aaaa:bbbb:cccc:1"})
+    other_host_same_network = client.post(
+        URL, json=valid, headers={"X-Real-IP": "2001:db8:1:2:dddd:eeee:ffff:2"}
+    )
+    different_network = client.post(URL, json=valid, headers={"X-Real-IP": "2001:db8:1:3::1"})
+    assert (
+        first.status_code,
+        other_host_same_network.status_code,
+        different_network.status_code,
+    ) == (202, 429, 202)
