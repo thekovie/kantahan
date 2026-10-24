@@ -83,11 +83,13 @@ def test_full_local_flow_discover_fetch_import_build(env, tmp_path):
     discovered = json.loads((work / "discovered.json").read_text())
     assert {d["source"] for d in discovered} == {"a", "b"} and len(discovered) == 2
 
-    assert run(env, "fetch", fetcher=fetcher)[0] == 0
-    assert (work / "pdfs" / "key001.pdf").exists()
+    code, text = run(env, "fetch", fetcher=fetcher)
+    assert code == 0 and (work / "pdfs" / "key001.pdf").exists()
+    assert "fetching 1 document" in text and "[1/1] downloaded" in text and "MB)" in text
     assert run(env, "fetch", fetcher=fetcher)[1].endswith("already present 1, failed 0")
 
-    assert "imported 1" in run(env, "import")[1]
+    imported = run(env, "import")[1]
+    assert "imported 1" in imported and "[1/1] imported" in imported and "5 songs" in imported
     assert "unchanged 1" in run(env, "import")[1]
     stats = run(env, "stats")[1]
     assert "releases mapped: 1, songs 5" in stats
@@ -175,3 +177,25 @@ def test_uppercase_source_ids_are_accepted_and_unknown_ones_fail_cleanly(env, tm
     assert "imported 1" in run(env, "import", "--from", "A")[1]
     code, text = run(env, "import", "--from", "zzz")
     assert code == 1 and "unknown source 'zzz'" in text
+
+
+def test_the_time_left_is_only_guessed_once_there_is_something_to_go_on():
+    assert cli._eta(elapsed=120, done=4, total=10) == ", about 3 min left"
+    assert cli._eta(elapsed=30, done=3, total=4) == ", under a minute left"
+    assert cli._eta(elapsed=10, done=2, total=10) == ""  # too early to say
+    assert cli._eta(elapsed=300, done=10, total=10) == ""  # nothing left
+
+
+def test_fetch_counts_a_shared_file_once_and_says_what_it_is_doing(env, tmp_path):
+    work, _, _ = env
+    links = [
+        {"source": "a", "section": "REYNA SERIES", "label": "Reyna Vol 1", "url": PDF_URL},
+        {"source": "a", "section": "BRAVO", "label": "Bravo Vol 1", "url": PDF_URL},
+    ]
+    work.mkdir(parents=True)
+    (work / "discovered.json").write_text(json.dumps(links))
+    site = Site({PDF_URL: b"%PDF-1.4 test"})
+    code, text = run(env, "fetch", "--section", "all", fetcher=Fetcher(site, sleep=lambda s: None))
+    assert code == 0
+    assert "fetching 1 document (1 link already on disk or sharing a file)" in text
+    assert text.count("downloaded") == 1

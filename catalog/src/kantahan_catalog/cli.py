@@ -7,6 +7,7 @@ import hashlib
 import re
 import sqlite3
 import sys
+import time
 from collections.abc import Callable, Collection, Sequence
 from pathlib import Path
 from typing import Any
@@ -101,19 +102,45 @@ def _section_links(args: argparse.Namespace) -> list[DiscoveredLink]:
     return [x for x in links if x.section.upper() == wanted and x.source in args.from_sources]
 
 
+def _eta(elapsed: float, done: int, total: int) -> str:
+    """A rough time left (", about 12 min left") once three downloads give an average."""
+    remaining = total - done
+    if done < 3 or remaining <= 0:
+        return ""
+    seconds = elapsed / done * remaining
+    if seconds < 60:
+        return ", under a minute left"
+    return f", about {round(seconds / 60)} min left"
+
+
 def cmd_fetch(args: argparse.Namespace, out: Out, fetcher: Fetcher, **_: Any) -> int:
-    fetched = skipped = failed = 0
+    # Several links can lead to one file; each file is fetched once, so the count below is honest.
+    plan: list[tuple[DiscoveredLink, Path]] = []
+    queued: set[Path] = set()
+    skipped = 0
     for link in _section_links(args):
         dest = _pdf_path(args.work, link.url)
-        if dest.exists() and not args.refresh:
+        if dest in queued or (dest.exists() and not args.refresh):
             skipped += 1
             continue
+        queued.add(dest)
+        plan.append((link, dest))
+    total = len(plan)
+    noun = "document" if total == 1 else "documents"
+    which = "link" if skipped == 1 else "links"
+    out(f"fetching {total} {noun} ({skipped} {which} already on disk or sharing a file)")
+    started = time.monotonic()
+    fetched = failed = 0
+    for number, (link, dest) in enumerate(plan, 1):
         try:
-            fetcher.download_pdf(link.url, dest)
-            fetched += 1
+            _digest, size = fetcher.download_pdf(link.url, dest)
         except FetchError as exc:
             failed += 1
-            out(f"  FAILED {link.label}: {exc}")
+            out(f"  [{number}/{total}] FAILED {link.label}: {exc}")
+            continue
+        fetched += 1
+        eta = _eta(time.monotonic() - started, number, total)
+        out(f"  [{number}/{total}] downloaded {link.label} ({size / 1024 / 1024:.1f} MB{eta})")
     out(f"fetched {fetched}, already present {skipped}, failed {failed}")
     return 1 if failed else 0
 
@@ -139,7 +166,8 @@ def cmd_import(args: argparse.Namespace, out: Out, **_: Any) -> int:
             raise ValueError(f"unknown source {sid!r}; known: {sorted(sources)}")
         ensure_source(conn, sid, sources[sid]["url"], sources[sid]["priority"])
     tally: dict[str, int] = {}
-    for link in _section_links(args):
+    links = _section_links(args)
+    for number, link in enumerate(links, 1):
         path = _pdf_path(args.work, link.url)
         if not path.exists():
             out(f"  MISSING {link.label}: run fetch first")
@@ -155,6 +183,10 @@ def cmd_import(args: argparse.Namespace, out: Out, **_: Any) -> int:
             blank_artist_hashes=blank_hashes,
         )
         tally[result.outcome] = tally.get(result.outcome, 0) + 1
+        if result.outcome == "imported":
+            out(f"  [{number}/{len(links)}] imported {link.label}: {result.rows} songs")
+        elif number % 100 == 0:
+            out(f"  [{number}/{len(links)}] links checked")
         if result.outcome == "rejected":
             reasons = sorted({i.code for i in result.issues if i.severity == "error"})
             out(f"  REJECTED {link.label}: {reasons}; kept the previous import")
@@ -337,15 +369,19 @@ def _run_steps(
     args: argparse.Namespace, out: Out, fetcher: Fetcher, conn: sqlite3.Connection
 ) -> tuple[int, str, dict[str, Any]]:
     stats: dict[str, Any] = {}
+    out("[1/5] looking for new documents on the publisher's pages")
     if cmd_discover(_sub(args), out, fetcher=fetcher):
         return 1, "discover-failed", stats
+    out("[2/5] downloading documents (one request every few seconds, so this can take a while)")
     # One dead link must not hold back every new volume: publish what could be downloaded, but
     # report the run as partial (non-zero exit, retried tomorrow) so the failure stays visible.
     stats["fetch_failed"] = bool(cmd_fetch(_sub(args), out, fetcher=fetcher))
     if stats["fetch_failed"]:
         out("WARNING: some documents could not be downloaded; continuing with what is available")
+    out("[3/5] reading the documents into the database")
     if cmd_import(_sub(args), out):
         return 1, "import-failed", stats
+    out("[4/5] joining volumes to machines")
     if cmd_map(args, out):
         return 1, "map-failed", stats
     stats["open_quarantine"] = _count(
@@ -353,6 +389,7 @@ def _run_steps(
     )
     if stats["open_quarantine"]:
         out(f"WARNING: {stats['open_quarantine']} document(s) in quarantine; they add no songs")
+    out("[5/5] building and publishing the catalog")
     outcome = _do_publish(args, out, conn, allow_drop=False)
     return (1, "partial", stats) if stats["fetch_failed"] else (0, outcome, stats)
 
