@@ -68,3 +68,72 @@ def make_pdf(
     path.parent.mkdir(parents=True, exist_ok=True)
     pdf.output(str(path))
     return path
+
+
+# Older song-list layout (audited M4): a small page with two tables side by side, each row
+# Title | code in a coloured box | small artist. The page also carries decorative thin
+# rectangles at fixed x positions, which look like cell borders but are not table structure.
+SMALL_TABLES: tuple[tuple[int, int, int, int], ...] = (
+    (20, 120, 161, 190),
+    (203, 303, 344, 378),
+)
+DECOY_X = (9.0, 20.5, 119.2, 130.7, 150.1, 161.6, 186.4, 191.9, 197.9, 203.4, 302.0, 313.6)
+SMALL_TOP = 60
+SMALL_PITCH = 24
+
+
+def make_two_table_pdf(
+    path: Path,
+    pages: Sequence[Page],
+    header: str = "Vol. 5 ! 1",
+    merged: int = 0,
+    artist_background: bool = False,
+) -> Path:
+    """`merged` > 0 draws the second table's artists as one cell per that many rows, with the
+    text once in the middle; `artist_background` lays one tall grey rectangle behind the whole
+    artist column of the first table (a design element, not a merged cell)."""
+    pdf = FPDF(unit="pt", format=(390, 674))
+    pdf.set_auto_page_break(False)
+    for tables in pages:
+        pdf.add_page()
+        pdf.set_font("Helvetica", size=10)
+        pdf.set_xy(20, 20)
+        pdf.cell(200, 12, header)
+        for edges, rows in zip(SMALL_TABLES, tables, strict=False):
+            pdf.set_font("Helvetica", size=7)
+            pdf.set_xy(edges[0], SMALL_TOP - SMALL_PITCH)
+            pdf.cell(60, 8, "Title")
+            pdf.set_xy(edges[1] + 8, SMALL_TOP - SMALL_PITCH)
+            pdf.cell(30, 8, "Code")
+            for i, (number, title, artist) in enumerate(rows):
+                y = SMALL_TOP + i * SMALL_PITCH
+                pdf.set_fill_color(240, 220, 120)
+                pdf.rect(edges[1] + 8, y + 2, 32, SMALL_PITCH - 4, style="F")
+                pdf.set_font("Helvetica", style="B", size=11)
+                pdf.set_xy(edges[1] + 9, y + 6)
+                pdf.cell(30, 12, number)
+                pdf.set_font("Helvetica", size=10)
+                pdf.set_xy(edges[0] + 2, y + 6)
+                pdf.cell(edges[1] - edges[0] - 4, 12, title)
+                pdf.set_font("Helvetica", size=6)
+                lines = artist.split("\n")
+                if merged and edges is SMALL_TABLES[1]:
+                    lines = lines if i % merged == merged // 2 else []
+                for j, text in enumerate(lines):
+                    pdf.set_xy(edges[2] + 2, y + SMALL_PITCH / 2 - 3.5 * len(lines) + 7 * j)
+                    pdf.cell(edges[3] - edges[2] - 2, 7, text)
+        if merged:
+            for k in range(0, len(tables[1]), merged):
+                pdf.set_fill_color(235, 235, 245)
+                pdf.rect(
+                    SMALL_TABLES[1][2], SMALL_TOP + k * SMALL_PITCH, 34, merged * SMALL_PITCH, "D"
+                )
+        if artist_background and tables[0]:
+            pdf.set_fill_color(245, 245, 250)
+            pdf.rect(SMALL_TABLES[0][2], SMALL_TOP, 29, len(tables[0]) * SMALL_PITCH, style="D")
+        for i in range(max((len(t) for t in tables), default=0)):
+            for x in DECOY_X:
+                pdf.rect(x, SMALL_TOP + i * SMALL_PITCH, 0.2, 30, style="F")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    pdf.output(str(path))
+    return path

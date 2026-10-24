@@ -1,6 +1,6 @@
 # Testing
 
-Catalog pipeline: **176 tests, 96% line coverage** (`pytest --cov`), `ruff` clean, `mypy --strict` clean. Web app: **146 unit and integration tests (98% line coverage), 44 Playwright end-to-end tests** (mobile Pixel 7 and desktop 1440 wide, including axe scans), `tsc --strict` clean.
+Catalog pipeline: **198 tests, 96% line coverage** (`pytest --cov`), `ruff` clean, `mypy --strict` clean. Web app: **148 unit and integration tests (98% line coverage), 44 Playwright end-to-end tests** (mobile Pixel 7 and desktop 1440 wide, including axe scans), `tsc --strict` clean.
 
 ## Policy
 
@@ -13,10 +13,11 @@ Tests first, 80%+ coverage. No test touches the network or real Platinum documen
 | `test_normalize.py` | display and matching forms, apostrophes, accents, ampersand |
 | `test_classify.py` | header family from page-1 text, only "For Reyna" maps to a model |
 | `test_db.py` | migrations up/down/idempotent/atomic, seed, leading zeros, uniqueness |
-| `test_extract.py` | rows, wrapped lines, three tables, leading zeros, partial tables, header lines, stray tokens, overflow into the next row (artist and title), same-line words, mid-word wraps, unresolved overlap, page cap, ASCII digits, bad inputs |
+| `test_extract.py` | two-table layout read by code position with decoy rectangles, multi-page, border reader still preferred, rows, wrapped lines, three tables, leading zeros, partial tables, header lines, stray tokens, overflow into the next row (artist and title), same-line words, mid-word wraps, unresolved overlap, page cap, ASCII digits, bad inputs |
 | `test_validate.py` | every error and warning rule |
 | `test_importer.py` | mapped/held/quarantined, dedupe by hash and across sources, canonical song linking, row-drop drift |
 | `test_build.py` | bundle contents, held releases excluded, artist withholding, re-listing collapse, conflicts, versions |
+| `test_mapping.py` | every section has a seeded model, a volume joins every section that lists it, mapping twice changes nothing, Reyna needs its own header, unknown sections and other sources are reported |
 | `test_discover.py` | JS literal scanner, Source A and HTML parsing, link diff |
 | `test_fetch.py` | host allowlist, redirects, retry/backoff, size cap, robots.txt, atomic download |
 | `test_cli.py` | end-to-end discover, fetch, import, build with a fake site |

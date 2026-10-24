@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 import statistics
 from collections import Counter, defaultdict
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any
 
@@ -36,6 +36,20 @@ ROW_REACH = 0.9  # a word further than this many pitches from a number is not in
 OVERLAP_FRACTION = 0.05
 BOUNDARY_REACH = 0.6  # an overlap must sit this close (in row pitches) to a row boundary
 SAME_LINE = 0.3
+
+# A border-based reading is not trusted when more codes than this are left outside every table:
+# the document is then read by where its codes sit instead (see borderless_template).
+FALLBACK_STRAYS = 3
+FALLBACK_STRAY_RATE = 0.01
+CODE_CLUSTER_GAP = 12.0  # points between code columns of different tables
+MIN_CODE_SHARE = 0.05  # a code column holds at least this share of all 5-digit tokens
+MIN_CELL_GAP = 8.0  # empty space between an artist cell's text and the next table's titles
+MERGED_MIN_ROWS = 1.8  # a cell this many row pitches tall spans several rows
+MERGED_MIN_WIDTH = 20.0
+ZONE_PAD = 3.0  # _table_rows accepts words this far outside a table's title and artist edges
+MIN_PAGE_CODES = 3  # codes per column a page needs before its own columns are trusted
+MIN_PAGE_VOTES = 3  # lines a page needs before its own cut is trusted over the document's
+LINE_TOLERANCE = 4.0  # words whose centres are this close vertically are on one text line
 
 Edges = tuple[float, float, float, float]
 
@@ -69,6 +83,129 @@ def table_template(pages: list[Any]) -> list[Edges]:
     if not edges or len(edges) % 4:
         raise ExtractionError(f"unexpected table structure: {len(edges)} vertical borders")
     return [(edges[i], edges[i + 1], edges[i + 2], edges[i + 3]) for i in range(0, len(edges), 4)]
+
+
+def _code_columns(pages: list[Any], min_count: int = 5) -> list[tuple[float, float]]:
+    """x-ranges of the columns that hold the 5-digit song codes, left to right."""
+    spans = sorted(
+        (w["x0"], w["x1"])
+        for page in pages
+        for w in page.extract_words(x_tolerance=1.5, y_tolerance=2)
+        if STRAY_TOKEN.fullmatch(w["text"])
+    )
+    clusters: list[list[tuple[float, float]]] = []
+    for span in spans:
+        if clusters and span[0] - clusters[-1][-1][0] <= CODE_CLUSTER_GAP:
+            clusters[-1].append(span)
+        else:
+            clusters.append([span])
+    keep = [c for c in clusters if len(c) >= max(min_count, MIN_CODE_SHARE * len(spans))]
+    return [(min(a for a, _ in c), max(b for _, b in c)) for c in keep]
+
+
+def _cut_votes(page: Any, low: float, high: float) -> Counter[int]:
+    """Where, on each text line of this page between two code columns, the widest gap ends.
+
+    That gap is the cell boundary: artist text on its left, the next table's title on its
+    right. Titles are left-aligned, so most lines vote for the same x.
+    """
+    words = sorted(
+        (w for w in page.extract_words(x_tolerance=1.5, y_tolerance=2) if low <= w["x0"] <= high),
+        key=lambda w: (_center(w)[1], w["x0"]),
+    )
+    lines: list[list[dict[str, Any]]] = []
+    for w in words:
+        if lines and _center(w)[1] - _center(lines[-1][0])[1] <= LINE_TOLERANCE:
+            lines[-1].append(w)
+        else:
+            lines.append([w])
+    votes: Counter[int] = Counter()
+    for line in lines:
+        line.sort(key=lambda w: w["x0"])
+        gaps = [(b["x0"] - a["x1"], b["x0"]) for a, b in zip(line, line[1:], strict=False)]
+        if gaps and max(gaps)[0] >= MIN_CELL_GAP:
+            votes[round(max(gaps)[1])] += 1
+    return votes
+
+
+def _borrow(index: int, measured: dict[int, Any]) -> Any:
+    """The measurement of the nearest page that has one, preferring the same side of the spread.
+
+    Some documents alternate page offsets (book-style inner margins), so a sparse page is most
+    like another page an even number of pages away.
+    """
+    best = min(measured, key=lambda j: (abs(index - j) % 2, abs(index - j)))
+    return measured[best]
+
+
+def _majority_cut(votes: Counter[int]) -> float | None:
+    """The cut a page's text lines agree on, or None when they do not agree (or are too few)."""
+    total = sum(votes.values())
+    if total < MIN_PAGE_VOTES:
+        return None
+    x, n = votes.most_common(1)[0]
+    return float(x) - 1.5 if n * 2 >= total else None
+
+
+def borderless_template(pages: list[Any]) -> list[list[Edges]]:
+    """Table edges per page for documents whose cell borders cannot be read as borders.
+
+    Each table has one code column. A table's titles run from the previous table's cut to its
+    codes, its artists from its codes to the next cut. Pages of one document are laid out with
+    slightly different offsets, so code columns and cuts are measured on each page; a page with
+    too little to measure borrows from a similar page.
+    """
+    per_page = [_code_columns([page], MIN_PAGE_CODES) for page in pages]
+    counts = Counter(len(c) for c in per_page if c)
+    expected = counts.most_common(1)[0][0] if counts else 0
+    if expected < 2:
+        raise ExtractionError("expected at least two code columns")
+    measured = {i: c for i, c in enumerate(per_page) if len(c) == expected}
+    columns = [measured[i] if i in measured else _borrow(i, measured) for i in range(len(pages))]
+
+    spans = [
+        [(cols[k][1] + 2, cols[k + 1][0] - 2) for k in range(expected - 1)] for cols in columns
+    ]
+    votes = [
+        [_cut_votes(page, lo, hi) for lo, hi in page_spans]
+        for page, page_spans in zip(pages, spans, strict=True)
+    ]
+    own: list[list[float | None]] = [[_majority_cut(v) for v in page_votes] for page_votes in votes]
+    cuts_per_page = []
+    for i in range(len(pages)):
+        row: list[float] = []
+        for k in range(expected - 1):
+            have: dict[int, float] = {
+                j: c for j in range(len(pages)) if (c := own[j][k]) is not None
+            }
+            if not have:
+                raise ExtractionError("cannot tell where one table ends and the next begins")
+            chosen = own[i][k]
+            row.append(chosen if chosen is not None else float(_borrow(i, have)))
+        cuts_per_page.append(row)
+    page_width = min(float(p.width) for p in pages)
+    templates: list[list[Edges]] = []
+    for i, cols in enumerate(columns):
+        bounded = [
+            min(max(float(c), lo), hi)
+            for c, (lo, hi) in zip(cuts_per_page[i], spans[i], strict=True)
+        ]
+        # A word counts for a table when its centre lies within 3 points of the table's edges
+        # (see _table_rows); the cut therefore sits between the two zones with no overlap.
+        edges = [0.0, *bounded, page_width]
+        last = len(cols) - 1
+        templates.append(
+            [
+                (
+                    edges[k] + (ZONE_PAD if k else 0.0),
+                    c[0] - 1,
+                    c[1] + 1,
+                    edges[k + 1] - (ZONE_PAD + 0.01 if k < last else 0.0),
+                )
+                for k, c in enumerate(cols)
+            ]
+        )
+    return templates
 
 
 def _center(word: dict[str, Any]) -> tuple[float, float]:
@@ -184,8 +321,57 @@ def _suspect(unresolved: set[int], row_count: int) -> set[int]:
     return out
 
 
+def _line_count(words: list[dict[str, Any]]) -> int:
+    lines: list[float] = []
+    for w in sorted(words, key=lambda w: w["top"]):
+        if not lines or w["top"] - lines[-1] > 0.5 * (w["bottom"] - w["top"]):
+            lines.append(w["top"])
+    return len(lines)
+
+
+def _merged_artists(
+    artist_words: list[dict[str, Any]],
+    cy: list[float],
+    pitch: float,
+    edges: Edges,
+    rects: list[dict[str, Any]],
+) -> dict[int, str]:
+    """Artist text of cells that are drawn across several rows ("5 songs by one artist").
+
+    Such a cell is a tall rectangle in the artist column. Its text belongs to every row whose
+    number sits inside it, not just to the row the text happens to be centred on.
+    """
+    out: dict[int, str] = {}
+    for r in rects:
+        if not (
+            r["x0"] >= edges[2] - 3
+            and r["x1"] <= edges[3] + 6
+            and r["x1"] - r["x0"] >= MERGED_MIN_WIDTH
+            and r["bottom"] - r["top"] >= MERGED_MIN_ROWS * pitch
+        ):
+            continue
+        inside = [
+            w
+            for w in artist_words
+            if r["x0"] <= _center(w)[0] <= r["x1"] and r["top"] <= _center(w)[1] <= r["bottom"]
+        ]
+        text = _lines_text(inside)
+        covered = [row for row, y in enumerate(cy) if r["top"] <= y <= r["bottom"]]
+        # A merged cell holds one short text for several rows. If it has about a line per row
+        # it is a background shape behind ordinary cells, not a merged cell.
+        if not text or len(covered) < 2 or _line_count(inside) >= len(covered):
+            continue
+        for row in covered:
+            out[row] = text
+    return out
+
+
 def _table_rows(
-    words: list[dict[str, Any]], edges: Edges, page_no: int, table_no: int
+    words: list[dict[str, Any]],
+    edges: Edges,
+    page_no: int,
+    table_no: int,
+    rects: list[dict[str, Any]] | None = None,
 ) -> tuple[list[RawRow], int]:
     e0, e1, e2, e3 = edges
     numbers = sorted(
@@ -215,6 +401,7 @@ def _table_rows(
             artist_words.append(w)
     titles, title_open = _assign_cell(title_words, cy, pitch)
     artists, artist_open = _assign_cell(artist_words, cy, pitch)
+    merged = _merged_artists(artist_words, cy, pitch, edges, rects or [])
     title_hits = _suspect(title_open, len(numbers))
     artist_hits = _suspect(artist_open, len(numbers))
     rows = []
@@ -226,7 +413,7 @@ def _table_rows(
             RawRow(
                 number=n["text"],
                 title=_lines_text(titles.get(i, [])),
-                artist=_lines_text(artists.get(i, [])),
+                artist=merged.get(i) or _lines_text(artists.get(i, [])),
                 page=page_no,
                 table=table_no,
                 row=i,
@@ -236,8 +423,36 @@ def _table_rows(
     return rows, len(numbers)
 
 
+def _read(pages: list[Any], templates: list[list[Edges]]) -> tuple[list[RawRow], int]:
+    rows: list[RawRow] = []
+    used = stray = 0
+    for page_no, page in enumerate(pages, start=1):
+        words = page.extract_words(x_tolerance=1.5, y_tolerance=2, use_text_flow=True)
+        for position, word in enumerate(words):
+            word["_i"] = position  # PDF write order
+        page_used = 0
+        for table_no, edges in enumerate(templates[page_no - 1]):
+            table_rows, count = _table_rows(words, edges, page_no, table_no, page.rects)
+            rows.extend(table_rows)
+            page_used += count
+        used += page_used
+        tokens = sum(1 for w in words if STRAY_TOKEN.fullmatch(w["text"]))
+        stray += max(tokens - page_used, 0)
+    return rows, max(stray, 0)
+
+
+def _trusted(rows: list[RawRow], stray: int) -> bool:
+    """True when the validator would not reject this reading for stray codes."""
+    return stray <= FALLBACK_STRAYS and (stray <= 1 or stray <= FALLBACK_STRAY_RATE * len(rows))
+
+
 def extract_rows(path: str | Path) -> DocumentExtract:
-    """Extract all song rows. Raises ExtractionError when the structure is not understood."""
+    """Extract all song rows. Raises ExtractionError when the structure is not understood.
+
+    Documents are read through their cell borders first (the audited Reyna generation). When that
+    leaves many codes outside every table, or finds no usable structure, the codes' own positions
+    are used instead, and whichever reading leaves fewer stray codes wins.
+    """
     try:
         with pdfplumber.open(str(path)) as pdf:
             if len(pdf.pages) > MAX_PAGES:
@@ -245,23 +460,25 @@ def extract_rows(path: str | Path) -> DocumentExtract:
             pages = list(pdf.pages)
             if not pages:
                 raise ExtractionError("document has no pages")
-            template = table_template(pages)
-            rows: list[RawRow] = []
-            used = stray = 0
-            for page_no, page in enumerate(pages, start=1):
-                words = page.extract_words(x_tolerance=1.5, y_tolerance=2, use_text_flow=True)
-                for position, word in enumerate(words):
-                    word["_i"] = position  # PDF write order
-                page_used = 0
-                for table_no, edges in enumerate(template):
-                    table_rows, count = _table_rows(words, edges, page_no, table_no)
-                    rows.extend(table_rows)
-                    page_used += count
-                used += page_used
-                tokens = sum(1 for w in words if STRAY_TOKEN.fullmatch(w["text"]))
-                stray += max(tokens - page_used, 0)
-            header = _header_lines(pages[0])
-            return DocumentExtract(tuple(rows), len(pages), header, max(stray, 0))
+            best: tuple[list[RawRow], int] | None = None
+            failure: ExtractionError | None = None
+            readers: tuple[Callable[[], list[list[Edges]]], ...] = (
+                lambda: [table_template(pages)] * len(pages),
+                lambda: borderless_template(pages),
+            )
+            for templates_for in readers:
+                try:
+                    candidate = _read(pages, templates_for())
+                except ExtractionError as exc:
+                    failure = failure or exc
+                    continue
+                if best is None or (candidate[1] < best[1] and candidate[0]):
+                    best = candidate
+                if _trusted(*best):
+                    break
+            if best is None:
+                raise failure or ExtractionError("no readable table structure")
+            return DocumentExtract(tuple(best[0]), len(pages), _header_lines(pages[0]), best[1])
     except ExtractionError:
         raise
     except Exception as exc:  # corrupt or encrypted PDFs surface as many library errors

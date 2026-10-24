@@ -1,5 +1,7 @@
 # How published models appear in the app. A model is published only if it is listed here and has
 # mapped releases. Hue is one of: magenta, violet, aqua, orange, lime, yellow.
+# Names follow the publisher's own machine groups on its song list page. Colours only help tell
+# models apart; the name is always shown next to them.
 source:
   label: Platinum Karaoke song list updates
   url: https://platinumkaraoke.com/pages/songlist-update
@@ -7,4 +9,48 @@ models:
   reyna:
     name: Reyna
     family: Reyna series
+    hue: magenta
+  t-x:
+    name: T-X
+    family: Platinum machine group
+    hue: violet
+  flute-piano-piano-xl-sd-pk10:
+    name: Flute / Piano V1.5 / Piano XL SD / PK10
+    family: Platinum machine group
+    hue: aqua
+  major-alpha-cello-x3-piano-xl-hdd:
+    name: Major / Alpha / Cello / X3 / Piano XL HDD
+    family: Platinum machine group
+    hue: lime
+  ks-40-kbox:
+    name: KS-40 / KBOX-2 / KBOX-3
+    family: Platinum machine group
+    hue: orange
+  bmb-x2-x1-hdd:
+    name: BMB / X2 / X1 / HDD
+    family: Platinum machine group
+    hue: yellow
+  ks-100-ks-10-mini-sd:
+    name: KS-100 Minibox / KS-10 Mini SD
+    family: Platinum machine group
+    hue: aqua
+  ks-5-junior:
+    name: KS-5 / Junior Lite / KS-10 / Junior 2
+    family: Platinum machine group
+    hue: lime
+  hermosa-n20-nano-plus:
+    name: Hermosa / N20 Nano Plus
+    family: Platinum machine group
+    hue: violet
+  home-40-nano-old:
+    name: Home 40 / Nano Old
+    family: Platinum machine group
+    hue: orange
+  bravo:
+    name: Bravo
+    family: Platinum machine group
+    hue: yellow
+  p-series:
+    name: P-Series
+    family: Platinum machine group
     hue: magenta

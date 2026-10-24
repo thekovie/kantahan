@@ -78,7 +78,7 @@ export function toSongs(bundle: BundleV1): Song[] {
 
 function parseModel(raw: unknown): ModelInfo {
   if (!isRecord(raw)) throw new CatalogError("a model entry is not an object");
-  const { slug, name, family, hue, file, songs, coverage, sha256, bytes } = raw;
+  const { slug, name, family, hue, file, songs, coverage, sha256, bytes, excluded } = raw;
   if (
     typeof slug !== "string" ||
     typeof name !== "string" ||
@@ -96,8 +96,11 @@ function parseModel(raw: unknown): ModelInfo {
   if ((songs as number) < 1 || (bytes as number) < 1 || (bytes as number) > MAX_BUNDLE_BYTES) {
     throw new CatalogError(`model "${slug}" has an unreasonable size`);
   }
+  if (excluded !== undefined && (!Number.isInteger(excluded) || (excluded as number) < 0)) {
+    throw new CatalogError(`model "${slug}" has an invalid left-out count`);
+  }
   if (!HEX_SHA256.test(sha256)) throw new CatalogError(`model "${slug}" has no valid checksum`);
-  return { slug, name, family, hue: hue as HueKey, file, sha256, bytes: bytes as number, songs: songs as number, coverage };
+  return { slug, name, family, hue: hue as HueKey, file, sha256, bytes: bytes as number, songs: songs as number, coverage, ...(excluded ? { excluded: excluded as number } : {}) };
 }
 
 export function parseManifest(raw: unknown): Manifest {

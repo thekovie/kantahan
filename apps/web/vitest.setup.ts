@@ -1,11 +1,14 @@
 import "@testing-library/jest-dom/vitest";
 import "fake-indexeddb/auto";
-import { cleanup } from "@testing-library/react";
+import { cleanup, configure } from "@testing-library/react";
 import { webcrypto } from "node:crypto";
 import { afterEach, vi } from "vitest";
 
 // jsdom may not expose SubtleCrypto; the app verifies downloads with it.
 if (!globalThis.crypto?.subtle) Object.defineProperty(globalThis, "crypto", { value: webcrypto });
+
+// Waits for async UI are generous so a busy machine (or CI runner) does not make tests flaky.
+configure({ asyncUtilTimeout: 4000 });
 
 afterEach(() => {
   cleanup();

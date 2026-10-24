@@ -5,6 +5,7 @@ All notable changes are documented here. Format follows [Keep a Changelog](https
 ## [Unreleased]
 
 ### Added
+- M4 other Platinum machine groups: 12 models (one per publisher section, migration 0005), a `map` step joining each volume to every group that lists it (Reyna still needs its own header), an extractor that also reads the older two-table layouts and merged artist cells, `import --reimport`, `catalog/reviewed.yaml`, coverage wording for monthly lists, conflict handling (same title with different artist keeps the song; up to 5% title conflicts are left out and counted), and the "N song numbers are left out" note in the app. Decision in `docs/decisions/0004-machine-group-models.md`.
 - M3 automatic updates: `kantahan-catalog publish`, `run` (cron entry point with a 14 day interval and a run lock), `audit`, `rollback`, `suspend`/`resume` and `withdraw`; versioned bundles plus a manifest with SHA-256 per model, safety gates, atomic swap (migration 0004, `catalog/display.yaml`). The app checks for a newer catalog on open and on demand, verifies every download, swaps it in one transaction, keeps the old catalog on any failure, and shows a notice when the catalog is paused. Documented in `docs/catalog-updates.md` and `docs/security.md`.
 - Repository bootstrap: README, license, agent instructions, documentation skeleton.
 - M0 source audit documents (see `docs/source-audit.md`).

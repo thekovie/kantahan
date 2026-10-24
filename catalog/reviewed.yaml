@@ -1,0 +1,11 @@
+# Documents a person has looked at and confirmed need an exception to a validation rule.
+# Nothing here is catalog data: only the identity of a file and why it is accepted. Entries are
+# keyed by the SHA-256 of the file, so a file replaced behind the same link is not exempt.
+accept_blank_artists:
+  # The "Kid Songs" tables (nursery rhymes) leave the artist cell empty for most rows. The same
+  # list appears in both documents. Viewed on the rendered page (2026-10-24): titles and codes
+  # read correctly, the artist cells are blank in the source.
+  - sha256: 78cbce2118957a8b1865643f0511ae33a97482325442a4a60017f80356b2d586   # BRAVO Volume 8
+    file_key: 9pcb6892l9zmhc2
+  - sha256: c55a78412ab2a67fe6eb0281bb21b73730a3b7f65fcb65f8f4190f139e05782f   # P-SERIES Volume 73
+    file_key: 2lllhcub1ac61xu

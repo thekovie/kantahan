@@ -183,3 +183,36 @@ def test_admin_commands_suspend_rollback_and_withdraw(world):
     assert (
         code == 1 and "nothing to publish" in text
     )  # the only volume left: refuse an empty catalog
+
+
+def test_a_run_covers_every_publisher_section_and_a_new_one_only_warns(world, tmp_path):
+    run, work, pages, _ = world
+    bravo_pdf = "https://www.mediafire.com/file/bravo01/Bravo_Volume_1.pdf/file"
+    new_pdf = "https://www.mediafire.com/file/newsec1/New_Section_Volume_1.pdf/file"
+    script = (
+        'const songList=[{product:"REYNA SERIES",volumes:[{volume:1,link:"' + PDF_URL + '"}]},'
+        '{product:"BRAVO",volumes:[{volume:1,link:"' + bravo_pdf + '"}]},'
+        '{product:"BRAND NEW MACHINES",volumes:[{volume:1,link:"' + new_pdf + '"}]}],x=1;'
+    ).encode()
+    pages["https://platinumkaraoke.com/cdn/shop/t/50/assets/songlist-update-data.js?v=1"] = script
+    pdf2 = make_pdf(tmp_path / "b.pdf", [[sample_rows(20000, 4)]], header="Vol. 1 ! 1")
+    pages[bravo_pdf] = Path(pdf2).read_bytes()
+    pages[new_pdf] = Path(pdf2).read_bytes()
+    code, text = run("run", "--manual")
+    assert code == 0 and "BRAND NEW MACHINES" in text and "no model yet" in text
+    conn = db.connect(work / "catalog.sqlite")
+    mapped = {
+        r[0]
+        for r in conn.execute(
+            "SELECT m.slug FROM release_model rm JOIN model m ON m.id = rm.model_id"
+        )
+    }
+    assert "bravo" in mapped  # the section is fetched, imported and mapped without being named
+    assert manifest(work)["models"][0]["slug"] == "reyna"  # bravo has no display entry, so it waits
+
+
+def test_map_command_reports_and_never_fails_for_an_unknown_section(world):
+    run, work, _, _ = world
+    run("run", "--manual")
+    code, text = run("map")
+    assert code == 0 and "map:" in text

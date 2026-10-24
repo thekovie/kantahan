@@ -4,8 +4,7 @@ import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
-import { resetStorage } from "./lib/storage";
-import { MODEL_B_ROWS, fakeFetch, makeBundle, makeManifest, modelEntry } from "./test-utils";
+import { MODEL_B_ROWS, fakeFetch, wipeStorage, makeBundle, makeManifest, modelEntry } from "./test-utils";
 
 const modelB = makeBundle(MODEL_B_ROWS, "model-b");
 
@@ -44,10 +43,9 @@ const ROUTES = {
 beforeEach(() => {
   document.documentElement.setAttribute("data-theme", "dark");
 });
-afterEach(() => {
+afterEach(async () => {
   vi.unstubAllGlobals();
-  resetStorage();
-  indexedDB.deleteDatabase("kantahan");
+  await wipeStorage();
 });
 
 describe("songbook", () => {
@@ -112,6 +110,14 @@ describe("songbook", () => {
     expect(within(dialog).getByRole("img")).toHaveAccessibleName("Song number 1 5 5 6 3");
     await user.click(within(dialog).getByRole("button", { name: "Done" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  });
+
+  it("says how many song numbers were left out of a model", async () => {
+    const manifest = makeManifest();
+    const left = { ...manifest, models: [{ ...manifest.models[0]!, excluded: 205 }, manifest.models[1]!] };
+    stubNetwork({ ...ROUTES, "/catalog/manifest.json": left });
+    mount();
+    expect(await screen.findByText(/205 song numbers are left out/)).toBeInTheDocument();
   });
 
   it("never shows another model's songs, and remembers the choice", async () => {
@@ -287,8 +293,7 @@ describe("catalog updates", () => {
     const first = mount();
     await screen.findByRole("tab", { name: /^A, 1 song/ });
     first.unmount();
-    indexedDB.deleteDatabase("kantahan"); // start with nothing saved: every bundle comes from the network
-    resetStorage();
+    await wipeStorage(); // start with nothing saved: every bundle comes from the network
     const slow = fakeFetch(ROUTES);
     let releaseA!: () => void;
     const gate = new Promise<void>((resolve) => (releaseA = resolve));

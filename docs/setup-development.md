@@ -31,9 +31,10 @@ All output goes to `catalog/work/` (gitignored: the database, downloaded PDFs an
 ```bash
 cd catalog
 .venv/bin/kantahan-catalog discover        # read the approved index pages (A, B, C)
-.venv/bin/kantahan-catalog fetch           # download the REYNA SERIES documents (polite; ~3 s apart)
+.venv/bin/kantahan-catalog fetch           # download the REYNA SERIES documents (polite; ~3 s apart); `--section all` fetches every machine group (about 800 MB)
 .venv/bin/kantahan-catalog import          # extract, validate, import
 .venv/bin/kantahan-catalog import --from b c   # record B and C links (no new documents expected)
+.venv/bin/kantahan-catalog map                 # join volumes to the machine groups that list them (run after import)
 .venv/bin/kantahan-catalog stats
 .venv/bin/kantahan-catalog build --model reyna
 ```

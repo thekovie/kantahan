@@ -21,7 +21,11 @@ export function CatalogNote({ manifest, model, songCount, update, onCheck }: Cat
     <section className="catalog-note" aria-label="About this catalog">
       <p>
         {model.name} songbook · {model.coverage} · {songCount.toLocaleString("en-PH")} songs. Songs added in earlier
-        volumes are not included. Compiled from{" "}
+        volumes are not included.
+        {model.excluded
+          ? ` ${model.excluded.toLocaleString("en-PH")} song numbers are left out because the publisher lists them with different titles in different volumes.`
+          : ""}{" "}
+        Compiled from{" "}
         <a href={manifest.source.url} rel="noreferrer noopener" target="_blank">
           {manifest.source.label}
         </a>

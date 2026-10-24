@@ -1,11 +1,10 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { TAMPERED_ROWS, fakeFetch, makeBundle, makeManifest, sha256 } from "../test-utils";
+import { TAMPERED_ROWS, fakeFetch, makeBundle, makeManifest, sha256, wipeStorage } from "../test-utils";
 import { LoadError, loadManifestFromAnywhere, loadSongs } from "./loader";
-import { loadCatalog, resetStorage, saveCatalog, saveManifest } from "./storage";
+import { loadCatalog, saveCatalog, saveManifest } from "./storage";
 
-afterEach(() => {
-  resetStorage();
-  indexedDB.deleteDatabase("kantahan");
+afterEach(async () => {
+  await wipeStorage();
 });
 
 const manifest = makeManifest();

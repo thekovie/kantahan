@@ -25,6 +25,7 @@ from .discover import (
 )
 from .fetch import Fetcher, FetchError
 from .importer import FILE_KEY, ensure_source, import_pdf
+from .mapping import SECTION_TO_MODEL, apply_section_mappings
 from .publish import (
     DEFAULT_KEEP,
     PublishError,
@@ -37,6 +38,7 @@ from .publish import (
 
 SCRIPT_SRC = re.compile(r'src="((?:https?:)?//[^"]*songlist-update-data\.js[^"]*)"')
 DEFAULT_SECTION = "REYNA SERIES"
+ALL_SECTIONS = "ALL"
 Out = Callable[[str], None]
 
 
@@ -92,6 +94,8 @@ def cmd_discover(args: argparse.Namespace, out: Out, fetcher: Fetcher, **_: Any)
 def _section_links(args: argparse.Namespace) -> list[DiscoveredLink]:
     links = load_links(args.work / "discovered.json")
     wanted = args.section.upper()
+    if wanted == ALL_SECTIONS:  # every group the publisher lists, which `run` and `audit` use
+        return [x for x in links if x.section in SECTION_TO_MODEL and x.source in args.from_sources]
     return [x for x in links if x.section.upper() == wanted and x.source in args.from_sources]
 
 
@@ -112,9 +116,21 @@ def cmd_fetch(args: argparse.Namespace, out: Out, fetcher: Fetcher, **_: Any) ->
     return 1 if failed else 0
 
 
+def _blank_artist_hashes(path: Path) -> frozenset[str]:
+    """SHA-256 of files a person looked at and confirmed leave the artist cell empty on purpose.
+
+    Keyed by content, so a file replaced behind the same link does not inherit the exception.
+    """
+    if not path.exists():
+        return frozenset()
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    return frozenset(str(e["sha256"]) for e in data.get("accept_blank_artists", []))
+
+
 def cmd_import(args: argparse.Namespace, out: Out, **_: Any) -> int:
     conn = db.connect(args.work / "catalog.sqlite")
     db.migrate(conn)
+    blank_hashes = _blank_artist_hashes(args.reviewed)
     sources = _sources(args.sources)
     for sid in args.from_sources:
         if sid not in sources:
@@ -133,12 +149,32 @@ def cmd_import(args: argparse.Namespace, out: Out, **_: Any) -> int:
             url=link.url,
             label=link.label,
             retry_quarantined=args.retry_quarantined,
+            reimport=args.reimport,
+            blank_artist_hashes=blank_hashes,
         )
         tally[result.outcome] = tally.get(result.outcome, 0) + 1
+        if result.outcome == "rejected":
+            reasons = sorted({i.code for i in result.issues if i.severity == "error"})
+            out(f"  REJECTED {link.label}: {reasons}; kept the previous import")
         if result.outcome == "quarantined":
             reasons = sorted({i.code for i in result.issues if i.severity == "error"})
             out(f"  QUARANTINED {link.label}: {reasons}")
     out("import: " + ", ".join(f"{k} {v}" for k, v in sorted(tally.items())))
+    return 0
+
+
+def cmd_map(args: argparse.Namespace, out: Out, **_: Any) -> int:
+    """Join imported volumes to the machine groups that list them (the publisher's own page)."""
+    conn = db.connect(args.work / "catalog.sqlite")
+    db.migrate(conn)
+    result = apply_section_mappings(conn, load_links(args.work / "discovered.json"))
+    out(
+        f"map: added {result.added}, already mapped {result.already}, "
+        f"Reyna left to its header rule {result.strict_skipped}, "
+        f"listed but not imported {result.not_imported}"
+    )
+    for section in result.unknown_sections:
+        out(f"  WARNING: section {section!r} has no model yet; its volumes are not published")
     return 0
 
 
@@ -201,6 +237,9 @@ def _do_publish(
         out(f"  skipped {note}")
     songs = ", ".join(f"{slug} {n}" for slug, n in sorted(result.songs.items()))
     out(f"{result.outcome} {result.version}: {songs}")
+    for slug, count in sorted((result.excluded or {}).items()):
+        if count:
+            out(f"  {slug}: {count} song numbers left out (listed with different titles)")
     return result.outcome
 
 
@@ -252,8 +291,10 @@ def cmd_withdraw(args: argparse.Namespace, out: Out, **_: Any) -> int:
 
 
 def _sub(args: argparse.Namespace, **extra: Any) -> argparse.Namespace:
-    base = {"section": DEFAULT_SECTION, "from_sources": ["a"], "refresh": False}
-    return argparse.Namespace(**{**vars(args), **base, "retry_quarantined": False, **extra})
+    base = {"section": ALL_SECTIONS, "from_sources": ["a"], "refresh": False}
+    return argparse.Namespace(
+        **{**vars(args), **base, "retry_quarantined": False, "reimport": False, **extra}
+    )
 
 
 def _run_steps(
@@ -269,6 +310,8 @@ def _run_steps(
         out("WARNING: some documents could not be downloaded; continuing with what is available")
     if cmd_import(_sub(args), out):
         return 1, "import-failed", stats
+    if cmd_map(args, out):
+        return 1, "map-failed", stats
     stats["open_quarantine"] = _count(
         conn, "SELECT count(*) FROM quarantine WHERE resolved_at IS NULL"
     )
@@ -347,6 +390,9 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--work", type=Path, default=Path("work"), help="output folder (gitignored)")
     p.add_argument("--sources", type=Path, default=Path("sources.yaml"))
     p.add_argument(
+        "--reviewed", type=Path, default=Path("reviewed.yaml"), help="human-reviewed exceptions"
+    )
+    p.add_argument(
         "--display", type=Path, default=Path("display.yaml"), help="model names and hues"
     )
     p.add_argument(
@@ -371,6 +417,13 @@ def parser() -> argparse.ArgumentParser:
                 action="store_true",
                 help="evaluate quarantined documents again (after an extractor fix)",
             )
+            s.add_argument(
+                "--reimport",
+                action="store_true",
+                help="extract documents again even if already imported (after an extractor fix); "
+                "run `map` afterwards",
+            )
+    sub.add_parser("map", help="join imported volumes to the machine groups that list them")
     sub.add_parser("stats", help="show database counts")
     b = sub.add_parser("build", help="build a local catalog bundle for one model")
     b.add_argument("--model", default="reyna")
@@ -401,6 +454,7 @@ COMMANDS: dict[str, Callable[..., int]] = {
     "discover": cmd_discover,
     "fetch": cmd_fetch,
     "import": cmd_import,
+    "map": cmd_map,
     "stats": cmd_stats,
     "build": cmd_build,
     "publish": cmd_publish,

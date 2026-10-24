@@ -1,5 +1,5 @@
 import pytest
-from pdfgen import make_pdf
+from pdfgen import make_pdf, make_two_table_pdf
 
 from kantahan_catalog.extract import (
     MAX_PAGES,
@@ -178,3 +178,65 @@ def test_word_split_across_lines_is_joined_but_a_standalone_x_is_kept(tmp_path):
     got = rows_by_number(make_pdf(tmp_path / "w.pdf", [[rows]]))
     assert got["15000"].artist == "The Chainsmokers"
     assert got["15001"].artist == "Nik Makino x Trey"
+
+
+def two_tables(first=18, second=18, start=42000):
+    rows = [(str(start + i), f"Old Song {i}", f"Art {i}") for i in range(first + second)]
+    return [rows[:first], rows[first:]]
+
+
+def test_two_table_layout_without_borders_is_read_by_where_the_codes_sit(tmp_path):
+    path = make_two_table_pdf(tmp_path / "old.pdf", [two_tables()])
+    result = extract_rows(path)
+    assert len(result.rows) == 36 and result.stray_tokens == 0
+    first, last = result.rows[0], result.rows[-1]
+    assert (first.number, first.title, first.artist) == ("42000", "Old Song 0", "Art 0")
+    assert (last.number, last.title, last.artist) == ("42035", "Old Song 35", "Art 35")
+    assert {r.table for r in result.rows} == {0, 1}
+
+
+def test_two_table_layout_over_several_pages_keeps_every_row(tmp_path):
+    pages = [two_tables(20, 20, 42000), two_tables(5, 3, 43000)]
+    result = extract_rows(make_two_table_pdf(tmp_path / "old.pdf", pages))
+    assert len(result.rows) == 48 and result.stray_tokens == 0
+
+
+def test_the_border_reader_still_wins_when_it_understands_the_document(tmp_path, pdf):
+    rows = [("15001", "Dati", "Sam Conception")]
+    result = extract_rows(pdf("a.pdf", rows))
+    assert [r.number for r in result.rows] == ["15001"]
+
+
+def test_a_one_letter_title_word_does_not_leak_into_the_previous_tables_artist(tmp_path):
+    left = [(str(42000 + i), f"Old Song {i}", f"Art {i}") for i in range(10)]
+    right = [(str(42100 + i), f"I Will Survive {i}", f"Band {i}") for i in range(10)]
+    result = extract_rows(make_two_table_pdf(tmp_path / "old.pdf", [[left, right]]))
+    by_number = {r.number: r for r in result.rows}
+    assert by_number["42003"].artist == "Art 3"
+    assert by_number["42103"].title == "I Will Survive 3" and by_number["42103"].artist == "Band 3"
+
+
+def test_an_artist_cell_drawn_across_several_rows_gives_its_text_to_each_row(tmp_path):
+    left = [(str(42000 + i), f"Old Song {i}", f"Art {i}") for i in range(10)]
+    right = [(str(42100 + i), f"Song {i}", "Big Name") for i in range(10)]
+    result = extract_rows(make_two_table_pdf(tmp_path / "m.pdf", [[left, right]], merged=5))
+    by_number = {r.number: r for r in result.rows}
+    assert {by_number[str(42100 + i)].artist for i in range(10)} == {"Big Name"}
+    assert by_number["42003"].artist == "Art 3"
+
+
+def test_a_tall_background_rectangle_is_not_mistaken_for_a_merged_cell(tmp_path):
+    left = [(str(42000 + i), f"Old Song {i}", f"Art {i}") for i in range(10)]
+    right = [(str(42100 + i), f"Song {i}", f"Band {i}") for i in range(10)]
+    result = extract_rows(
+        make_two_table_pdf(tmp_path / "bg.pdf", [[left, right]], artist_background=True)
+    )
+    by_number = {r.number: r for r in result.rows}
+    assert by_number["42002"].artist == "Art 2" and by_number["42005"].artist == "Art 5"
+
+
+def test_a_sparse_page_borrows_the_layout_of_a_similar_page(tmp_path):
+    full = two_tables(20, 20, 42000)
+    sparse = [[("43000", "Lonely", "Art")], []]
+    result = extract_rows(make_two_table_pdf(tmp_path / "s.pdf", [full, sparse, full]))
+    assert len(result.rows) == 81 and result.stray_tokens == 0

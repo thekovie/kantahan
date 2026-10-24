@@ -1,3 +1,4 @@
+import hashlib
 import json
 
 from conftest import sample_rows
@@ -155,3 +156,84 @@ def test_overprinted_title_rows_get_no_canonical_song(conn, pdf):
     rows = sample_rows(count=3)
     run(conn, pdf("r.pdf", rows))
     assert count(conn, "song") == 3
+
+
+def test_reimport_replaces_rows_that_an_older_extractor_got_wrong(conn, pdf):
+    path = pdf("a.pdf", [("15001", "Dati", "Sam Conception"), ("15002", "Dahilan", "Hunyo")])
+    import_pdf(conn, path, source_slug="a", url=URL, label="Volume 1")
+    conn.execute("UPDATE song_entry SET artist_raw = 'Conc' WHERE number = '15001'")
+    unchanged = import_pdf(conn, path, source_slug="a", url=URL, label="Volume 1")
+    assert unchanged.outcome == "unchanged"
+    assert (
+        conn.execute("SELECT artist_raw FROM song_entry WHERE number='15001'").fetchone()[0]
+        == "Conc"
+    )
+
+    again = import_pdf(conn, path, source_slug="a", url=URL, label="Volume 1", reimport=True)
+    assert again.outcome == "imported" and again.rows == 2
+    artist = conn.execute("SELECT artist_raw FROM song_entry WHERE number='15001'").fetchone()[0]
+    assert artist == "Sam Conception"
+    assert conn.execute("SELECT count(*) FROM release").fetchone()[0] == 1
+
+
+def test_reimport_keeps_a_withdrawal_and_every_sections_link(conn, pdf):
+    path = pdf("a.pdf", [("15001", "Dati", "Sam Conception"), ("15002", "Dahilan", "Hunyo")])
+    import_pdf(conn, path, source_slug="a", url=URL, label="Volume 1")
+    other = "https://www.mediafire.com/file/zzz999/Other_Section_Link.pdf/file"
+    import_pdf(conn, path, source_slug="a", url=other, label="Volume 1 again")
+    conn.execute("UPDATE release SET withdrawn_at = '2026-10-01'")
+    conn.commit()
+
+    again = import_pdf(conn, path, source_slug="a", url=URL, label="Volume 1", reimport=True)
+    assert again.outcome == "imported"
+    assert conn.execute("SELECT withdrawn_at FROM release").fetchone()[0] == "2026-10-01"
+    linked = conn.execute("SELECT count(*) FROM document_link WHERE document_id IS NOT NULL")
+    assert linked.fetchone()[0] == 2  # both URLs still point at the one document
+
+
+def test_reimport_never_replaces_a_working_import_with_a_rejected_one(conn, pdf, monkeypatch):
+    from kantahan_catalog import importer as importer_module
+    from kantahan_catalog.extract import extract_rows as real
+    from kantahan_catalog.models import DocumentExtract
+
+    rows = [(str(15000 + i), f"Song {i}", "Artist") for i in range(50)]
+    path = pdf("a.pdf", rows)
+    import_pdf(conn, path, source_slug="a", url=URL, label="Volume 1")
+
+    def worse(source):
+        read = real(source)  # an extractor that now loses most of the rows
+        return DocumentExtract(read.rows[:20], read.pages, read.header_lines, read.stray_tokens)
+
+    monkeypatch.setattr(importer_module, "extract_rows", worse)
+    result = import_pdf(conn, path, source_slug="a", url=URL, label="Volume 1", reimport=True)
+    assert result.outcome == "rejected"
+    assert conn.execute("SELECT count(*) FROM song_entry").fetchone()[0] == 50
+    assert conn.execute("SELECT status FROM document").fetchone()[0] == "ok"
+
+
+def test_blank_artists_are_accepted_only_for_the_reviewed_file_content(conn, pdf):
+    rows = [(str(15000 + i), f"Song {i}", "") for i in range(30)]
+    path = pdf("blank.pdf", rows)
+    rejected = import_pdf(conn, path, source_slug="a", url=URL, label="Volume 1")
+    assert rejected.outcome == "quarantined"
+    sha = hashlib.sha256(path.read_bytes()).hexdigest()
+    accepted = import_pdf(
+        conn,
+        path,
+        source_slug="a",
+        url=URL,
+        label="Volume 1",
+        retry_quarantined=True,
+        blank_artist_hashes={sha},
+    )
+    assert accepted.outcome == "imported"
+    other = pdf("other.pdf", [(str(16000 + i), f"Song {i}", "") for i in range(30)])
+    again = import_pdf(
+        conn,
+        other,
+        source_slug="a",
+        url="https://www.mediafire.com/file/other/f.pdf/file",
+        label="Volume 2",
+        blank_artist_hashes={sha},
+    )
+    assert again.outcome == "quarantined"
