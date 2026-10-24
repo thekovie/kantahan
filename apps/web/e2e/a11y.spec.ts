@@ -26,6 +26,14 @@ for (const scheme of ["dark", "light"] as const) {
       await scan(page);
     });
 
+    test("the all-machines results have no accessibility violations", async ({ page }) => {
+      await page.goto("/");
+      await page.getByRole("radio", { name: "All machines" }).click();
+      await page.getByRole("searchbox").fill("neon");
+      await expect(page.getByRole("status").filter({ hasText: "found" })).toBeVisible();
+      await scan(page);
+    });
+
     test("the read-out has no accessibility violations", async ({ page }) => {
       await page.goto("/");
       await page.getByRole("searchbox").fill("neon");

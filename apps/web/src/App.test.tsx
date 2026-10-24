@@ -335,3 +335,86 @@ describe("catalog updates", () => {
     expect(net.calls).toEqual([]);
   });
 });
+
+describe("all machines", () => {
+  const clash = makeBundle([["15563", "Beta Clash", "Beta Artist"], ["20002", "Beta Song Two", "Beta Artist"]], "model-b");
+  const clashManifest = makeManifest({
+    models: [modelEntry("model-a", makeBundle(), "Model A", "magenta"), modelEntry("model-b", clash, "Model B", "aqua")],
+  });
+  const CLASH = {
+    "/catalog/manifest.json": clashManifest,
+    "/catalog/model-a.json": makeBundle(),
+    "/catalog/model-b.json": clash,
+  };
+
+  it("offers every machine at once and labels each row with its machine", async () => {
+    stubNetwork(ROUTES);
+    const user = userEvent.setup();
+    mount();
+    await user.click(await screen.findByRole("radio", { name: "All machines" }));
+    const search = await screen.findByRole("searchbox", { name: /Search all machines/ });
+
+    await user.type(search, "dahilan");
+    const row = await screen.findByRole("button", { name: /Dahilan/ });
+    expect(within(row).getByText("Model A")).toBeInTheDocument();
+
+    await user.clear(search);
+    await user.type(search, "beta song one");
+    expect(within(await screen.findByRole("button", { name: /Beta Song One/ })).getByText("Model B")).toBeInTheDocument();
+  });
+
+  it("keeps a clashing number as separate rows, each naming its machine", async () => {
+    stubNetwork(CLASH);
+    const user = userEvent.setup();
+    mount();
+    await user.click(await screen.findByRole("radio", { name: "All machines" }));
+    await user.type(await screen.findByRole("searchbox"), "15563");
+    const rows = within(await screen.findByRole("list", { name: "Search results" })).getAllByRole("button");
+    expect(rows).toHaveLength(2);
+    const text = rows.map((row) => row.textContent ?? "");
+    expect(text.some((t) => t.includes("Dahilan") && t.includes("Model A"))).toBe(true);
+    expect(text.some((t) => t.includes("Beta Clash") && t.includes("Model B"))).toBe(true);
+    for (const row of rows) expect(within(row).getByRole("img")).toHaveAccessibleName("Song number 1 5 5 6 3");
+  });
+
+  it("opens a song's own machine in the read-out", async () => {
+    stubNetwork(CLASH);
+    const user = userEvent.setup();
+    mount();
+    await user.click(await screen.findByRole("radio", { name: "All machines" }));
+    await user.type(await screen.findByRole("searchbox"), "15563");
+    await user.click(await screen.findByRole("button", { name: /Beta Clash/ }));
+    const dialog = await screen.findByRole("dialog", { name: "Beta Clash" });
+    expect(within(dialog).getByText("Model B", { selector: ".line__name" })).toBeInTheDocument();
+  });
+
+  it("remembers the choice and shows the right pause or note about the machines", async () => {
+    stubNetwork(ROUTES);
+    const user = userEvent.setup();
+    const first = mount();
+    await user.click(await screen.findByRole("radio", { name: "All machines" }));
+    expect(await screen.findByText(/each row says which machine it is for/i)).toBeInTheDocument();
+    expect(localStorage.getItem("kantahan.model")).toBe("all");
+    first.unmount();
+    mount();
+    expect(await screen.findByRole("radio", { name: "All machines" })).toBeChecked();
+  });
+
+  it("names a machine that could not be loaded and still shows the others", async () => {
+    stubNetwork({ ...ROUTES, "/catalog/model-b.json": { schema: 7 } });
+    const user = userEvent.setup();
+    mount();
+    await user.click(await screen.findByRole("radio", { name: "All machines" }));
+    expect(await screen.findByText(/Model B could not be loaded/)).toBeInTheDocument();
+    await user.type(screen.getByRole("searchbox"), "dahilan");
+    expect(await screen.findByRole("button", { name: /Dahilan/ })).toBeInTheDocument();
+  });
+
+  it("has no All choice when there is only one machine", async () => {
+    const manifest = makeManifest();
+    stubNetwork({ ...ROUTES, "/catalog/manifest.json": { ...manifest, models: [manifest.models[0]!] } });
+    mount();
+    await screen.findByRole("tablist", { name: "Songs by first letter" });
+    expect(screen.queryByRole("radio", { name: "All machines" })).not.toBeInTheDocument();
+  });
+});

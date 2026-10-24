@@ -3,7 +3,7 @@ import { type LoadDeps, type LoadFailure, type LoadSource, loadManifestFromAnywh
 import { readLastCheck, readModel, writeModel } from "../lib/prefs";
 import { SongIndex } from "../lib/search";
 import { type SyncResult, checkForUpdates } from "../lib/sync";
-import type { Manifest } from "../lib/types";
+import { ALL_MODELS, type Manifest, type Song } from "../lib/types";
 
 export type CatalogState =
   | { phase: "manifest-loading" }
@@ -11,7 +11,15 @@ export type CatalogState =
   | { phase: "suspended"; manifest: Manifest }
   | { phase: "songs-loading"; manifest: Manifest; slug: string }
   | { phase: "songs-failed"; kind: LoadFailure; message: string; manifest: Manifest; slug: string }
-  | { phase: "ready"; manifest: Manifest; slug: string; index: SongIndex; source: LoadSource };
+  | {
+      phase: "ready";
+      manifest: Manifest;
+      slug: string;
+      index: SongIndex;
+      source: LoadSource;
+      /** Names of machines that could not be loaded (all-machines view only). */
+      missing: readonly string[];
+    };
 
 /** The "Check for updates" status line. `done` carries a plain-language result. */
 export type UpdateState = { phase: "idle" } | { phase: "checking" } | { phase: "done"; message: string };
@@ -60,6 +68,51 @@ export function useCatalog(deps?: LoadDeps) {
   const autoChecked = useRef(false);
 
   /**
+   * Every machine's songs in one index. Each entry keeps its own machine and number (nothing is merged), so
+   * the same number on two machines stays two rows. A machine that fails is named; the rest still show.
+   */
+  const showAll = useCallback(
+    async (manifest: Manifest, quiet: boolean, current: () => boolean) => {
+      activeRef.current = ALL_MODELS;
+      const key = `${ALL_MODELS}:${manifest.models.map((m) => `${m.slug}:${m.sha256}`).join("|")}`;
+      const cached = indexes.current.get(key);
+      if (cached) {
+        if (current()) setState({ phase: "ready", manifest, slug: ALL_MODELS, index: cached, source: "device", missing: [] });
+        return true;
+      }
+      if (!quiet && current()) setState({ phase: "songs-loading", manifest, slug: ALL_MODELS });
+      const results = await Promise.allSettled(manifest.models.map((m) => loadSongs(m, manifest, depsRef.current)));
+      const songs: Song[] = [];
+      const missing: string[] = [];
+      let source: LoadSource = "device";
+      let firstError: unknown;
+      results.forEach((result, i) => {
+        const model = manifest.models[i];
+        if (!model) return;
+        if (result.status === "rejected") {
+          missing.push(model.name);
+          firstError ??= result.reason;
+          return;
+        }
+        if (result.value.source === "network") source = "network";
+        for (const song of result.value.songs) songs.push({ ...song, id: songs.length, model: model.slug });
+      });
+      if (songs.length === 0) {
+        if (!quiet && current()) setState({ ...describe(firstError), phase: "songs-failed", manifest, slug: ALL_MODELS });
+        return false;
+      }
+      const index = new SongIndex(songs);
+      for (const stale of [...indexes.current.keys()]) {
+        if (stale.startsWith(`${ALL_MODELS}:`)) indexes.current.delete(stale);
+      }
+      if (missing.length === 0) indexes.current.set(key, index);
+      if (current()) setState({ phase: "ready", manifest, slug: ALL_MODELS, index, source, missing });
+      return true;
+    },
+    [],
+  );
+
+  /**
    * Show one model of a manifest. Only the newest request may change the screen: if the visitor
    * picks another model, or another check lands, while this one is loading, its result is dropped.
    * `quiet` keeps what is on screen instead of flashing a loader. Returns false when it failed.
@@ -71,13 +124,14 @@ export function useCatalog(deps?: LoadDeps) {
       if (current()) setState({ phase: "suspended", manifest });
       return true;
     }
+    if (wanted === ALL_MODELS && manifest.models.length > 1) return showAll(manifest, quiet, current);
     const model = manifest.models.find((m) => m.slug === wanted) ?? manifest.models[0];
     if (!model) return true;
     activeRef.current = model.slug;
     const key = `${model.slug}:${model.sha256}`;
     const cached = indexes.current.get(key);
     if (cached) {
-      if (current()) setState({ phase: "ready", manifest, slug: model.slug, index: cached, source: "device" });
+      if (current()) setState({ phase: "ready", manifest, slug: model.slug, index: cached, source: "device", missing: [] });
       return true;
     }
     if (!quiet && current()) setState({ phase: "songs-loading", manifest, slug: model.slug });
@@ -88,13 +142,13 @@ export function useCatalog(deps?: LoadDeps) {
         if (stale.startsWith(`${model.slug}:`)) indexes.current.delete(stale);
       }
       indexes.current.set(key, index);
-      if (current()) setState({ phase: "ready", manifest, slug: model.slug, index, source });
+      if (current()) setState({ phase: "ready", manifest, slug: model.slug, index, source, missing: [] });
       return true;
     } catch (error) {
       if (!quiet && current()) setState({ ...describe(error), phase: "songs-failed", manifest, slug: model.slug });
       return false;
     }
-  }, []);
+  }, [showAll]);
 
   useEffect(() => {
     let cancelled = false;

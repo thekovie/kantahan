@@ -3,7 +3,8 @@ import type { Manifest, ModelInfo } from "../lib/types";
 
 interface CatalogNoteProps {
   manifest: Manifest;
-  model: ModelInfo;
+  /** The machine shown, or null for the all-machines view. */
+  model: ModelInfo | null;
   songCount: number;
   update: UpdateState;
   onCheck: () => void;
@@ -20,11 +21,21 @@ export function CatalogNote({ manifest, model, songCount, update, onCheck }: Cat
   return (
     <section className="catalog-note" aria-label="About this catalog">
       <p>
-        {model.name} songbook · {model.coverage} · {songCount.toLocaleString("en-PH")} songs. Songs added in earlier
-        volumes are not included.
-        {model.excluded
-          ? ` ${model.excluded.toLocaleString("en-PH")} song numbers are left out because the publisher lists them with different titles in different volumes.`
-          : ""}{" "}
+        {model ? (
+          <>
+            {model.name} songbook · {model.coverage} · {songCount.toLocaleString("en-PH")} songs. Songs added in
+            earlier volumes are not included.
+            {model.excluded
+              ? ` ${model.excluded.toLocaleString("en-PH")} song numbers are left out because the publisher lists them with different titles in different volumes.`
+              : ""}
+          </>
+        ) : (
+          <>
+            All machines · {songCount.toLocaleString("en-PH")} songs from {manifest.models.length} machines. The same
+            number can be a different song on another machine, so each row says which machine it is for. Songs added
+            in earlier volumes are not included.
+          </>
+        )}{" "}
         Compiled from{" "}
         <a href={manifest.source.url} rel="noreferrer noopener" target="_blank">
           {manifest.source.label}
