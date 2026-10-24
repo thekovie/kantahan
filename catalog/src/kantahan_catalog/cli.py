@@ -357,6 +357,20 @@ def _run_steps(
     return (1, "partial", stats) if stats["fetch_failed"] else (0, outcome, stats)
 
 
+def _require_free_space(args: argparse.Namespace) -> None:
+    """Stop before downloading when the disk is nearly full, so a run can never fill it."""
+    floor = args.min_free_mb * 1024 * 1024
+    free = runner.free_bytes(args.work)
+    if free < floor:
+        raise PublishError(
+            f"only {free // (1024 * 1024)} MB free where the catalog is kept ({args.work}); "
+            f"a run needs at least {args.min_free_mb} MB. Free some space (for example "
+            "`docker builder prune -f`, old backups, before-restore-* folders in the work "
+            "folder) and run again, or lower --min-free-mb.",
+            blocked=True,
+        )
+
+
 def cmd_run(args: argparse.Namespace, out: Out, fetcher: Fetcher, **_: Any) -> int:
     conn = db.connect(args.work / "catalog.sqlite")
     db.migrate(conn)
@@ -367,6 +381,7 @@ def cmd_run(args: argparse.Namespace, out: Out, fetcher: Fetcher, **_: Any) -> i
     with runner.run_lock(args.work):
         run_id = runner.start_run(conn, kind)
         try:
+            _require_free_space(args)
             code, outcome, stats = _run_steps(args, out, fetcher, conn)
         except PublishError as exc:
             out(f"error: {exc}")
@@ -469,6 +484,12 @@ def parser() -> argparse.ArgumentParser:
     r = sub.add_parser("run", help="discover, fetch, import and publish (what cron runs)")
     r.add_argument("--manual", action="store_true", help="run now, ignoring the interval")
     r.add_argument("--min-interval-days", type=int, default=14)
+    r.add_argument(
+        "--min-free-mb",
+        type=int,
+        default=1024,
+        help="stop before downloading when less than this much disk is free (default 1024)",
+    )
     r.add_argument("--keep", type=int, default=DEFAULT_KEEP)
     r.add_argument("--allow-drop", action="store_true")
     bk = sub.add_parser("backup", help="back up the database and the published catalog")

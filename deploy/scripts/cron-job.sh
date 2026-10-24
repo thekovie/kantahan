@@ -14,6 +14,10 @@ if ! mkdir -p "$LOG_DIR" 2>/dev/null || [ ! -w "$LOG_DIR" ]; then
   exit 1
 fi
 LOG="$LOG_DIR/ingest-$1.log"
+# Keep logs small: past 5 MB the current log becomes ingest-<job>.log.1 (one older copy is kept).
+if [ -f "$LOG" ] && [ "$(wc -c <"$LOG")" -gt 5242880 ]; then
+  mv -f "$LOG" "$LOG.1"
+fi
 {
   echo "=== $(date -u +%FT%TZ) kantahan-catalog $*"
   docker compose run --rm -T ingest "$@"

@@ -252,3 +252,25 @@ def test_a_brand_new_install_can_run_stats_and_build_without_crashing(world):
     assert code == 0 and "documents: 0" in text
     code, text = run("build")
     assert code == 1 and "no mapped releases" in text
+
+
+def test_a_run_stops_before_downloading_when_the_disk_is_nearly_full(world, monkeypatch):
+    run, work, _, _ = world
+    monkeypatch.setattr(runner, "free_bytes", lambda _path: 200 * 1024 * 1024)
+    code, text = run("run", "--manual")
+    assert code == 2
+    assert "only 200 MB free" in text and "at least 1024 MB" in text and "builder prune" in text
+    assert not (work / "pdfs").exists()
+    conn = db.connect(work / "catalog.sqlite")
+    assert conn.execute("SELECT outcome FROM import_run").fetchone()["outcome"] == "blocked"
+
+
+def test_the_free_space_floor_can_be_lowered(world, monkeypatch):
+    run, work, _, _ = world
+    monkeypatch.setattr(runner, "free_bytes", lambda _path: 200 * 1024 * 1024)
+    code, text = run("run", "--manual", "--min-free-mb", "100")
+    assert code == 0 and "published v1" in text
+
+
+def test_free_bytes_reads_the_nearest_existing_folder(tmp_path):
+    assert runner.free_bytes(tmp_path / "does" / "not" / "exist") > 0

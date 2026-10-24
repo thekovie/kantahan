@@ -35,7 +35,7 @@ The owner decided (2026-10-23) not to ask for permission and to credit the sourc
 
 ## What you need
 
-- Docker Engine with Compose v2 (`docker compose version`), 3 GB of free disk (about 800 MB of source documents plus the database and catalog), and outbound internet access for the catalog job.
+- Docker Engine with Compose v2 (`docker compose version`), at least 5 GB of free disk (see [Disk use](#disk-use); a 60 GB server is far more than enough), and outbound internet access for the catalog job.
 - A domain with HTTPS handled by a reverse proxy (Caddy, Traefik or nginx; examples below).
 - An SMTP account that can send mail (a mail provider's relay, or a local relay). Port 587 with STARTTLS is the default.
 
@@ -131,9 +131,31 @@ MAILTO=you@example.net
 | Look at the live version | `curl -s https://kantahan.example/catalog/manifest.json` |
 | Roll back a bad version | `docker compose run --rm ingest rollback v7` (temporary: the next publish builds from the database again) |
 | Logs | `docker compose logs -f web contact` (rotated: 3 files of 10 MB each per container), and `/var/log/kantahan/ingest-*.log` for cron jobs |
-| Disk use | `docker system df -v` (the catalog keeps its newest 5 versions) |
+| Disk use | `docker system df -v`, and see [Disk use](#disk-use) below |
 
 Base images are not updated automatically: rebuild now and then (`docker compose build --pull && docker compose up -d`).
+
+## Disk use
+
+Measured on the real catalog (12 machines, 78,141 songs) on 2026-10-24. Nothing here grows without a limit except the Docker build cache, which you clear by hand.
+
+| What | Size | Growth |
+|---|---|---|
+| Source PDFs (`work/pdfs`) | about 815 MB in 363 files (largest 38 MB) | One file per source link. A run skips files it already has and `fetch --refresh` overwrites in place, so the same document is never stored twice. It grows only when the publisher adds a new link (about 2 MB each). Files for links that later disappear stay until you delete them. |
+| Database | about 9 MB | Slow. |
+| Published catalog | 3.4 MB per version | The newest 5 versions are kept: about 17 MB. |
+| Backups | about 11 MB each (no PDFs) | The newest 14 are kept: about 155 MB. |
+| Cron job logs | at most 5 MB per job, plus one rotated copy | Bounded by the wrapper. |
+| Container logs | at most 30 MB per container (3 files of 10 MB) | Bounded. |
+| Docker images | web 78 MB, contact 225 MB, ingest 293 MB | Replaced on rebuild. |
+| Docker build cache | **grows with every rebuild** | Not bounded. After many rebuilds on a development machine it reached 8.5 GB. |
+| `before-restore-*` folders in the work volume | a database copy each | One per restore, never removed automatically. Delete them once a restore is confirmed. |
+
+The steady total is about 2 GB, so a 60 GB disk has plenty of room. To keep it that way:
+
+- After you rebuild or update, run `docker builder prune -f` and `docker image prune -f` (or put them in a monthly cron job).
+- The scheduled `run` refuses to download anything when less than 1 GB is free on the work volume. It stops with exit 2 (`blocked`), cron mails the message, and nothing is left half-written. Change the floor with `run --min-free-mb N`.
+- To get the 815 MB back you can delete `work/pdfs`: they can be downloaded again by `fetch`, and are only needed again for `import --reimport` and for checking a changed file.
 
 ## Takedown: pause, remove, resume
 
