@@ -56,6 +56,13 @@ check "a missing required setting is named and stops the deploy" refuses_without
 check "the compose file publishes no host port" publishes_no_port
 check "the catalog job container stays running, ready for scheduled tasks" test -n "$(dc ps -q --status running ingest)"
 check "a job runs inside it with the short kc command" dc exec -T ingest kc migrate
+# Coolify runs compose with the repository root as the project directory and no .env file. This is exactly
+# what failed on the first real deploy ("lstat /artifacts/deploy"), so build one image that way.
+ROOT="$(cd .. && pwd)"
+coolify_style() { env -i PATH="$PATH" HOME="$HOME" DOCKER_BUILDKIT=1 "${REQUIRED[@]}" docker compose --env-file /dev/null --project-directory "$ROOT" -f "$ROOT/deploy/docker-compose.yml" "$@"; }
+context_is_the_repository_root() { [ "$(coolify_style config | grep -c "context: $ROOT\$")" = 3 ]; }
+check "built the way Coolify runs it, every image's build context is the repository root" context_is_the_repository_root
+check "the catalog job image builds that way" coolify_style build ingest
 
 echo "== web: headers and caching"
 check "home is served" test "$(status_of $BASE/)" = 200
