@@ -1,6 +1,6 @@
 import { Check } from "lucide-react";
 import type { KeyboardEvent } from "react";
-import type { ModelInfo } from "../lib/types";
+import { ALL_MODELS, type ModelInfo } from "../lib/types";
 
 interface ModelPickerProps {
   models: readonly ModelInfo[];
@@ -14,20 +14,22 @@ const MAX_CHIPS = 5;
 export function ModelPicker({ models, value, onChange }: ModelPickerProps) {
   if (models.length > MAX_CHIPS) return <ModelSelect models={models} value={value} onChange={onChange} />;
   if (models.length === 1) return null; // nothing to choose; the model is still named in the search and the note
+  const items = [{ slug: ALL_MODELS, name: "All machines", hue: "all" }, ...models.map((m) => ({ slug: m.slug, name: m.name, hue: m.hue }))];
 
   const move = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
     const step = event.key === "ArrowRight" || event.key === "ArrowDown" ? 1 : event.key === "ArrowLeft" || event.key === "ArrowUp" ? -1 : 0;
     if (!step) return;
     event.preventDefault();
-    const next = models[(index + step + models.length) % models.length];
+    const target = (index + step + items.length) % items.length;
+    const next = items[target];
     if (!next) return;
     onChange(next.slug);
-    (event.currentTarget.parentElement?.children[(index + step + models.length) % models.length] as HTMLElement | undefined)?.focus();
+    (event.currentTarget.parentElement?.children[target] as HTMLElement | undefined)?.focus();
   };
 
   return (
     <div className="models" role="radiogroup" aria-label="Machine model">
-      {models.map((model, index) => {
+      {items.map((model, index) => {
         const selected = model.slug === value;
         return (
           <button
@@ -57,6 +59,7 @@ function ModelSelect({ models, value, onChange }: ModelPickerProps) {
         Machine model
       </label>
       <select id="model-select" className="select" value={value} onChange={(event) => onChange(event.target.value)}>
+        <option value={ALL_MODELS}>All machines</option>
         {families.map((family) => (
           <optgroup key={family} label={family}>
             {models

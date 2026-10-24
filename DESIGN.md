@@ -249,3 +249,7 @@ A dynamic mic on a yellow disc (#ffc20e). The ball head is also a magnifying len
 - **Don't** put gradients or card shadows on surfaces, or box each row in a card.
 - **Don't** rely on colour alone to tell models apart.
 - **Don't** add display faces beyond Barlow Semi Condensed, or use it for running text.
+
+## All machines view
+
+The first choice in the machine chooser is **All machines**: every machine's songs in one list. Its line sign is ink (no machine colour applies) with the badge "All" and the count of machines. Each row carries a small **machine tag** under its number: a dot in that machine's line colour with the name written out, so a number is never read without knowing which remote it is for. Rows are never merged across machines. See [ADR 0007](docs/decisions/0007-all-machines-view.md).

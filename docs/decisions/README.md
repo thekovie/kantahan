@@ -10,3 +10,4 @@ One short file per decision: context, decision, consequences. Number sequentiall
 | [0004](0004-machine-group-models.md) | Machine groups as models | Accepted |
 | [0005](0005-production-deployment.md) | Production deployment | Accepted |
 | [0006](0006-wayfinding-ui.md) | Interface reroll: Metro Wayfinding | Accepted |
+| [0007](0007-all-machines-view.md) | An all-machines view that never merges machines | Accepted |

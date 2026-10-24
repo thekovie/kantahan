@@ -145,6 +145,8 @@ h3 {
 .hue-orange { --hue: var(--hue-orange); --on-hue: var(--on-hue-orange); }
 .hue-lime { --hue: var(--hue-green); --on-hue: var(--on-hue-green); }
 .hue-yellow { --hue: var(--hue-yellow); --on-hue: var(--on-hue-yellow); }
+/* The all-machines view has no line colour of its own: it uses ink. */
+.hue-all { --hue: var(--select); --on-hue: var(--on-select); }
 
 /* ---- shell ---- */
 .shell {
@@ -281,6 +283,9 @@ h3 {
   font-size: 1.25rem;
   font-weight: 700;
   line-height: 1;
+}
+.line__badge--word {
+  font-size: 0.875rem;
 }
 .line__name {
   font-family: var(--font-display);
@@ -442,6 +447,27 @@ h3 {
 }
 .song:active {
   background: var(--line);
+}
+.song__num {
+  display: grid;
+  justify-items: end;
+  gap: 0.25rem;
+}
+.song__model {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.song__dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  background: var(--hue, var(--select));
+  box-shadow: 0 0 0 1px var(--line-strong);
 }
 .song__title {
   display: block;

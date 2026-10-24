@@ -68,10 +68,13 @@ export class SongIndex {
         fuzzy: (term) => (term.length >= MIN_FUZZY_LENGTH ? FUZZY_FRACTION : false),
       },
     });
-    this.mini.addAll(songs.map((s) => ({ id: s.id, title: fold(s.title), artist: fold(s.artist) })));
+    // Fold each title once: with every machine in one index (tens of thousands of songs) folding inside the
+    // sort comparison would run it hundreds of thousands of times.
+    const folded = new Map<number, string>(songs.map((s) => [s.id, fold(s.title)]));
+    this.mini.addAll(songs.map((s) => ({ id: s.id, title: folded.get(s.id) ?? "", artist: fold(s.artist) })));
 
     this.sortedByTitle = [...songs].sort(
-      (a, b) => fold(a.title).localeCompare(fold(b.title)) || a.number.localeCompare(b.number),
+      (a, b) => (folded.get(a.id) ?? "").localeCompare(folded.get(b.id) ?? "") || a.number.localeCompare(b.number),
     );
     this.sortedByTitle.forEach((song, rank) => this.titleRank.set(song.id, rank));
     for (const song of this.sortedByTitle) {

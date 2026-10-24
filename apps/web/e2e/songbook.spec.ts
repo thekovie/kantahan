@@ -85,3 +85,24 @@ test("the read-out shows the number at a monumental size", async ({ page }) => {
   const dialogBox = await dialog.boundingBox();
   expect(box && dialogBox && box.x + box.width <= dialogBox.x + dialogBox.width).toBe(true);
 });
+
+test("the all-machines view labels every row with its machine, and keeps the choice", async ({ page }) => {
+  await page.getByRole("radio", { name: "All machines" }).click();
+  await expect(page.getByRole("radio", { name: "All machines" })).toBeChecked();
+  await page.getByRole("searchbox").fill("neon");
+  const rows = page.getByRole("list", { name: "Search results" }).getByRole("button");
+  await expect(rows.first()).toBeVisible();
+  // Every row names a machine, and more than one machine appears among the results.
+  const names = await rows.evaluateAll((nodes) =>
+    nodes.map((node) => node.querySelector(".song__model")?.textContent?.trim() ?? ""),
+  );
+  expect(names.every((name) => name !== "")).toBe(true);
+  expect(new Set(names).size).toBeGreaterThan(1);
+
+  await rows.first().click();
+  await expect(page.getByRole("dialog").locator(".line__name")).toHaveText(names[0] ?? "");
+  await page.keyboard.press("Escape");
+
+  await page.reload();
+  await expect(page.getByRole("radio", { name: "All machines" })).toBeChecked();
+});

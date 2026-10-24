@@ -4,6 +4,9 @@ All notable changes are documented here. Format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Added
+- **All machines** view: one search over every machine's songs. Rows are never merged across machines; each row names its machine, so the same number on two machines shows as two labelled rows. The sign, the chip and the read-out follow the song's machine, and a machine that cannot be loaded is named while the others still show. See [ADR 0007](docs/decisions/0007-all-machines-view.md).
+
 ### Changed
 - UI reroll, "Metro Wayfinding" ([ADR 0006](docs/decisions/0006-wayfinding-ui.md)): the pink-purple theme and the LED scoreboard numbers are gone. Calm light-first look (dark follows the phone), a coloured line sign for the selected machine, ruled song rows with a heavy plain number at the end, a new number sheet, new palette, Barlow Semi Condensed for the wordmark and numbers (Fredoka and DSEG7 removed), a new logo, a dynamic microphone that is also a magnifying lens (the old K tile looked like the owner's website), icons and share image. Behaviour, copy and data are unchanged.
 

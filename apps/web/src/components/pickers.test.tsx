@@ -34,6 +34,8 @@ describe("ModelPicker", () => {
     expect(screen.getByRole("radio", { name: "Model 2" })).toBeChecked();
     expect(screen.getByRole("radio", { name: "Model 2" })).toHaveFocus();
     await user.keyboard("{ArrowLeft}{ArrowLeft}");
+    expect(screen.getByRole("radio", { name: "All machines" })).toBeChecked();
+    await user.keyboard("{ArrowLeft}");
     expect(screen.getByRole("radio", { name: "Model 3" })).toBeChecked();
     await user.keyboard("a");
     expect(screen.getByRole("radio", { name: "Model 3" })).toBeChecked();
@@ -58,6 +60,8 @@ describe("ModelPicker", () => {
     expect(screen.getByRole("group", { name: "Family two" })).toBeInTheDocument();
     await user.selectOptions(select, "Model 5");
     expect(select).toHaveValue("m5");
+    await user.selectOptions(select, "All machines");
+    expect(select).toHaveValue("all");
   });
 });
 

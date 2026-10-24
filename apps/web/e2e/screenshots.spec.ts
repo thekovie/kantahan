@@ -34,6 +34,13 @@ for (const scheme of ["dark", "light"] as const) {
       await page.screenshot({ path: name("readout") });
       await page.keyboard.press("Escape");
 
+      await page.getByRole("radio", { name: "All machines" }).click();
+      await page.getByRole("searchbox").fill("neon");
+      await expect(page.getByRole("status").filter({ hasText: "found" })).toBeVisible();
+      await expect(page.getByRole("list", { name: "Search results" })).toBeVisible();
+      await page.screenshot({ path: name("all-results") });
+      await page.getByRole("radio", { name: "Model A" }).click();
+
       await page.getByRole("searchbox").fill("qqqqqq");
       await expect(page.getByRole("heading", { name: "No songs found" })).toBeVisible();
       await page.screenshot({ path: name("empty") });

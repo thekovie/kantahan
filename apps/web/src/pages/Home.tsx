@@ -1,7 +1,7 @@
 import { PauseCircle, SearchX, TriangleAlert, WifiOff } from "lucide-react";
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { CatalogNote } from "../components/CatalogNote";
-import { LineSign } from "../components/LineSign";
+import { AllSign, LineSign } from "../components/LineSign";
 import { LetterStrip } from "../components/LetterStrip";
 import { ModelPicker } from "../components/ModelPicker";
 import { Readout } from "../components/Readout";
@@ -10,7 +10,7 @@ import { SongList } from "../components/SongList";
 import { BootSkeleton, SongSkeleton, StatePanel } from "../components/StatePanel";
 import type { UpdateState, useCatalog } from "../hooks/useCatalog";
 import { RESULT_LIMIT, type SongIndex } from "../lib/search";
-import type { Manifest, ModelInfo, Song } from "../lib/types";
+import { ALL_MODELS, type Manifest, type ModelInfo, type Song } from "../lib/types";
 
 const PAGE_SIZE = 120;
 const PANEL_ID = "letter-panel";
@@ -38,15 +38,22 @@ export function Home({ catalog }: { catalog: ReturnType<typeof useCatalog> }) {
   }
 
   const { manifest, slug: modelSlug } = state;
-  const model = manifest.models.find((m) => m.slug === modelSlug) ?? manifest.models[0];
-  if (!model) return null;
+  const first = manifest.models[0];
+  if (!first) return null;
+  const isAll = modelSlug === ALL_MODELS && manifest.models.length > 1;
+  const model: ModelInfo | null = isAll ? null : (manifest.models.find((m) => m.slug === modelSlug) ?? first);
+  const readoutModel = (open && manifest.models.find((m) => m.slug === open.model)) || model || first;
 
   return (
     <>
-      <LineSign model={model} />
-      <ModelPicker models={manifest.models} value={modelSlug} onChange={selectModel} />
-      <SearchField value={query} onChange={setQuery} modelName={model.name} />
-      <div className={`hue-${model.hue}`}>
+      {model ? (
+        <LineSign model={model} />
+      ) : (
+        <AllSign detail={`${manifest.models.length} machines`} />
+      )}
+      <ModelPicker models={manifest.models} value={isAll ? ALL_MODELS : (model?.slug ?? first.slug)} onChange={selectModel} />
+      <SearchField value={query} onChange={setQuery} modelName={model ? model.name : "all machines"} />
+      <div className={model ? `hue-${model.hue}` : "hue-all"}>
         {state.phase === "songs-loading" && <SongSkeleton />}
         {state.phase === "songs-failed" && <FailurePanel kind={state.kind} message={state.message} onRetry={retry} />}
         {state.phase === "ready" && (
@@ -58,10 +65,11 @@ export function Home({ catalog }: { catalog: ReturnType<typeof useCatalog> }) {
             onOpen={setOpen}
             update={update}
             onCheck={checkNow}
+            missing={state.missing}
           />
         )}
       </div>
-      <Readout song={open} model={model} onClose={() => setOpen(null)} />
+      <Readout song={open} model={readoutModel} onClose={() => setOpen(null)} />
     </>
   );
 }
@@ -69,34 +77,44 @@ export function Home({ catalog }: { catalog: ReturnType<typeof useCatalog> }) {
 interface SongbookProps {
   index: SongIndex;
   manifest: Manifest;
-  model: ModelInfo;
+  /** The machine shown, or null for the all-machines view. */
+  model: ModelInfo | null;
+  /** Machines that could not be loaded (all-machines view). */
+  missing: readonly string[];
   query: string;
   onOpen: (song: Song) => void;
   update: UpdateState;
   onCheck: () => void;
 }
 
-function Songbook({ index, manifest, model, query, onOpen, update, onCheck }: SongbookProps) {
+function Songbook({ index, manifest, model, query, onOpen, update, onCheck, missing }: SongbookProps) {
   const deferred = useDeferredValue(query);
   const searching = deferred.trim() !== "";
+  const machines = model ? undefined : manifest.models;
   return (
     <>
+      {missing.length > 0 && (
+        <p className="status" role="status">
+          {missing.join(", ")} could not be loaded, so its songs are not shown. Check the connection and try again from
+          the note below.
+        </p>
+      )}
       {searching ? (
-        <Results index={index} model={model} query={deferred} onOpen={onOpen} />
+        <Results index={index} model={model} query={deferred} onOpen={onOpen} machines={machines} />
       ) : (
-        <Browse index={index} onOpen={onOpen} />
+        <Browse index={index} onOpen={onOpen} machines={machines} />
       )}
       <CatalogNote manifest={manifest} model={model} songCount={index.songs.length} update={update} onCheck={onCheck} />
     </>
   );
 }
 
-function Results({ index, model, query, onOpen }: { index: SongIndex; model: ModelInfo; query: string; onOpen: (song: Song) => void }) {
+function Results({ index, model, query, onOpen, machines }: { index: SongIndex; model: ModelInfo | null; query: string; onOpen: (song: Song) => void; machines?: readonly ModelInfo[] }) {
   const result = useMemo(() => index.search(query), [index, query]);
   if (result.total === 0) {
     return (
       <StatePanel icon={<SearchX size={40} />} title="No songs found">
-        Nothing in the {model.name} songbook matches “{query.trim()}”. Check the spelling, try fewer words, or type the
+        Nothing in {model ? `the ${model.name} songbook` : "any machine's songbook"} matches “{query.trim()}”. Check the spelling, try fewer words, or type the
         song number.
       </StatePanel>
     );
@@ -108,12 +126,12 @@ function Results({ index, model, query, onOpen }: { index: SongIndex; model: Mod
         {result.total.toLocaleString("en-PH")} {result.total === 1 ? "song" : "songs"} found
         {result.total > shown ? `, showing the first ${RESULT_LIMIT}. Type more to narrow it down.` : "."}
       </p>
-      <SongList songs={result.songs} onOpen={onOpen} label="Search results" />
+      <SongList songs={result.songs} onOpen={onOpen} label="Search results" models={machines} />
     </>
   );
 }
 
-function Browse({ index, onOpen }: { index: SongIndex; onOpen: (song: Song) => void }) {
+function Browse({ index, onOpen, machines }: { index: SongIndex; onOpen: (song: Song) => void; machines?: readonly ModelInfo[] }) {
   const letters = useMemo(() => index.letters(), [index]);
   const first = letters[0]?.letter ?? "A";
   const [letter, setLetter] = useState(first);
@@ -134,7 +152,7 @@ function Browse({ index, onOpen }: { index: SongIndex; onOpen: (song: Song) => v
           <h2>{name}</h2>
           <span className="status">{songs.length.toLocaleString("en-PH")} songs</span>
         </div>
-        <SongList songs={songs.slice(0, limit)} onOpen={onOpen} label={name} />
+        <SongList songs={songs.slice(0, limit)} onOpen={onOpen} label={name} models={machines} />
         {songs.length > limit && (
           <button type="button" className="more" onClick={() => setLimit((n) => n + PAGE_SIZE)}>
             Show more ({(songs.length - limit).toLocaleString("en-PH")} left)

@@ -13,19 +13,42 @@ export function lineBadge(name: string): string {
   return (mark ?? "").toUpperCase();
 }
 
+interface SignProps {
+  className: string;
+  badge: string;
+  name: string;
+  detail: string;
+}
+
+function Sign({ className, badge, name, detail }: SignProps) {
+  return (
+    <div className={className}>
+      <span className={badge.length > 2 ? "line__badge line__badge--word" : "line__badge"} aria-hidden="true">
+        {badge}
+      </span>
+      <span className="line__name">{name}</span>
+      <span className="line__detail">{detail}</span>
+    </div>
+  );
+}
+
 /**
- * The selected machine drawn as a metro line header: a round badge with the model's initial, its name and
+ * The selected machine drawn as a metro line header: a round badge with the model's mark, its name and
  * the volumes covered, on the model's line colour. The name is always written out, so colour is never the
  * only way to tell the machines apart.
  */
 export function LineSign({ model, top = false }: LineSignProps) {
   return (
-    <div className={`line hue-${model.hue}${top ? " line--top" : ""}`}>
-      <span className="line__badge" aria-hidden="true">
-        {lineBadge(model.name)}
-      </span>
-      <span className="line__name">{model.name}</span>
-      <span className="line__detail">{model.coverage}</span>
-    </div>
+    <Sign
+      className={`line hue-${model.hue}${top ? " line--top" : ""}`}
+      badge={lineBadge(model.name)}
+      name={model.name}
+      detail={model.coverage}
+    />
   );
+}
+
+/** The sign for the all-machines view: ink, because no single machine's colour applies. */
+export function AllSign({ detail }: { detail: string }) {
+  return <Sign className="line hue-all" badge="All" name="All machines" detail={detail} />;
 }

@@ -18,8 +18,13 @@ export interface BundleV1 {
   u: number[];
 }
 
+/** The saved choice that shows every machine's songs together instead of one machine. */
+export const ALL_MODELS = "all";
+
 export interface Song {
   id: number;
+  /** Slug of the machine this entry belongs to; set only in the all-machines view. */
+  model?: string;
   number: string;
   title: string;
   artist: string;
