@@ -70,6 +70,9 @@ def test_manual_run_goes_from_discovery_to_a_published_catalog(world):
     run, work, _, _ = world
     code, text = run("run", "--manual")
     assert code == 0 and "published v1" in text
+    for step in range(1, 6):
+        assert f"[{step}/5]" in text  # each stage announces itself, so a long run is never silent
+    assert "[1/1] downloaded" in text
     assert manifest(work)["models"][0]["songs"] == 5
     conn = db.connect(work / "catalog.sqlite")
     row = conn.execute("SELECT kind, outcome FROM import_run").fetchone()
