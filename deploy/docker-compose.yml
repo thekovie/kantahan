@@ -1,7 +1,9 @@
 # Kantahan production stack.
-#   Coolify: Docker Compose build pack, Base Directory /deploy, Docker Compose Location /docker-compose.yml.
+#   Coolify: Docker Compose build pack, Base Directory /, Docker Compose Location /deploy/docker-compose.yml.
 #            Fill in the variables Coolify shows (docs/deployment.md, "Deploying with Coolify").
 #   Plain Docker: copy .env.example to .env, fill it in, then `docker compose up -d` from this folder.
+# Builds use the repository root as the build context: Coolify runs compose with the repository root as the
+# project directory (so the default `.` is right); from this folder .env sets BUILD_ROOT=.. .
 # No port is published here (a proxy reaches `web` over the Docker network); plain Docker adds one through
 # compose.hostport.yml, which .env.example loads.
 name: kantahan
@@ -17,7 +19,7 @@ services:
   # The app and the published catalog, plus a proxy for /api to the contact service.
   web:
     build:
-      context: ..
+      context: ${BUILD_ROOT:-.}
       dockerfile: deploy/web/Dockerfile
     image: kantahan-web:local
     restart: unless-stopped
@@ -43,7 +45,7 @@ services:
   # Relays rights and correction requests by e-mail. Not published to the host.
   contact:
     build:
-      context: ..
+      context: ${BUILD_ROOT:-.}
       dockerfile: deploy/contact/Dockerfile
     image: kantahan-contact:local
     restart: unless-stopped
@@ -80,7 +82,7 @@ services:
   # In Coolify these are Scheduled Tasks on the `ingest` container. `docker compose run --rm ingest run` also works.
   ingest:
     build:
-      context: ..
+      context: ${BUILD_ROOT:-.}
       dockerfile: deploy/ingest/Dockerfile
     image: kantahan-ingest:local
     restart: unless-stopped
