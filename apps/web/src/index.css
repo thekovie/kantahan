@@ -37,6 +37,7 @@
   --select: #ffc93c;
   --on-select: #1b1038;
   --focus: #3de0f5;
+  --error: #ffb4c4;
   --scrim: rgb(10 4 24 / 0.7);
 
   /* The LED number token is a dark tile in both themes; only the digit colour changes by model. */
@@ -64,6 +65,7 @@
   --select: #1b1038;
   --on-select: #ffd84d;
   --focus: #5b21b6;
+  --error: #a3103f;
   --scrim: rgb(27 16 56 / 0.6);
 }
 
@@ -573,7 +575,8 @@ a {
   background: var(--surface);
   text-align: center;
 }
-.state h2 {
+.state h2,
+.state h3 {
   margin: 0;
   font-size: 1.25rem;
 }
@@ -731,4 +734,133 @@ a {
   .song {
     min-height: 5rem;
   }
+}
+
+/* ---- contact form ---- */
+.form {
+  display: grid;
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+.form .btn {
+  justify-self: start;
+}
+.form__group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.form__group legend {
+  margin-bottom: 0.5rem;
+  padding: 0;
+  font-weight: 700;
+}
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.choice {
+  position: relative;
+}
+.choice input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.choice span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 3rem;
+  padding: 0.25rem 1rem;
+  border: 2px solid var(--line-strong);
+  border-radius: 1.5rem;
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+}
+.choice input:checked + span {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: var(--on-brand);
+  box-shadow: inset 0 0 0 2px var(--on-brand);
+}
+.choice input:focus-visible + span {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+.field {
+  display: grid;
+  gap: 0.375rem;
+}
+.field__label {
+  font-weight: 700;
+}
+.field__req {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.field__input {
+  width: 100%;
+  min-height: 3.5rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--line-strong);
+  border-radius: 1rem;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 1.0625rem;
+}
+.field__input--area {
+  min-height: 9rem;
+  resize: vertical;
+}
+.field__input[aria-invalid="true"],
+.form__group[aria-invalid="true"] .choice span {
+  border-color: var(--error);
+}
+.field__hint,
+.field__error,
+.form__privacy {
+  margin: 0;
+  font-size: 0.9375rem;
+}
+.field__hint,
+.form__privacy {
+  color: var(--text-muted);
+}
+.field__error {
+  color: var(--error);
+  font-weight: 600;
+}
+.form__privacy a {
+  color: var(--text);
+  text-decoration: underline;
+}
+.notice-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--error);
+  border-radius: 1rem;
+  background: var(--surface);
+}
+.notice-error svg {
+  flex: none;
+  margin-top: 0.125rem;
+  color: var(--error);
+}
+.hp {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
 }

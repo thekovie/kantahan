@@ -39,6 +39,7 @@ export default defineConfig({
       },
     }),
   ],
+  server: { proxy: { "/api": "http://localhost:8000" } }, // the contact service, when running locally
   build: { target: "es2022" },
   test: {
     environment: "jsdom",
