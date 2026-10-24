@@ -14,6 +14,8 @@ from typing import Any
 import yaml
 
 from . import db, runner
+from .backup import DEFAULT_KEEP as BACKUP_KEEP
+from .backup import BackupError, make_backup, restore_backup
 from .build import BuildError, build_bundle
 from .discover import (
     DiscoveredLink,
@@ -273,6 +275,29 @@ def cmd_suspend(args: argparse.Namespace, out: Out, **_: Any) -> int:
     return 0
 
 
+def cmd_backup(args: argparse.Namespace, out: Out, **_: Any) -> int:
+    with runner.run_lock(args.work):
+        path = make_backup(
+            args.work, _publish_dir(args), args.to or args.work / "backups", keep=args.keep
+        )
+    out(f"backup written: {path}")
+    return 0
+
+
+def cmd_restore(args: argparse.Namespace, out: Out, **_: Any) -> int:
+    if not args.yes:
+        out(f"restore replaces the database and the live catalog with {args.backup}.")
+        out("What it replaces is kept in <work>/before-restore-<time>/. Run again with --yes.")
+        return 2
+    with runner.run_lock(args.work):
+        summary = restore_backup(args.backup, args.work, _publish_dir(args))
+    out(f"restored; live catalog {summary.live_version}, versions {', '.join(summary.versions)}")
+    if summary.kept_aside:
+        out(f"previous files kept in {summary.kept_aside}")
+    out("A restored database may predate withdrawals made later: check them before publishing.")
+    return 0
+
+
 def cmd_withdraw(args: argparse.Namespace, out: Out, **_: Any) -> int:
     conn = db.connect(args.work / "catalog.sqlite")
     db.migrate(conn)
@@ -435,6 +460,12 @@ def parser() -> argparse.ArgumentParser:
     r.add_argument("--min-interval-days", type=int, default=14)
     r.add_argument("--keep", type=int, default=DEFAULT_KEEP)
     r.add_argument("--allow-drop", action="store_true")
+    bk = sub.add_parser("backup", help="back up the database and the published catalog")
+    bk.add_argument("--to", type=Path, default=None, help="backup folder (default: <work>/backups)")
+    bk.add_argument("--keep", type=int, default=BACKUP_KEEP, help="backups to keep")
+    rs = sub.add_parser("restore", help="restore the database and catalog from a backup")
+    rs.add_argument("backup", type=Path)
+    rs.add_argument("--yes", action="store_true", help="really replace the live data")
     sub.add_parser("audit", help="re-download every document and report files that changed")
     rb = sub.add_parser("rollback", help="point the live catalog at an older version")
     rb.add_argument("version", help="for example v3")
@@ -460,6 +491,8 @@ COMMANDS: dict[str, Callable[..., int]] = {
     "publish": cmd_publish,
     "run": cmd_run,
     "audit": cmd_audit,
+    "backup": cmd_backup,
+    "restore": cmd_restore,
     "rollback": cmd_rollback,
     "suspend": cmd_suspend,
     "resume": cmd_suspend,
@@ -480,7 +513,7 @@ def main(
     except PublishError as exc:
         out(f"error: {exc}")
         return 2 if exc.blocked else 1
-    except (FetchError, ValueError, runner.RunLocked) as exc:
+    except (FetchError, ValueError, runner.RunLocked, BackupError) as exc:
         out(f"error: {exc}")
         return 1
 

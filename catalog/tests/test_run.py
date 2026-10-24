@@ -216,3 +216,31 @@ def test_map_command_reports_and_never_fails_for_an_unknown_section(world):
     run("run", "--manual")
     code, text = run("map")
     assert code == 0 and "map:" in text
+
+
+def test_backup_and_restore_drill_through_the_command_line(world, tmp_path):
+    run, work, _, _ = world
+    run("run", "--manual")
+    backups = tmp_path / "backups"
+    code, text = run("backup", "--to", str(backups))
+    assert code == 0 and "backup written" in text
+    live = manifest(work)
+
+    import shutil
+
+    shutil.rmtree(work / "publish")
+    (work / "catalog.sqlite").unlink()
+    code, text = run("restore", str(next(backups.iterdir())))
+    assert code == 2 and "--yes" in text and not (work / "publish").exists()
+
+    code, text = run("restore", str(next(backups.iterdir())), "--yes")
+    assert code == 0 and "restored" in text and "predate withdrawals" in text
+    assert manifest(work) == live
+    code, text = run("publish")
+    assert code == 0 and "unchanged" in text
+
+
+def test_restoring_a_missing_backup_fails_clearly(world, tmp_path):
+    run, _, _, _ = world
+    code, text = run("restore", str(tmp_path / "nope"), "--yes")
+    assert code == 1 and "not a backup" in text
