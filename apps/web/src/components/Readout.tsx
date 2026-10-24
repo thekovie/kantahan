@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { ModelInfo, Song } from "../lib/types";
+import { LineSign } from "./LineSign";
 import { NumberToken } from "./NumberToken";
 
 interface ReadoutProps {
@@ -23,25 +24,28 @@ export function Readout({ song, model, onClose }: ReadoutProps) {
   return (
     <dialog
       ref={dialog}
-      className={`readout hue-${model.hue}`}
+      className="readout"
       aria-labelledby="readout-title"
       onClose={onClose}
       onClick={(event) => event.target === dialog.current && dialog.current?.close()}
     >
-      <NumberToken number={song.number} large tick />
-      <h2 id="readout-title" className="readout__title">
-        {song.title}
-      </h2>
-      {song.artistKnown && <p className="readout__artist">{song.artist}</p>}
-      <p className="readout__meta">
-        <span>
-          {model.name} · {model.family}
-        </span>
-        <span>{song.release}</span>
-      </p>
-      <button type="button" className="btn btn--block" autoFocus onClick={() => dialog.current?.close()}>
-        Done
-      </button>
+      <LineSign model={model} top />
+      <div className="readout__body">
+        <NumberToken number={song.number} large />
+        <h2 id="readout-title" className="readout__title">
+          {song.title}
+        </h2>
+        {song.artistKnown && <p className="readout__artist">{song.artist}</p>}
+        <p className="readout__meta">
+          <span>
+            {model.name} · {model.family}
+          </span>
+          <span>{song.release}</span>
+        </p>
+        <button type="button" className="btn btn--block" autoFocus onClick={() => dialog.current?.close()}>
+          Done
+        </button>
+      </div>
     </dialog>
   );
 }

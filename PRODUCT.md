@@ -41,8 +41,8 @@ Songs and numbers come from the official Platinum Karaoke song-list updates, ext
 ## Brand Commitments
 
 - Name **Kantahan** (Tagalog, a place or time to sing together); independent, not affiliated with Platinum Karaoke or Vismay International Corporation, and it must say so.
-- Logo: a white K on a magenta tile whose arm ends in a yellow mic head (`apps/web/public/brand/`).
-- Palette direction "Videoke Night" (docs/design.md): Mic Magenta, Stage Indigo, Sunbeam Yellow, Aqua Glow, Lime Pop, Fiesta Blush. The owner asked explicitly that the UI be **colorful and not boring**, and that the UI/UX skills be consulted.
+- Logo: a dynamic microphone whose ball head doubles as a magnifying lens, on a yellow disc, with the handle banded in three line colours (`apps/web/public/brand/`). It must not resemble the owner's own website (a blue rounded tile with a white K and a yellow dot), which an earlier version did.
+- Visual direction "Metro Wayfinding" (docs/decisions/0006-wayfinding-ui.md): calm and clean, light first with dark following the phone, one coloured "line" per machine model, heavy plain song numbers. The owner rejected the earlier pink-purple palette and the LED scoreboard numbers, so neither returns. The first brief still asks for a colourful, not boring app: colour does jobs (model line, selection, state), it does not fill the screen.
 - Source credit wherever catalog data is shown (wording in docs/legal-and-attribution.md).
 - No co-author or tool attribution in commits or PRs (process rule).
 

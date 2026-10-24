@@ -1,6 +1,6 @@
 # 0003: M2 interface direction
 
-Status: accepted, 2026-10-23
+Status: accepted, 2026-10-23. Superseded by [0006](0006-wayfinding-ui.md) on 2026-10-24 (the owner rejected the LED token and the purple palette).
 
 ## Context
 

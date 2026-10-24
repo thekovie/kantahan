@@ -1,10 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Kantahan">
   <title>Kantahan</title>
-  <rect width="512" height="512" rx="112" fill="#E6007E"/>
-  <g stroke="#FFFFFF" stroke-width="56" stroke-linecap="round" fill="none">
-    <path d="M168 144V368"/>
-    <path d="M196 276L338 388"/>
-    <path d="M196 252L316 164"/>
-  </g>
-  <circle cx="352" cy="136" r="52" fill="#FFC93C"/>
+  <circle cx="256" cy="256" r="256" fill="#FFC20E"/>
+  <g transform="rotate(-45 256 243)"><circle cx="256" cy="168" r="96" fill="#FFFFFF" stroke="#0B1B2B" stroke-width="26"/><g fill="#0B1B2B"><circle cx="256" cy="108" r="8.5"/><circle cx="211" cy="138" r="8.5"/><circle cx="241" cy="138" r="8.5"/><circle cx="271" cy="138" r="8.5"/><circle cx="301" cy="138" r="8.5"/><circle cx="196" cy="168" r="8.5"/><circle cx="226" cy="168" r="8.5"/><circle cx="256" cy="168" r="8.5"/><circle cx="286" cy="168" r="8.5"/><circle cx="316" cy="168" r="8.5"/><circle cx="211" cy="198" r="8.5"/><circle cx="241" cy="198" r="8.5"/><circle cx="271" cy="198" r="8.5"/><circle cx="301" cy="198" r="8.5"/><circle cx="256" cy="228" r="8.5"/></g><rect x="212" y="262" width="88" height="30" rx="12" fill="#0B1B2B"/><path d="M224 290H288L280 410Q280 430 260 430H252Q232 430 232 410Z" fill="#0B1B2B"/><clipPath id="ah"><path d="M224 290H288L280 410Q280 430 260 430H252Q232 430 232 410Z"/></clipPath><g clip-path="url(#ah)"><rect x="216" y="334" width="80" height="14" fill="#E8685B"/><rect x="216" y="348" width="80" height="14" fill="#FFC20E"/><rect x="216" y="362" width="80" height="14" fill="#3DD6C8"/></g></g>
 </svg>

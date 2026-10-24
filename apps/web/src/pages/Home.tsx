@@ -1,6 +1,7 @@
 import { PauseCircle, SearchX, TriangleAlert, WifiOff } from "lucide-react";
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { CatalogNote } from "../components/CatalogNote";
+import { LineSign } from "../components/LineSign";
 import { LetterStrip } from "../components/LetterStrip";
 import { ModelPicker } from "../components/ModelPicker";
 import { Readout } from "../components/Readout";
@@ -42,6 +43,7 @@ export function Home({ catalog }: { catalog: ReturnType<typeof useCatalog> }) {
 
   return (
     <>
+      <LineSign model={model} />
       <ModelPicker models={manifest.models} value={modelSlug} onChange={selectModel} />
       <SearchField value={query} onChange={setQuery} modelName={model.name} />
       <div className={`hue-${model.hue}`}>

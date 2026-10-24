@@ -27,6 +27,7 @@ export function StatePanel({ icon, title, children, action }: StatePanelProps) {
 export function BootSkeleton() {
   return (
     <div role="status" aria-label="Loading the songbook">
+      <div className="boot__line" />
       <div className="boot__models" />
       <div className="boot__search" />
       <div className="songs boot__rows">

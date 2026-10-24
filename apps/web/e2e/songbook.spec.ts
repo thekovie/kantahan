@@ -77,11 +77,11 @@ test("the read-out shows the number at a monumental size", async ({ page }) => {
   await page.getByRole("list", { name: "Search results" }).getByRole("button").first().click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
-  const size = await dialog.locator(".led--large").evaluate((el) => Number.parseFloat(getComputedStyle(el).fontSize));
+  const size = await dialog.locator(".num--large").evaluate((el) => Number.parseFloat(getComputedStyle(el).fontSize));
   const viewport = page.viewportSize()?.width ?? 0;
   // Phones fill the dialog (about 55px digits); a desktop dialog is wider and must go much larger.
   expect(size).toBeGreaterThanOrEqual(viewport >= 900 ? 100 : 48);
-  const box = await dialog.locator(".led--large").boundingBox();
+  const box = await dialog.locator(".num--large").boundingBox();
   const dialogBox = await dialog.boundingBox();
   expect(box && dialogBox && box.x + box.width <= dialogBox.x + dialogBox.width).toBe(true);
 });

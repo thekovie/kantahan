@@ -172,10 +172,10 @@ describe("shell", () => {
     stubNetwork(ROUTES);
     const user = userEvent.setup();
     mount();
-    await user.click(await screen.findByRole("button", { name: "Switch to the light theme" }));
-    expect(document.documentElement).toHaveAttribute("data-theme", "light");
-    expect(localStorage.getItem("kantahan.theme")).toBe("light");
-    expect(screen.getByRole("button", { name: "Switch to the dark theme" })).toBeInTheDocument();
+    await user.click(await screen.findByRole("button", { name: "Switch to the dark theme" }));
+    expect(document.documentElement).toHaveAttribute("data-theme", "dark");
+    expect(localStorage.getItem("kantahan.theme")).toBe("dark");
+    expect(screen.getByRole("button", { name: "Switch to the light theme" })).toBeInTheDocument();
   });
 
   it("reaches the About, Privacy and Rights pages from the menu", async () => {

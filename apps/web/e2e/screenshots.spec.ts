@@ -26,6 +26,9 @@ for (const scheme of ["dark", "light"] as const) {
       await expect(page.getByRole("status").filter({ hasText: "found" })).toBeVisible();
       await page.screenshot({ path: name("results") });
 
+      await page.evaluate(() => window.scrollTo(0, 900));
+      await page.screenshot({ path: name("scrolled") });
+      await page.evaluate(() => window.scrollTo(0, 0));
       await page.getByRole("list", { name: "Search results" }).getByRole("button").first().click();
       await expect(page.getByRole("dialog")).toBeVisible();
       await page.screenshot({ path: name("readout") });

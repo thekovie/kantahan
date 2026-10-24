@@ -37,12 +37,12 @@ export function readTheme(): ThemePref {
 
 export const writeTheme = (theme: ThemePref): void => write(THEME_KEY, theme);
 
-/** The theme to paint: an explicit choice wins, otherwise the system setting, dark when unknown. */
+/** The theme to paint: an explicit choice wins, otherwise the system setting, light when unknown. */
 export function resolveTheme(pref: ThemePref): "dark" | "light" {
   if (pref !== "system") return pref;
   try {
-    return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   } catch {
-    return "dark";
+    return "light";
   }
 }
