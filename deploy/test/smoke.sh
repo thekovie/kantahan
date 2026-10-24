@@ -65,6 +65,14 @@ check "app routes fall back to the shell" test "$(status_of $BASE/rights)" = 200
 check "the manifest is the seeded catalog" manifest_is_seeded
 check "server version is hidden" server_version_hidden
 
+echo "== browser: the strict policy against the real stack"
+if [ -d ../apps/web/node_modules/@playwright/test ]; then
+  check "the app works in a real browser under the policy" node test/stack-e2e.mjs "$BASE"
+  check "that request's mail reached the sink" sink_has 'Subject: \[Kantahan\] Removal request'
+else
+  echo "  skip  browser checks (run npm ci in apps/web first)"
+fi
+
 echo "== contact: through nginx to mail"
 OK='{"type":"correction","message":"Song 00001 lists the wrong artist in this smoke test.","email":"tester@example.org","name":"Smoke Tester","reference":"Reyna, 00001","website":""}'
 check "a valid request is accepted" test "$(post $BASE "$OK")" = 202

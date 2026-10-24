@@ -69,13 +69,41 @@ function asInvalid(error: unknown): never {
   throw new LoadError("invalid", error instanceof Error ? error.message : "The catalog file is not valid.");
 }
 
-/** The current manifest from the server, never from a cache. */
-export async function fetchManifest(deps: LoadDeps = {}): Promise<Manifest> {
+declare global {
+  interface Window {
+    /** Set by the inline boot script on a first visit: the manifest download it already started. */
+    __kantahanManifest?: Promise<ArrayBuffer>;
+  }
+}
+
+/** The download the page started on a first visit, once; never used again (so it cannot go stale). */
+function takeEarlyManifest(): Promise<ArrayBuffer> | undefined {
+  if (typeof window === "undefined") return undefined;
+  const early = window.__kantahanManifest;
+  delete window.__kantahanManifest;
+  return early;
+}
+
+/**
+ * The manifest from the server. An explicit check (`fresh`) goes to the network and skips every cache, so
+ * nothing stale can hide a pause or a rollback. The very first load has nothing saved to go stale: it uses
+ * default caching and may take the download the page already started (see takeEarlyManifest).
+ */
+export async function fetchManifest(deps: LoadDeps = {}, options: { fresh?: boolean } = {}): Promise<Manifest> {
   try {
+    const early = deps.fetchFn || options.fresh ? undefined : takeEarlyManifest();
+    if (early) {
+      try {
+        const bytes = await early;
+        if (bytes.byteLength <= MAX_MANIFEST_BYTES) return parseManifest(parseJson(bytes));
+      } catch {
+        /* the early download failed or was not a manifest: fall through to a normal request */
+      }
+    }
     const bytes = await fetchBytes(
       `${deps.base ?? CATALOG_BASE}/manifest.json`,
       deps,
-      { cache: "no-store", headers: { Accept: "application/json" } },
+      { headers: { Accept: "application/json" }, ...(options.fresh ? { cache: "reload" as const } : {}) },
       { atMost: MAX_MANIFEST_BYTES },
     );
     return parseManifest(parseJson(bytes));

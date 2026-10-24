@@ -40,5 +40,5 @@ The PNGs were rendered from the SVGs with headless Chrome. Usage rules: keep cle
 - Mobile first; touch targets at least 48 px with 8 px gaps; body text at least 16 px.
 - AA contrast (4.5:1 text, 3:1 large text and UI parts) in light and dark.
 - Respect `prefers-reduced-motion`; animate transform and opacity only.
-- Fonts self-hosted (offline PWA, no third-party requests); display face for brand and numbers with tabular figures, plain legible face for body. Chosen in M2: Atkinson Hyperlegible Next (body), Fredoka (wordmark), DSEG7 Classic Bold (song numbers only), all under the SIL OFL (licenses in `apps/web/src/assets/fonts/`).
+- Fonts self-hosted (offline PWA, no third-party requests); display face for brand and numbers with tabular figures, plain legible face for body. Chosen in M2: Atkinson Hyperlegible Next (body), Fredoka (wordmark), DSEG7 Classic Bold (song numbers only), all under the SIL OFL (licenses in `apps/web/src/assets/fonts/`). The Fredoka file is a subset holding only the letters of the wordmark (2 KB instead of 30 KB; the licence has no Reserved Font Name, so a subset is allowed). Anything else set in Fredoka would need the full font again.
 - A standalone outlined wordmark SVG is still deferred; the app sets the wordmark in Fredoka.

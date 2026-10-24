@@ -17,7 +17,7 @@ services:
       SMTP_PORT: "2525"
       SMTP_SECURITY: none
       SMTP_FROM: Kantahan <contact@kantahan.example>
-      RATE_PER_IP_HOUR: "3"
+      RATE_PER_IP_HOUR: "4"
     depends_on:
       - smtp-sink
   web:

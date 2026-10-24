@@ -8,10 +8,13 @@ RUN npm ci
 COPY apps/web/ ./
 # The demo catalog and any local real catalog are excluded by .dockerignore.
 RUN npm run build
+# The built page carries the theme script inline; the web server's policy must name its hash.
+COPY deploy/web/security-headers.conf /tmp/security-headers.conf
+RUN sed -i "s|__THEME_SCRIPT_HASH__|$(cat dist/csp-script-hash.txt)|" /tmp/security-headers.conf && rm dist/csp-script-hash.txt
 
 FROM nginxinc/nginx-unprivileged:1.27-alpine
 COPY deploy/web/nginx.conf /etc/nginx/conf.d/default.conf
-COPY deploy/web/security-headers.conf /etc/nginx/snippets/security-headers.conf
+COPY --from=build /tmp/security-headers.conf /etc/nginx/snippets/security-headers.conf
 COPY --from=build /src/apps/web/dist /usr/share/nginx/html
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD wget -q -O /dev/null http://127.0.0.1:8080/healthz || exit 1

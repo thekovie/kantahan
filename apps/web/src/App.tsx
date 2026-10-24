@@ -1,13 +1,15 @@
-import { useEffect, useRef } from "react";
+import { Suspense, lazy, useEffect, useRef } from "react";
 import { Route, Switch, useLocation } from "wouter";
 import { Footer } from "./components/Footer";
 import { Header } from "./components/Header";
 import { useCatalog } from "./hooks/useCatalog";
 import { useTheme } from "./hooks/useTheme";
-import { About } from "./pages/About";
 import { Home } from "./pages/Home";
-import { Privacy } from "./pages/Privacy";
-import { Rights } from "./pages/Rights";
+
+// The text pages (and the contact form) load when first opened, keeping the songbook's first load small.
+const About = lazy(() => import("./pages/About").then((m) => ({ default: m.About })));
+const Privacy = lazy(() => import("./pages/Privacy").then((m) => ({ default: m.Privacy })));
+const Rights = lazy(() => import("./pages/Rights").then((m) => ({ default: m.Rights })));
 
 const TITLES: Record<string, string> = {
   "/": "Kantahan",
@@ -39,22 +41,24 @@ export default function App() {
       </a>
       <Header theme={theme} onToggleTheme={toggle} demo={demo} />
       <main id="main" ref={main} tabIndex={-1} className="shell__main">
-        <Switch>
-          <Route path="/">
-            <Home catalog={catalog} />
-          </Route>
-          <Route path="/about" component={About} />
-          <Route path="/privacy" component={Privacy} />
-          <Route path="/rights" component={Rights} />
-          <Route>
-            <article className="prose">
-              <h1>Page not found</h1>
-              <p>
-                That page does not exist. <a href="/">Back to the songbook</a>.
-              </p>
-            </article>
-          </Route>
-        </Switch>
+        <Suspense fallback={null}>
+          <Switch>
+            <Route path="/">
+              <Home catalog={catalog} />
+            </Route>
+            <Route path="/about" component={About} />
+            <Route path="/privacy" component={Privacy} />
+            <Route path="/rights" component={Rights} />
+            <Route>
+              <article className="prose">
+                <h1>Page not found</h1>
+                <p>
+                  That page does not exist. <a href="/">Back to the songbook</a>.
+                </p>
+              </article>
+            </Route>
+          </Switch>
+        </Suspense>
       </main>
       <Footer />
     </div>
