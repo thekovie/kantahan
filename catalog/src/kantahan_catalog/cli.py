@@ -293,10 +293,19 @@ def cmd_restore(args: argparse.Namespace, out: Out, **_: Any) -> int:
         return 2
     with runner.run_lock(args.work):
         summary = restore_backup(args.backup, args.work, _publish_dir(args))
-    out(f"restored; live catalog {summary.live_version}, versions {', '.join(summary.versions)}")
+    out(f"restored; live catalog {summary.live_version or 'none (run publish)'}")
+    if summary.versions:
+        out(f"version folders brought back: {', '.join(summary.versions)}")
+    if summary.skipped:
+        out(
+            f"left out: {', '.join(summary.skipped)} (older than the live catalog or a withdrawal, "
+            "or already on the server)"
+        )
     if summary.kept_aside:
         out(f"previous files kept in {summary.kept_aside}")
-    out("A restored database may predate withdrawals made later: check them before publishing.")
+    for note in summary.notes:
+        out(f"WARNING: {note}")
+    out("Withdrawals and a pause made on this server were kept; the live catalog was not changed.")
     return 0
 
 

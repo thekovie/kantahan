@@ -234,7 +234,7 @@ def test_backup_and_restore_drill_through_the_command_line(world, tmp_path):
     assert code == 2 and "--yes" in text and not (work / "publish").exists()
 
     code, text = run("restore", str(next(backups.iterdir())), "--yes")
-    assert code == 0 and "restored" in text and "predate withdrawals" in text
+    assert code == 0 and "restored" in text and "Withdrawals and a pause" in text
     assert manifest(work) == live
     code, text = run("publish")
     assert code == 0 and "unchanged" in text

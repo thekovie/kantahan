@@ -41,7 +41,7 @@ function inlineBootScript(): Plugin {
     apply: "build",
     transformIndexHtml: {
       order: "pre",
-      handler: (html) => html.replace('<script src="/theme-init.js"></script>', `<script>${source}</script>`),
+      handler: (html) => html.replace('<script src="/theme-init.js"></script>', () => `<script>${source}</script>`),
     },
     generateBundle() {
       this.emitFile({ type: "asset", fileName: "csp-script-hash.txt", source: hash });

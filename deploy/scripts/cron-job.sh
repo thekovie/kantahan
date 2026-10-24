@@ -8,7 +8,11 @@
 set -u
 cd "$(dirname "$0")/.."
 LOG_DIR="${KANTAHAN_LOG_DIR:-/var/log/kantahan}"
-mkdir -p "$LOG_DIR" 2>/dev/null || LOG_DIR="${TMPDIR:-/tmp}"
+if ! mkdir -p "$LOG_DIR" 2>/dev/null || [ ! -w "$LOG_DIR" ]; then
+  # Say so loudly (cron mails this) rather than logging to a predictable shared path.
+  echo "kantahan cron: cannot write logs to $LOG_DIR; create it or set KANTAHAN_LOG_DIR" >&2
+  exit 1
+fi
 LOG="$LOG_DIR/ingest-$1.log"
 {
   echo "=== $(date -u +%FT%TZ) kantahan-catalog $*"

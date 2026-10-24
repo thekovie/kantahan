@@ -10,7 +10,10 @@ COPY apps/web/ ./
 RUN npm run build
 # The built page carries the theme script inline; the web server's policy must name its hash.
 COPY deploy/web/security-headers.conf /tmp/security-headers.conf
-RUN sed -i "s|__THEME_SCRIPT_HASH__|$(cat dist/csp-script-hash.txt)|" /tmp/security-headers.conf && rm dist/csp-script-hash.txt
+RUN test -s dist/csp-script-hash.txt \
+    && sed -i "s|__THEME_SCRIPT_HASH__|$(cat dist/csp-script-hash.txt)|" /tmp/security-headers.conf \
+    && grep -q "sha256-" /tmp/security-headers.conf \
+    && rm dist/csp-script-hash.txt
 
 FROM nginxinc/nginx-unprivileged:1.27-alpine
 COPY deploy/web/nginx.conf /etc/nginx/conf.d/default.conf

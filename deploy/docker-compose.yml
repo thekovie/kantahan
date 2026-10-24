@@ -2,6 +2,13 @@
 # Copy .env.example to .env first and fill it in (see docs/deployment.md).
 name: kantahan
 
+# Container logs rotate, so bot traffic cannot fill the disk.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   # The app and the published catalog, plus a proxy for /api to the contact service.
   web:
@@ -13,9 +20,11 @@ services:
     # Bound to the host's loopback by default: put your reverse proxy in front (docs/deployment.md).
     ports:
       - "${WEB_BIND:-127.0.0.1:8080}:8080"
+    # Not "healthy": the site must stay up even if the contact service cannot start (for example after a
+    # wrong mail setting). Only the form is affected then.
     depends_on:
       contact:
-        condition: service_healthy
+        condition: service_started
     volumes:
       - catalog-publish:/usr/share/nginx/html/catalog:ro
     read_only: true
@@ -23,6 +32,9 @@ services:
       - /tmp
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
+    mem_limit: 256m
+    pids_limit: 128
+    logging: *logging
 
   # Relays rights and correction requests by e-mail. Not published to the host.
   contact:
@@ -42,6 +54,9 @@ services:
       - /tmp
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
+    mem_limit: 256m
+    pids_limit: 128
+    logging: *logging
 
   # The catalog job. Never started by `up`; run it on demand or from cron:
   #   docker compose run --rm ingest run          (discover, fetch, import, publish)
@@ -61,6 +76,9 @@ services:
       - /tmp
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
+    mem_limit: 1g
+    pids_limit: 256
+    logging: *logging
 
 volumes:
   # The live catalog: written by `ingest`, read by `web`.
