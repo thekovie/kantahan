@@ -1,11 +1,10 @@
 import { openDB } from "idb";
 import { afterEach, describe, expect, it } from "vitest";
-import { makeBundle, makeManifest } from "../test-utils";
+import { makeBundle, makeManifest, wipeStorage } from "../test-utils";
 import { loadCatalog, loadManifest, resetStorage, saveCatalog, saveManifest } from "./storage";
 
 afterEach(async () => {
-  resetStorage();
-  indexedDB.deleteDatabase("kantahan");
+  await wipeStorage();
 });
 
 describe("storage", () => {

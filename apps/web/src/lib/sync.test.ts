@@ -1,12 +1,11 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { MODEL_B_ROWS, fakeFetch, makeBundle, makeManifest, modelEntry } from "../test-utils";
+import { MODEL_B_ROWS, fakeFetch, makeBundle, makeManifest, modelEntry, wipeStorage } from "../test-utils";
 import { readLastCheck } from "./prefs";
-import { loadCatalog, loadManifest, resetStorage, saveCatalog, saveManifest } from "./storage";
+import { loadCatalog, loadManifest, saveCatalog, saveManifest } from "./storage";
 import { checkForUpdates } from "./sync";
 
-afterEach(() => {
-  resetStorage();
-  indexedDB.deleteDatabase("kantahan");
+afterEach(async () => {
+  await wipeStorage();
 });
 
 const v1 = makeManifest({ version: "v1" });

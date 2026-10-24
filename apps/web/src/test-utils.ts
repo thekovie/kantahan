@@ -1,4 +1,6 @@
 import { createHash } from "node:crypto";
+import { cleanup } from "@testing-library/react";
+import { resetStorage } from "./lib/storage";
 import { parseBundle, toSongs } from "./lib/catalog";
 import type { BundleV1, HueKey, Manifest, ModelInfo, Song } from "./lib/types";
 
@@ -88,4 +90,20 @@ export function fakeFetch(routes: Record<string, unknown>): typeof fetch & { cal
     return new Response(JSON.stringify(routes[key]), { status: 200, headers: { "Content-Type": "application/json" } });
   };
   return Object.assign(impl, { calls }) as typeof fetch & { calls: string[] };
+}
+
+/**
+ * End-of-test cleanup for anything that touches IndexedDB: unmount, let the background writes of
+ * the test that just ended land, close the connection and wait until the database is really gone.
+ * Without the waiting, a late write can recreate the database and leak into the next test.
+ */
+export async function wipeStorage(): Promise<void> {
+  cleanup();
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  resetStorage();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise<void>((resolve) => {
+    const request = indexedDB.deleteDatabase("kantahan");
+    request.onsuccess = request.onerror = request.onblocked = () => resolve();
+  });
 }
