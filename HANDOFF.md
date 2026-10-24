@@ -1,10 +1,10 @@
 # Handoff
 
-Last updated: **2026-10-23**
+Last updated: **2026-10-24**
 
 ## Current milestone
 
-**M5, production readiness: built and verified locally on branch `m5-production` (PR pending).** M0 to M4 are merged to `main`. The full stack (web, contact, ingest) builds as Docker images and passes a smoke test, but **nothing is hosted yet**: deploying needs a VPS, a domain, a reverse proxy and an SMTP account, which are the owner's to provide ([docs/deployment.md](docs/deployment.md)). The project is feature-complete against the brief.
+**M0 to M5 are all merged to `main`; the project is feature-complete and verified locally.** M5 (production readiness) landed in PR #5. The full stack (web, contact, ingest) builds as Docker images and passes a smoke test, but **nothing is hosted yet**: deploying needs a VPS, a domain, a reverse proxy and an SMTP account, which are the owner's to provide ([docs/deployment.md](docs/deployment.md)). The project is feature-complete against the brief.
 
 ## Completed
 
