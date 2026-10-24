@@ -1,116 +1,385 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-23T00:00:00Z",
+  "generatedAt": "2026-10-24T00:00:00Z",
   "title": "Design System: Kantahan",
   "extensions": {
     "colorMeta": {
-      "stage-indigo": { "role": "neutral", "displayName": "Stage Indigo", "canonical": "#1b1038", "tonalRamp": ["#0d081c", "#1b1038", "#261650", "#33206b", "#4b3a83", "#7a68ad", "#b3a6d3", "#ece8f5"] },
-      "mic-magenta": { "role": "primary", "displayName": "Mic Magenta", "canonical": "#c4006d", "tonalRamp": ["#4a0029", "#76003f", "#9e0058", "#c4006d", "#e0338f", "#ee6bb0", "#f7a5d0", "#fddff0"] },
-      "sunbeam-yellow": { "role": "secondary", "displayName": "Sunbeam Yellow", "canonical": "#ffc93c", "tonalRamp": ["#4d3a00", "#7a5c00", "#a88000", "#d6a500", "#ffc93c", "#ffd76b", "#ffe6a0", "#fff5d6"] },
-      "aqua-glow": { "role": "secondary", "displayName": "Aqua Glow", "canonical": "#3de0f5", "tonalRamp": ["#033c44", "#066877", "#0a95aa", "#17bdd3", "#3de0f5", "#7aebf9", "#b3f3fc", "#e3fafe"] },
-      "led-magenta": { "role": "tertiary", "displayName": "LED Magenta", "canonical": "#ff4fb0", "tonalRamp": ["#4d0033", "#80005a", "#b30080", "#e0309a", "#ff4fb0", "#ff82c8", "#ffb3de", "#ffe3f3"] },
-      "led-lime": { "role": "tertiary", "displayName": "LED Lime", "canonical": "#a6f04a", "tonalRamp": ["#2a4000", "#4a7000", "#6fa30a", "#8cd02e", "#a6f04a", "#c0f57c", "#d9f9ad", "#effcd9"] },
-      "fiesta-blush": { "role": "neutral", "displayName": "Fiesta Blush", "canonical": "#fff0f7", "tonalRamp": ["#7a5c93", "#a98cbd", "#e4c3d6", "#f2d6e5", "#ffe1ef", "#fff0f7", "#fff7fb", "#ffffff"] }
+      "ink": {
+        "role": "primary",
+        "displayName": "Signage Ink",
+        "canonical": "#0b1b2b",
+        "tonalRamp": [
+          "#10263d",
+          "#1c456e",
+          "#29639e",
+          "#3882cc",
+          "#69a1d9",
+          "#99bfe5",
+          "#c2d9ef",
+          "#ebf2fa"
+        ]
+      },
+      "wall": {
+        "role": "neutral",
+        "displayName": "Cool Wall",
+        "canonical": "#f4f6f9",
+        "tonalRamp": [
+          "#1b2431",
+          "#314159",
+          "#465e81",
+          "#5d7ba7",
+          "#859bbc",
+          "#adbcd2",
+          "#ced6e4",
+          "#eef2f6"
+        ]
+      },
+      "sign": {
+        "role": "neutral",
+        "displayName": "Sign White",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#262626",
+          "#454545",
+          "#636363",
+          "#828282",
+          "#a1a1a1",
+          "#bfbfbf",
+          "#d9d9d9",
+          "#f2f2f2"
+        ]
+      },
+      "sign-2": {
+        "role": "neutral",
+        "displayName": "Sign Tint",
+        "canonical": "#e9eef4",
+        "tonalRamp": [
+          "#192533",
+          "#2e435c",
+          "#426085",
+          "#587eac",
+          "#819ec0",
+          "#aabdd5",
+          "#ccd8e6",
+          "#eef2f6"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#d3dbe5",
+        "tonalRamp": [
+          "#1c2530",
+          "#334357",
+          "#4a617d",
+          "#627ea2",
+          "#889eb9",
+          "#afbdd0",
+          "#cfd8e3",
+          "#eff2f6"
+        ]
+      },
+      "rule-strong": {
+        "role": "neutral",
+        "displayName": "Strong Rule",
+        "canonical": "#66758a",
+        "tonalRamp": [
+          "#21252c",
+          "#3b434f",
+          "#556172",
+          "#6f7f95",
+          "#929eaf",
+          "#b6bec9",
+          "#d3d8de",
+          "#f0f2f4"
+        ]
+      },
+      "ink-muted": {
+        "role": "neutral",
+        "displayName": "Muted Ink",
+        "canonical": "#44546a",
+        "tonalRamp": [
+          "#1e252f",
+          "#364254",
+          "#4e6079",
+          "#677e9d",
+          "#8c9db5",
+          "#b1bdcd",
+          "#d0d7e1",
+          "#eff2f5"
+        ]
+      },
+      "error": {
+        "role": "neutral",
+        "displayName": "Error",
+        "canonical": "#b3261e",
+        "tonalRamp": [
+          "#420e0b",
+          "#761914",
+          "#aa241d",
+          "#db3329",
+          "#e4655d",
+          "#ed9792",
+          "#f4c0bd",
+          "#fbeae9"
+        ]
+      },
+      "line-red": {
+        "role": "secondary",
+        "displayName": "Line Red",
+        "canonical": "#c8281c",
+        "tonalRamp": [
+          "#430d09",
+          "#791811",
+          "#ae2318",
+          "#e03124",
+          "#e86359",
+          "#ef968f",
+          "#f6c0bc",
+          "#fceae9"
+        ]
+      },
+      "line-blue": {
+        "role": "secondary",
+        "displayName": "Line Blue",
+        "canonical": "#0057b8",
+        "tonalRamp": [
+          "#00244c",
+          "#00418a",
+          "#005ec7",
+          "#057bff",
+          "#429cff",
+          "#80bcff",
+          "#b2d7ff",
+          "#e5f2ff"
+        ]
+      },
+      "line-teal": {
+        "role": "secondary",
+        "displayName": "Line Teal",
+        "canonical": "#00786f",
+        "tonalRamp": [
+          "#004c47",
+          "#008a7f",
+          "#00c7b8",
+          "#05ffec",
+          "#42fff1",
+          "#80fff5",
+          "#b2fff9",
+          "#e5fffd"
+        ]
+      },
+      "line-orange": {
+        "role": "secondary",
+        "displayName": "Line Orange",
+        "canonical": "#b84a0c",
+        "tonalRamp": [
+          "#481d05",
+          "#813408",
+          "#bb4b0c",
+          "#f06314",
+          "#f38a4e",
+          "#f7b087",
+          "#facfb7",
+          "#fdefe7"
+        ]
+      },
+      "line-green": {
+        "role": "secondary",
+        "displayName": "Line Green",
+        "canonical": "#4d7c0f",
+        "tonalRamp": [
+          "#2a4408",
+          "#4c7b0f",
+          "#6eb115",
+          "#90e420",
+          "#abeb57",
+          "#c6f18d",
+          "#ddf7bb",
+          "#f4fce8"
+        ]
+      },
+      "line-yellow": {
+        "role": "secondary",
+        "displayName": "Line Yellow",
+        "canonical": "#ffc20e",
+        "tonalRamp": [
+          "#4c3900",
+          "#8a6700",
+          "#c79500",
+          "#ffc005",
+          "#ffcf42",
+          "#ffdf80",
+          "#ffecb2",
+          "#fff9e5"
+        ]
+      }
     },
     "typographyMeta": {
-      "wordmark": { "displayName": "Wordmark", "purpose": "Header brand only, Fredoka." },
-      "led-digits": { "displayName": "LED digits", "purpose": "Song numbers only, DSEG7; sized by container in the read-out." },
-      "body": { "displayName": "Body", "purpose": "Everything else, Atkinson Hyperlegible Next." }
+      "wordmark": {
+        "displayName": "Wordmark",
+        "purpose": "Header brand in Barlow Semi Condensed 700."
+      },
+      "song-number": {
+        "displayName": "Song Number",
+        "purpose": "Every song number; tabular, heavy, 2rem in rows, up to 9rem in the read-out."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Read-out song title."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Song title in a row."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Prose, 65ch max."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Artist, status, hints, footer."
+      }
     },
     "shadows": [
-      { "name": "menu-panel", "value": "0 12px 28px rgb(10 4 24 / 0.35)", "purpose": "Only shadow in the system; the open menu." },
-      { "name": "focus-ring", "value": "outline: 3px solid var(--focus); outline-offset: 3px", "purpose": "Keyboard focus, aqua in dark and violet in light." }
+      {
+        "name": "menu-popover",
+        "value": "0 10px 28px rgb(11 27 43 / 0.2)",
+        "purpose": "Header menu popover only."
+      },
+      {
+        "name": "line-sign-mask",
+        "value": "0 0 0 0.5rem var(--bg)",
+        "purpose": "Wall-coloured mask so rows scrolling under the sticky line sign do not show at its rounded corners."
+      },
+      {
+        "name": "scrim",
+        "value": "rgb(11 27 43 / 0.55) (dark: rgb(0 0 0 / 0.65))",
+        "purpose": "Backdrop behind the read-out sheet."
+      }
     ],
     "motion": [
-      { "name": "ease-out-expo", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Read-out entry (200ms) and LED light-up (260ms, 55ms stagger per digit)." },
-      { "name": "press", "value": "transform: scale(0.96 to 0.985)", "purpose": "Active state on chips, rows, buttons." },
-      { "name": "reduced-motion", "value": "animation and transition disabled", "purpose": "prefers-reduced-motion removes all motion." }
+      {
+        "name": "ease-out-expo",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Read-out sheet (220ms) and number (260ms, 60ms delay) entrance. Disabled under prefers-reduced-motion."
+      }
     ],
     "breakpoints": [
-      { "name": "wide", "value": "48rem" },
-      { "name": "desktop", "value": "64rem" }
+      {
+        "name": "md",
+        "value": "48rem"
+      },
+      {
+        "name": "lg",
+        "value": "64rem"
+      }
     ]
   },
   "components": [
     {
-      "name": "LED Number Token",
-      "kind": "custom",
-      "refersTo": "led-tile",
-      "description": "Song number in seven-segment digits on a dark tile with ghost segments.",
-      "html": "<span class=\"ds-led\" data-ghost=\"88888\"><span class=\"ds-led-digits\">01234</span></span>",
-      "css": ".ds-led{position:relative;display:inline-grid;place-items:center;padding:.5rem .75rem;border-radius:.75rem;background:#12091f;font-family:DSEG7,ui-monospace,monospace;font-weight:700;font-size:1.625rem;line-height:1;letter-spacing:.06em}.ds-led::before,.ds-led-digits{grid-area:1/1;white-space:pre;color:#ff4fb0}.ds-led::before{content:attr(data-ghost);opacity:.13}"
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Ink fill, the one primary action.",
+      "html": "<button class=\"ds-btn\">Close</button>",
+      "css": ".ds-btn{min-height:3.5rem;padding:0 1.5rem;border:0;border-radius:.75rem;background:#0b1b2b;color:#fff;font:700 1rem 'Atkinson Hyperlegible Next',system-ui,sans-serif}.ds-btn:hover{filter:brightness(1.08)}.ds-btn:active{filter:brightness(.94)}.ds-btn:focus-visible{outline:3px solid #0b1b2b;outline-offset:3px}"
     },
     {
-      "name": "Song Row",
-      "kind": "card",
-      "refersTo": "song-row",
-      "description": "Tappable result: LED token, title over artist.",
-      "html": "<button class=\"ds-song\"><span class=\"ds-tok\">01234</span><span><span class=\"ds-t\">Song Title</span><span class=\"ds-a\">Artist</span></span></button>",
-      "css": ".ds-song{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:.875rem;width:100%;min-height:4.5rem;padding:.625rem .875rem .625rem .625rem;border:0;border-radius:1rem;background:#261650;color:#f8f3ff;text-align:left;font-family:'Atkinson Hyperlegible Next',system-ui,sans-serif}.ds-song:hover{background:#33206b}.ds-song:focus-visible{outline:3px solid #3de0f5;outline-offset:3px}.ds-song:active{transform:scale(.985)}.ds-tok{padding:.5rem .75rem;border-radius:.75rem;background:#12091f;color:#ff4fb0;font-family:DSEG7,ui-monospace,monospace;font-weight:700;font-size:1.625rem}.ds-t{display:block;font-size:1.0625rem;font-weight:600}.ds-a{display:block;font-size:.9375rem;color:#cdbff0}"
-    },
-    {
-      "name": "Model Chip",
-      "kind": "chip",
-      "refersTo": "chip",
-      "description": "Machine model selector; selected state fills with the family hue.",
-      "html": "<button class=\"ds-chip\">Model A</button> <button class=\"ds-chip ds-on\">Model B</button>",
-      "css": ".ds-chip{min-height:3rem;padding:0 1.125rem;border:2px solid #9a86d6;border-radius:999px;background:#261650;color:#f8f3ff;font:600 1rem 'Atkinson Hyperlegible Next',system-ui,sans-serif}.ds-chip:focus-visible{outline:3px solid #3de0f5;outline-offset:3px}.ds-chip:active{transform:scale(.97)}.ds-on{border-color:#f8f3ff;background:#3de0f5;color:#1b1038}"
+      "name": "Quiet Button",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "Secondary action with a strong-rule border.",
+      "html": "<button class=\"ds-quiet\">Check for updates</button>",
+      "css": ".ds-quiet{min-height:3rem;padding:0 1.125rem;border:2px solid #66758a;border-radius:.75rem;background:transparent;color:#0b1b2b;font:600 .9375rem system-ui,sans-serif}.ds-quiet:hover{background:#e9eef4}.ds-quiet:focus-visible{outline:3px solid #0b1b2b;outline-offset:3px}"
     },
     {
       "name": "Search Field",
       "kind": "input",
       "refersTo": "search-field",
-      "description": "56px search input on Surface with a strong border.",
+      "description": "Tall white field with strong-rule border.",
       "html": "<input class=\"ds-search\" type=\"search\" placeholder=\"Title, artist or number\">",
-      "css": ".ds-search{width:100%;min-height:3.5rem;padding:0 1rem;border:2px solid #9a86d6;border-radius:1rem;background:#261650;color:#f8f3ff;font:400 1.125rem 'Atkinson Hyperlegible Next',system-ui,sans-serif}.ds-search::placeholder{color:#cdbff0}.ds-search:focus-visible{outline:3px solid #3de0f5;outline-offset:3px}"
+      "css": ".ds-search{width:100%;box-sizing:border-box;min-height:3.5rem;padding:0 1rem;border:2px solid #66758a;border-radius:.75rem;background:#fff;color:#0b1b2b;font:1.125rem system-ui,sans-serif}.ds-search::placeholder{color:#44546a;opacity:1}.ds-search:focus-visible{border-color:#0b1b2b;outline:2px solid #0b1b2b;outline-offset:0}"
     },
     {
-      "name": "Letter Rail Key",
-      "kind": "nav",
-      "refersTo": "letter",
-      "description": "48px alphabet key; selected is Sunbeam Yellow.",
-      "html": "<button class=\"ds-letter\">A</button> <button class=\"ds-letter ds-sel\">B</button>",
-      "css": ".ds-letter{width:3rem;height:3rem;border:2px solid transparent;border-radius:.875rem;background:#261650;color:#f8f3ff;font:700 1rem 'Atkinson Hyperlegible Next',system-ui,sans-serif}.ds-letter:hover{background:#33206b}.ds-letter:focus-visible{outline:3px solid #3de0f5;outline-offset:3px}.ds-sel{background:#ffc93c;color:#1b1038}"
+      "name": "Model Chip",
+      "kind": "chip",
+      "refersTo": "model-chip",
+      "description": "Pill with line-colour dot; selected fills with the line colour.",
+      "html": "<span class=\"ds-chip\"><i class=\"ds-dot\"></i>Model A</span> <span class=\"ds-chip ds-on\">Model B</span>",
+      "css": ".ds-chip{display:inline-flex;align-items:center;gap:.5rem;min-height:3rem;padding:0 1.125rem 0 .875rem;border:2px solid #66758a;border-radius:999px;background:#fff;color:#0b1b2b;font:600 1rem system-ui,sans-serif}.ds-chip:hover{background:#e9eef4}.ds-dot{width:1rem;height:1rem;border-radius:50%;background:#0057b8;box-shadow:0 0 0 1px #66758a}.ds-on{border-color:#00786f;background:#00786f;color:#fff}"
     },
     {
-      "name": "Primary Button",
-      "kind": "button",
-      "refersTo": "button-primary",
-      "description": "Magenta 56px action, used for closing the read-out and state actions.",
-      "html": "<button class=\"ds-btn\">Close</button>",
-      "css": ".ds-btn{min-height:3.5rem;padding:0 1.5rem;border:0;border-radius:1rem;background:#c4006d;color:#fff;font:700 1rem 'Atkinson Hyperlegible Next',system-ui,sans-serif}.ds-btn:focus-visible{outline:3px solid #3de0f5;outline-offset:3px}.ds-btn:active{transform:scale(.98)}"
+      "name": "Line Sign",
+      "kind": "custom",
+      "refersTo": "line-sign",
+      "description": "Selected model as a metro line header.",
+      "html": "<div class=\"ds-line\"><span class=\"ds-badge\">A</span><span class=\"ds-name\">Model A</span><span class=\"ds-detail\">Vol. 1-12</span></div>",
+      "css": ".ds-line{display:flex;align-items:center;gap:.75rem;min-height:3rem;padding:.375rem 1rem .375rem .625rem;border-radius:.75rem;background:#0057b8;color:#fff}.ds-badge{display:grid;place-items:center;width:2rem;height:2rem;border-radius:50%;background:#fff;color:#0057b8;font:700 1.25rem 'Barlow Semi Condensed',sans-serif}.ds-name{font:700 1.5rem/1.1 'Barlow Semi Condensed',sans-serif}.ds-detail{margin-left:auto;font:600 .9375rem system-ui,sans-serif}"
+    },
+    {
+      "name": "Song Row",
+      "kind": "custom",
+      "refersTo": "song-row",
+      "description": "Ruled row: title and artist left, heavy number right.",
+      "html": "<div class=\"ds-row\"><span><b class=\"ds-t\">Sample Title</b><span class=\"ds-a\">Sample Artist</span></span><span class=\"ds-n\">00589</span></div>",
+      "css": ".ds-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:1rem;min-height:4.5rem;padding:.5rem .5rem .5rem .25rem;border-bottom:1px solid #d3dbe5;color:#0b1b2b;font-family:system-ui,sans-serif}.ds-row:hover{background:#e9eef4}.ds-t{display:block;font-size:1.0625rem;font-weight:600;line-height:1.3}.ds-a{display:block;color:#44546a;font-size:.9375rem}.ds-n{font:700 2rem/1 'Barlow Semi Condensed',sans-serif;font-variant-numeric:tabular-nums;letter-spacing:.02em}"
+    },
+    {
+      "name": "Alphabet Key",
+      "kind": "chip",
+      "refersTo": "letter-key",
+      "description": "3rem square key; selected is ink.",
+      "html": "<span class=\"ds-k\">A</span> <span class=\"ds-k ds-s\">B</span>",
+      "css": ".ds-k{display:inline-grid;place-items:center;width:3rem;height:3rem;border:2px solid #d3dbe5;border-radius:.5rem;background:#fff;color:#0b1b2b;font:700 1rem system-ui,sans-serif}.ds-k:hover{background:#e9eef4}.ds-s{border-color:#0b1b2b;background:#0b1b2b;color:#fff}"
     }
   ],
   "narrative": {
-    "northStar": "Videoke Night",
-    "overview": "A songbook you can read in the dark. Videoke night is taken only as palette, type, density and one move: the LED song number. The ground is Stage Indigo, the shell is Mic Magenta, and the number is the product, so every result is led by a seven-segment numeral on a dark tile while the rest of the screen stays calm and complete. Dark is the default because people use it in a dim room; the light theme, Fiesta Blush, keeps the same hues darkened for contrast.",
+    "northStar": "Metro Wayfinding",
+    "overview": "A songbook read like transit signage. Each karaoke machine model is a coloured line; the selected model is a flat bar of that colour pinned to the top of the list. Every song number is a plain, heavy station number at the right edge of a ruled row, and tapping a row opens it as a big read-out sign. Light is the first design; dark is a full matching version that follows the phone.\n\nThe surface is calm and clean: cool off-white wall, white sign surfaces, ink text, hairline rules. Colour is reserved for the six lines and the yellow logo disc. Chrome (brand, selection, focus, primary button) is ink. Depth is flat fills and rules.",
     "keyCharacteristics": [
-      "Dark default, light Fiesta Blush alternative, switched by data-theme=\"light\" on the root.",
-      "Song numbers in DSEG7 on a tile that is dark in both themes, with unlit \"ghost\" segments behind the lit digits.",
-      "Colour carries meaning: magenta shell, yellow selection, aqua focus, family hue per machine model.",
-      "Hyperlegible body face, rounded wordmark face, digit face reserved for numbers.",
-      "A \"Demo\" pill in the header marks the synthetic catalog."
+      "Light by default, dark via data-theme following the phone.",
+      "Ink is the brand: brand, select and focus are ink in light and near-white in dark.",
+      "One colour per model (a line), always paired with a written model name.",
+      "Song numbers in Barlow Semi Condensed bold, tabular, the largest thing on any row.",
+      "Every interactive target at least 3rem tall.",
+      "Ruled lists, not boxed cards; flat fills; no gradients, no glow."
     ],
     "rules": [
-      { "name": "The Number Carries Colour Rule", "body": "Hue is spent on song numbers and the model that owns them. Chrome stays indigo, magenta or neutral.", "section": "colors" },
-      { "name": "The Contrast Pair Rule", "body": "Every text and background pair is checked in theme.contrast.test.ts; change a token and its test together.", "section": "colors" },
-      { "name": "The Digits Only Rule", "body": "DSEG7 is for song numbers. Never set words in it.", "section": "typography" },
-      { "name": "The Leading Zero Rule", "body": "Numbers are strings; render every digit given.", "section": "typography" },
-      { "name": "The Flat Rows Rule", "body": "Rows, chips and fields have no shadow at rest or on hover; hover shifts to Surface 2.", "section": "elevation" }
+      {
+        "name": "The Ink Chrome Rule",
+        "body": "Brand, selection, focus and the primary button are ink, never a line colour. Line colours mean \"this machine model\" and nothing else.",
+        "section": "colors"
+      },
+      {
+        "name": "The Name Beside Colour Rule",
+        "body": "A line colour is never the only identifier; the model name is always written out beside it.",
+        "section": "colors"
+      },
+      {
+        "name": "The Station Number Rule",
+        "body": "Song numbers always use the display face, tabular figures and weight 700; they are never styled as decoration, glowing or segmented.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Sign Rule",
+        "body": "No gradients, glows or card shadows. A sign is a flat fill with a hairline or 2px border.",
+        "section": "elevation"
+      }
     ],
     "dos": [
-      "Do keep every target at least 48px and every text pair AA.",
-      "Do show the model, coverage and source near the results.",
-      "Do underline links inside running text.",
-      "Do give each machine model family one LED hue and use it consistently across chip, digits and read-out border.",
-      "Do keep the LED tile dark in both themes."
+      "Do keep light as the default and dark as a full second design that follows the phone.",
+      "Do set a model's colour only through the hue-* class (--hue, --on-hue) and read those two variables everywhere.",
+      "Do keep every target at least 3rem tall and every text/background pair at AA.",
+      "Do use rules, fills and spacing for structure; keep lists ruled.",
+      "Do render song numbers via the shared number token with the display face, tabular figures, weight 700."
     ],
     "donts": [
-      "Don't use DSEG7 or the LED tile for anything but song numbers.",
-      "Don't add shadows to rows, chips or fields.",
-      "Don't put gradient text, glass, coloured side stripes, textures or emoji icons on any surface.",
-      "Don't use a one-colour accent: selection, focus and shell each have their own hue.",
-      "Don't animate layout properties; use opacity and transform, and honour reduced motion."
+      "Don't use a line colour for brand, selection or focus.",
+      "Don't reintroduce the scoreboard look: segmented/LED numerals, neon, glow, pink-purple.",
+      "Don't put gradients or card shadows on surfaces, or box each row in a card.",
+      "Don't rely on colour alone to tell models apart.",
+      "Don't add display faces beyond Barlow Semi Condensed, or use it for running text."
     ]
   }
 }

@@ -1,244 +1,251 @@
 ---
 name: Kantahan
-description: A songbook you can read in the dark. Videoke night in type, palette and one move, the LED song number.
+description: A songbook drawn as metro wayfinding. Each machine model is a coloured line; every song number is a plain, heavy station number.
 colors:
-  stage-indigo: "#1b1038"
-  indigo-surface: "#261650"
-  indigo-surface-2: "#33206b"
-  indigo-line: "#4b3a83"
-  indigo-line-strong: "#9a86d6"
-  marquee-white: "#f8f3ff"
-  lavender-mist: "#cdbff0"
-  mic-magenta: "#c4006d"
-  sunbeam-yellow: "#ffc93c"
-  aqua-glow: "#3de0f5"
-  tile-black: "#12091f"
-  led-magenta: "#ff4fb0"
-  led-violet: "#b79bff"
-  led-aqua: "#3de0f5"
-  led-orange: "#ff9f43"
-  led-lime: "#a6f04a"
-  led-yellow: "#ffd84d"
-  fiesta-blush: "#fff0f7"
-  blush-surface-2: "#ffe1ef"
-  blush-line: "#e4c3d6"
-  blush-line-strong: "#7a5c93"
-  blush-text-muted: "#55447f"
-  blush-focus-violet: "#5b21b6"
+  wall: "#f4f6f9"
+  sign: "#ffffff"
+  sign-2: "#e9eef4"
+  rule: "#d3dbe5"
+  rule-strong: "#66758a"
+  ink: "#0b1b2b"
+  ink-muted: "#44546a"
+  error: "#b3261e"
+  line-red: "#c8281c"
+  line-blue: "#0057b8"
+  line-teal: "#00786f"
+  line-orange: "#b84a0c"
+  line-green: "#4d7c0f"
+  line-yellow: "#ffc20e"
+  disc-yellow: "#ffc20e"
+  night-wall: "#0e141b"
+  night-sign: "#17202a"
+  night-sign-2: "#212c39"
+  night-rule: "#2a3643"
+  night-rule-strong: "#7c8da1"
+  night-ink: "#eef3f8"
+  night-ink-muted: "#a6b5c6"
+  night-error: "#ff9a93"
 typography:
   wordmark:
-    fontFamily: "Fredoka, Atkinson Hyperlegible Next, system-ui, sans-serif"
-    fontSize: "1.5rem"
-    fontWeight: 600
+    fontFamily: "Barlow Semi Condensed, Atkinson Hyperlegible Next, system-ui, sans-serif"
+    fontSize: "1.75rem"
+    fontWeight: 700
+    lineHeight: 1.5
     letterSpacing: "0.01em"
-  title:
-    fontFamily: "Atkinson Hyperlegible Next, system-ui, -apple-system, Segoe UI, sans-serif"
-    fontSize: "1.5rem"
-    fontWeight: 600
-    lineHeight: 1.2
+  song-number:
+    fontFamily: "Barlow Semi Condensed, Atkinson Hyperlegible Next, system-ui, sans-serif"
+    fontSize: "2rem"
+    fontWeight: 700
+    lineHeight: 1
+    letterSpacing: "0.02em"
+    fontFeature: "tabular-nums"
   headline:
     fontFamily: "Atkinson Hyperlegible Next, system-ui, sans-serif"
-    fontSize: "1.25rem"
+    fontSize: "1.5rem"
+    fontWeight: 700
+    lineHeight: 1.2
+  title:
+    fontFamily: "Atkinson Hyperlegible Next, system-ui, sans-serif"
+    fontSize: "1.0625rem"
     fontWeight: 600
+    lineHeight: 1.3
   body:
     fontFamily: "Atkinson Hyperlegible Next, system-ui, sans-serif"
     fontSize: "1rem"
     fontWeight: 400
     lineHeight: 1.5
-  row-title:
-    fontFamily: "Atkinson Hyperlegible Next, system-ui, sans-serif"
-    fontSize: "1.0625rem"
-    fontWeight: 600
-    lineHeight: 1.3
   label:
     fontFamily: "Atkinson Hyperlegible Next, system-ui, sans-serif"
     fontSize: "0.9375rem"
     fontWeight: 600
-  led-digits:
-    fontFamily: "DSEG7, ui-monospace, monospace"
-    fontSize: "1.625rem"
-    fontWeight: 700
-    lineHeight: 1
-    letterSpacing: "0.06em"
+    lineHeight: 1.5
 rounded:
-  sm: "6px"
-  md: "12px"
-  lg: "16px"
-  xl: "20px"
-  sheet: "28px"
+  sm: "0.5rem"
+  md: "0.75rem"
+  lg: "1rem"
   pill: "999px"
 spacing:
-  xs: "4px"
-  sm: "8px"
-  md: "16px"
-  lg: "24px"
-  target: "48px"
+  xs: "0.25rem"
+  sm: "0.5rem"
+  md: "1rem"
+  lg: "1.5rem"
+  xl: "2rem"
+  tap: "3rem"
 components:
-  header:
-    backgroundColor: "{colors.mic-magenta}"
-    textColor: "#ffffff"
-    padding: "8px 8px 8px 16px"
   button-primary:
-    backgroundColor: "{colors.mic-magenta}"
-    textColor: "#ffffff"
-    rounded: "{rounded.lg}"
-    padding: "0 24px"
-    height: "56px"
-  chip:
-    backgroundColor: "{colors.indigo-surface}"
-    textColor: "{colors.marquee-white}"
-    rounded: "{rounded.pill}"
-    padding: "0 18px"
-    height: "48px"
-  chip-selected:
-    backgroundColor: "{colors.led-magenta}"
-    textColor: "{colors.stage-indigo}"
+    backgroundColor: "{colors.ink}"
+    textColor: "{colors.sign}"
+    rounded: "{rounded.md}"
+    padding: "0 1.5rem"
+    height: "3.5rem"
+  button-quiet:
+    backgroundColor: "transparent"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.md}"
+    padding: "0 1.125rem"
+    height: "3rem"
   search-field:
-    backgroundColor: "{colors.indigo-surface}"
-    textColor: "{colors.marquee-white}"
-    rounded: "{rounded.lg}"
-    height: "56px"
-  letter:
-    backgroundColor: "{colors.indigo-surface}"
-    textColor: "{colors.marquee-white}"
+    backgroundColor: "{colors.sign}"
+    textColor: "{colors.ink}"
     rounded: "{rounded.md}"
-    size: "48px"
-  letter-selected:
-    backgroundColor: "{colors.sunbeam-yellow}"
-    textColor: "{colors.stage-indigo}"
+    padding: "0 3.25rem"
+    height: "3.5rem"
+  model-chip:
+    backgroundColor: "{colors.sign}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.pill}"
+    padding: "0 1.125rem 0 0.875rem"
+    height: "3rem"
+  letter-key:
+    backgroundColor: "{colors.sign}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.sm}"
+    size: "3rem"
+  letter-key-selected:
+    backgroundColor: "{colors.ink}"
+    textColor: "{colors.sign}"
+  line-sign:
+    backgroundColor: "{colors.line-blue}"
+    textColor: "{colors.sign}"
+    rounded: "{rounded.md}"
+    padding: "0.375rem 1rem 0.375rem 0.625rem"
+    height: "3rem"
   song-row:
-    backgroundColor: "{colors.indigo-surface}"
-    textColor: "{colors.marquee-white}"
+    backgroundColor: "transparent"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.sm}"
+    padding: "0.5rem"
+    height: "4.5rem"
+  readout-sheet:
+    backgroundColor: "{colors.sign}"
+    textColor: "{colors.ink}"
     rounded: "{rounded.lg}"
-    height: "72px"
-  led-tile:
-    backgroundColor: "{colors.tile-black}"
-    textColor: "{colors.led-magenta}"
-    rounded: "{rounded.md}"
-    padding: "8px 12px"
-    typography: "{typography.led-digits}"
-  readout:
-    backgroundColor: "{colors.indigo-surface}"
-    textColor: "{colors.marquee-white}"
-    rounded: "{rounded.sheet}"
-    padding: "24px"
+    padding: "1.25rem 1.5rem 1.5rem"
 ---
 
 # Design System: Kantahan
 
 ## Overview
 
-**Creative North Star: "Videoke Night"**
+**Creative North Star: "Metro Wayfinding"**
 
-A songbook you can read in the dark. Videoke night is taken only as palette, type, density and one move: the LED song number. The ground is Stage Indigo, the shell is Mic Magenta, and the number is the product, so every result is led by a seven-segment numeral on a dark tile while the rest of the screen stays calm and complete. Dark is the default because people use it in a dim room; the light theme, Fiesta Blush, keeps the same hues darkened for contrast.
+A songbook read like transit signage. Each karaoke machine model is a coloured line; the selected model is a flat bar of that colour pinned to the top of the list. Every song number is a plain, heavy station number at the right edge of a ruled row, and tapping a row opens it as a big read-out sign. Light is the first design (daylight, lit rooms); dark is a full matching version that follows the phone, for dim rooms.
 
-Density is phone-first and thumb-sized: 48px minimum targets, one column at rest, two result columns on wide screens. No texture, no ornament, no decorative imagery. Colour always has a job: shell, selection, focus, or the model family a number belongs to.
+The surface is calm and clean: cool off-white wall, white sign surfaces, ink text, hairline rules. Colour is reserved for the six lines and for the yellow of the logo disc. Chrome (brand, selected state, focus, primary button) is ink, so it never competes with a line colour. Depth is flat fills and rules.
 
 **Key Characteristics:**
-- Dark default, light Fiesta Blush alternative, switched by `data-theme="light"` on the root.
-- Song numbers in DSEG7 on a tile that is dark in both themes, with unlit "ghost" segments behind the lit digits.
-- Colour carries meaning: magenta shell, yellow selection, aqua focus, family hue per machine model.
-- Hyperlegible body face, rounded wordmark face, digit face reserved for numbers.
-- A "Demo" pill in the header marks the synthetic catalog.
+- Light by default, dark via `data-theme="dark"` following the phone.
+- Ink is the brand: `--brand`, `--select` and `--focus` are ink in light and near-white in dark.
+- One colour per model (a "line"), always paired with a written model name.
+- Song numbers in Barlow Semi Condensed bold, tabular, the largest thing on any row.
+- Every interactive target is at least 3rem (48px) tall; the primary button and search field are 3.5rem.
+- Ruled lists, not boxed cards; flat fills; no gradients, no glow.
 
 ## Colors
 
-A deep indigo night with one hot magenta shell and a small set of LED hues that identify machine models.
+A cool, near-monochrome ink-on-paper palette with six saturated line colours that appear only where a machine model is named.
 
 ### Primary
-- **Mic Magenta** (#c4006d): the header bar, primary buttons (white text), accent-color and text selection. Same value in both themes.
+- **Signage Ink** (`ink`, #0b1b2b): Text, brand, selected state, focus ring, primary button fill. In dark it becomes `night-ink` (#eef3f8) and the on-brand text flips to ink.
 
-### Secondary
-- **Sunbeam Yellow** (#ffc93c): the selected letter on the alphabet rail and the caret, with Stage Indigo text. In light theme the selection inverts to Stage Indigo with Sunbeam text (#ffd84d).
-- **Aqua Glow** (#3de0f5): the focus ring in dark theme (3px, 3px offset). Light theme uses Blush Focus Violet (#5b21b6).
-
-### Tertiary (model family hues)
-- **LED Magenta** (#ff4fb0), **LED Aqua** (#3de0f5), **LED Lime** (#a6f04a): the hues in use for model families; **LED Violet** (#b79bff), **LED Yellow** (#ffd84d) and **LED Orange** (#ff9f43) are defined and ready. A hue colours the number digits, the model chip when selected, the read-out border, and the short rule under the index heading.
+### Secondary (the six lines)
+Each is paired with a text colour that passes AA; the pair is set once by a `hue-*` class and read as `--hue` / `--on-hue`. The catalog's data names map to line colours: magenta is red, violet is blue, aqua is teal, orange is orange, lime is green, yellow is yellow. The data names stay in the manifest; they are drawn as line colours in CSS only.
+- **Line Red** (`line-red`, #c8281c, white text; dark #e8685b with ink text).
+- **Line Blue** (`line-blue`, #0057b8, white text; dark #7db3ff).
+- **Line Teal** (`line-teal`, #00786f, white text; dark #3dd6c8).
+- **Line Orange** (`line-orange`, #b84a0c, white text; dark #ffa35c).
+- **Line Green** (`line-green`, #4d7c0f, white text; dark #a3e04a).
+- **Line Yellow** (`line-yellow`, #ffc20e, ink text; dark #ffd23f). Also the logo disc (`disc-yellow`).
 
 ### Neutral
-- **Stage Indigo** (#1b1038): page ground. **Indigo Surface** (#261650) and **Indigo Surface 2** (#33206b): rows, fields, hover. **Indigo Line** (#4b3a83) hairlines; **Indigo Line Strong** (#9a86d6) control borders.
-- **Marquee White** (#f8f3ff) text; **Lavender Mist** (#cdbff0) secondary text.
-- **Tile Black** (#12091f): the LED tile, in both themes.
-- Light: **Fiesta Blush** (#fff0f7) ground, white surfaces, **Blush Surface 2** (#ffe1ef), **Blush Line** (#e4c3d6), **Blush Line Strong** (#7a5c93), **Blush Text Muted** (#55447f), text Stage Indigo.
+- **Cool Wall** (`wall`, #f4f6f9): page background. Dark `night-wall` #0e141b.
+- **Sign White** (`sign`, #ffffff): header, inputs, chips, sheets. Dark `night-sign` #17202a.
+- **Sign Tint** (`sign-2`, #e9eef4): hover fill. Dark `night-sign-2` #212c39.
+- **Hairline** (`rule`, #d3dbe5): row rules, header and footer borders. Dark `night-rule` #2a3643.
+- **Strong Rule** (`rule-strong`, #66758a): borders of every control (2px). Dark `night-rule-strong` #7c8da1.
+- **Muted Ink** (`ink-muted`, #44546a): artist, status, hints. Dark `night-ink-muted` #a6b5c6.
+- **Error** (`error`, #b3261e): invalid borders and messages. Dark `night-error` #ff9a93.
+
+Dark tokens live under `:root[data-theme="dark"]` in `apps/web/src/index.css`; every text/background pair is contrast-tested in `src/theme.contrast.test.ts`.
 
 ### Named Rules
-**The Number Carries Colour Rule.** Hue is spent on song numbers and the model that owns them. Chrome stays indigo, magenta or neutral.
-**The Contrast Pair Rule.** Every text and background pair is checked in `theme.contrast.test.ts`; change a token and its test together.
+**The Ink Chrome Rule.** Brand, selection, focus and the primary button are ink, never a line colour. Line colours mean "this machine model" and nothing else.
+**The Name Beside Colour Rule.** A line colour is never the only identifier; the model name is always written out beside it.
 
 ## Typography
 
-**Display Font:** Fredoka (wordmark only; self-hosted variable, with Atkinson fallback)
-**Body Font:** Atkinson Hyperlegible Next (400, 600, 700; with system-ui fallback)
-**Digit Font:** DSEG7 Classic Bold (song numbers only)
+**Display Font:** Barlow Semi Condensed 700 (self-hosted via Fontsource; fallback Atkinson Hyperlegible Next, system-ui)
+**Body Font:** Atkinson Hyperlegible Next 400/600/700 (self-hosted; fallback system-ui, -apple-system, "Segoe UI", sans-serif)
 
-**Character:** A rounded, friendly wordmark over a hyperlegible humanist sans, with a seven-segment display face that appears only where a number is read.
+**Character:** Atkinson is chosen for legibility at phone distance in dim rooms; the condensed Barlow is reserved for what is read and keyed: the wordmark and every number.
 
 ### Hierarchy
-- **Wordmark** (Fredoka 600, 1.5rem): the header brand.
-- **Title** (600, 1.5rem, 1.2): the read-out song title.
-- **Headline** (600, 1.25rem): index heading, state headings, prose h2. Prose h1 is 1.875rem / 1.15.
-- **Body** (400, 1rem, 1.5): default; prose capped at 65ch.
-- **Row title** (600, 1.0625rem, 1.3) over **artist** (400, 0.9375rem, Lavender Mist).
-- **Label** (600-700, 0.8125-0.9375rem): chips, buttons, badge, status line.
-- **LED digits** (DSEG7 700, 1.625rem in rows, 2rem at 64rem+, up to 11rem in the read-out, letter-spacing 0.06em).
+- **Song number** (700, 2rem default, 2.25rem on desktop rows, up to 9rem in the read-out, line-height 1, tabular, +0.02em): the single heaviest element of a row. The read-out size is computed from digit count so any length fits the sheet.
+- **Wordmark** (Barlow 700, 1.75rem, +0.01em): header brand.
+- **Line name** (Barlow 700, 1.5rem, 1.1): line sign title; the badge initial is 1.25rem.
+- **Headline** (700, 1.5rem, 1.2): read-out song title; prose h1 is Barlow 2.25rem/1.1.
+- **Title** (600, 1.0625rem, 1.3): song title in a row.
+- **Body** (400, 1rem, 1.5): prose, capped at 65ch.
+- **Label** (600, 0.9375rem): artists, status, hints, footer, line detail. Headings h1-h3 are forced to 700.
 
 ### Named Rules
-**The Digits Only Rule.** DSEG7 is for song numbers. Never set words in it.
-**The Leading Zero Rule.** Numbers are strings; render every digit given.
+**The Station Number Rule.** Song numbers always use the display face, tabular figures and weight 700; they are never styled as decoration, glowing or segmented.
 
 ## Layout
 
-A single centred column: 42rem by default, 56rem from 48rem with results in two columns, 64rem from 64rem with 2rem row tokens and 5rem rows. Header bar, main and footer share the same max width. Side padding is 1rem; the model chips and letter rail scroll horizontally with snap and bleed to the screen edge. Rhythm is 0.5rem between rows, 0.75rem to 1.25rem between blocks. Safe-area insets are respected at the top and bottom. Read-out dialog: `min(92vw, 44rem)`, max height 92dvh.
+Single centered column, mobile first: `max-width` 42rem, widening to 56rem at 48rem and 64rem at 64rem; the header and footer follow the same widths. At 48rem the song list becomes two columns (2.5rem column gap). Vertical rhythm is 0.75rem between stacked controls, 1rem page padding, rows 4.5rem tall (5rem on desktop). Horizontal strips (model chips, alphabet) scroll with proximity snap and bleed to the screen edge. Safe-area insets are honoured in the header and footer. Order on first viewport: header, line sign, model chips (only when more than one model), search, alphabet strip, ruled rows. Motion is limited to a 220ms sheet entrance and 260ms number entrance (cubic-bezier(0.16, 1, 0.3, 1)), all removed under `prefers-reduced-motion`.
 
 ## Elevation & Depth
 
-Flat and tonal: depth comes from surface steps (ground, surface, surface 2) and 2px borders, not shadows. The only shadow is the open menu panel (`box-shadow: 0 12px 28px rgb(10 4 24 / 0.35)`). The read-out sits over a scrim (`rgb(10 4 24 / 0.7)` dark, `rgb(27 16 56 / 0.6)` light).
+Flat. Depth comes from fills (wall, sign, sign tint), hairline rules and 2px control borders. The one shadow is the header menu popover (`0 10px 28px rgb(11 27 43 / 0.2)`); the read-out sheet separates from the page with a scrim (`rgb(11 27 43 / 0.55)`, 0.65 black in dark). The sticky line sign carries a `0 0 0 0.5rem` wall-coloured spread that masks rows scrolling under its rounded corners; it is a mask, not a shadow.
 
 ### Named Rules
-**The Flat Rows Rule.** Rows, chips and fields have no shadow at rest or on hover; hover shifts to Surface 2.
+**The Flat Sign Rule.** No gradients, glows or card shadows. A sign is a flat fill with a hairline or 2px border.
 
 ## Shapes
 
-Generously rounded and thumb-friendly. Radii: pills (999px) for chips and badge; 12px for LED tiles, letters and menu links; 14-16px for rows, fields, buttons; 20px for the large LED tile and state panels; 28px for the read-out sheet. Controls use 2px Line Strong borders. Focus uses a 3px ring with 3px offset.
+Soft but sober: 0.5rem for small keys and rows, 0.75rem for controls and the line sign, 1rem for sheets and state panels, full pill for chips, badges and the round line badge. Rows are ruled with a bottom hairline, not boxed. Focus is a 3px ink outline, 3px offset (inputs: 2px, no offset, plus an ink border).
 
 ## Components
 
-### Header and menu
-Magenta bar with the K logo (36px, 9.6px radius), Fredoka wordmark, "Demo" pill (1.5px outline, bold) and a menu button. Menu panel: Surface, 2px Line Strong border, 16px radius, 48px links; hover and current page use Surface 2. Icon buttons are 48px with a translucent white hover.
+### Buttons
+- **Primary:** ink fill, on-brand text, 0.75rem radius, 3.5rem tall, weight 700; hover brightens (filter 1.08), active darkens (0.94).
+- **Quiet:** transparent, 2px strong-rule border, 3rem tall, 0.9375rem; hover fills sign tint.
+- **Icon button:** 3rem square minimum, 0.75rem radius, hover sign tint.
 
-### Model chips
-48px pills in a scroll rail. Unselected: Surface, Line Strong border, a small dot in the family hue. Selected: filled with the family hue, Stage Indigo text, dot hidden.
+### Chips (model chooser)
+White pill, 2px strong-rule border, a 1rem line-colour dot ringed by a 1px strong rule. Selected: fills with the line colour and on-hue text, dot hidden.
 
-### Search field
-56px, 16px radius, 2px Line Strong border, 1.125rem text, left icon, 48px clear button.
+### Cards / Containers
+There are no card-per-row lists. Containers are the read-out sheet (white, 1px strong rule, 1rem radius) and state panels (1px rule, 1rem radius, centered).
 
-### Letter rail
-48px squares with 14px radius. Selected letter is Sunbeam Yellow with Stage Indigo text.
+### Inputs / Fields
+White fill, 2px strong-rule border, 0.75rem radius, 3.5rem tall, 1.125rem text for search; labels weight 700; hints muted. Invalid: error border plus error message text. Search has a leading icon and a 3rem clear target.
 
-### Song row
-Grid of LED tile then title above artist; Surface, 16px radius, min 72px (80px wide). Press scales to 0.985.
+### Navigation
+Slim white header with a hairline bottom: round logo (2.25rem) plus Barlow wordmark, a demo badge (pill, 1.5px currentColor border) and a menu popover of 3rem links. Footer links are 3rem tall, ink, weight 600. Alphabet keys are 3rem squares; selected is ink.
 
-### LED number token (signature)
-Tile Black tile, DSEG7 digits in the family hue, unlit segments drawn as 13% opacity generated content. Digits light up on open with a 260ms staggered fade.
+### Line Sign (signature)
+The selected model as a metro line header: full-width sticky bar (top 0) in the model's line colour, a round badge (2rem) inverted to on-hue with the model initial, model name in Barlow 700, coverage right-aligned. A `--top` variant is square-cornered, static, for the read-out sheet header.
 
-### Read-out dialog
-Native dialog; Surface, 28px radius, 2px border in the family hue. The number fills the width: size is `min(11rem, (100cqw - 2.5rem) / (digits * 0.9 + 0.3))` via container query units. A full-width magenta button closes it. Entry 200ms ease-out; all motion is removed under reduced motion.
+### Song Row and Read-out
+Title and artist left, number right, 4.5rem tall, hover sign tint. Tapping opens a native dialog sheet (92vw, max 40rem) showing the line sign on top, a very large number, title, artist, meta and a block primary button.
 
-### States and buttons
-Primary button is magenta, 56px, 16px radius, bold white text. State panels are Surface cards with a centred heading and muted copy; loading uses pulsing Surface skeleton rows.
+### Logo
+A dynamic mic on a yellow disc (#ffc20e). The ball head is also a magnifying lens (white fill, ink ring, ink grille dots); handle in ink with red, yellow, teal stripes. Assets live in `apps/web/public/brand` (logo.svg, favicons, icons, maskable, og).
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** keep every target at least 48px and every text pair AA.
-- **Do** show the model, coverage and source near the results.
-- **Do** underline links inside running text.
-- **Do** give each machine model family one LED hue and use it consistently across chip, digits and read-out border.
-- **Do** keep the LED tile dark in both themes.
+- **Do** keep light as the default and dark as a full second design that follows the phone.
+- **Do** set a model's colour only through the `hue-*` class (`--hue`, `--on-hue`) and read those two variables everywhere.
+- **Do** keep every target at least 3rem tall and every text/background pair at AA.
+- **Do** use rules, fills and spacing for structure; keep lists ruled.
+- **Do** render song numbers via the shared number token with the display face, tabular figures, weight 700.
 
 ### Don't:
-- **Don't** use DSEG7 or the LED tile for anything but song numbers.
-- **Don't** add shadows to rows, chips or fields.
-- **Don't** put gradient text, glass, coloured side stripes, textures or emoji icons on any surface.
-- **Don't** use a one-colour accent: selection, focus and shell each have their own hue.
-- **Don't** animate layout properties; use opacity and transform, and honour reduced motion.
+- **Don't** use a line colour for brand, selection or focus.
+- **Don't** reintroduce the scoreboard look: segmented/LED numerals, neon, glow, pink-purple.
+- **Don't** put gradients or card shadows on surfaces, or box each row in a card.
+- **Don't** rely on colour alone to tell models apart.
+- **Don't** add display faces beyond Barlow Semi Condensed, or use it for running text.
