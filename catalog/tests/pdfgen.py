@@ -82,7 +82,16 @@ SMALL_TOP = 60
 SMALL_PITCH = 24
 
 
-def make_two_table_pdf(path: Path, pages: Sequence[Page], header: str = "Vol. 5 ! 1") -> Path:
+def make_two_table_pdf(
+    path: Path,
+    pages: Sequence[Page],
+    header: str = "Vol. 5 ! 1",
+    merged: int = 0,
+    artist_background: bool = False,
+) -> Path:
+    """`merged` > 0 draws the second table's artists as one cell per that many rows, with the
+    text once in the middle; `artist_background` lays one tall grey rectangle behind the whole
+    artist column of the first table (a design element, not a merged cell)."""
     pdf = FPDF(unit="pt", format=(390, 674))
     pdf.set_auto_page_break(False)
     for tables in pages:
@@ -108,9 +117,20 @@ def make_two_table_pdf(path: Path, pages: Sequence[Page], header: str = "Vol. 5 
                 pdf.cell(edges[1] - edges[0] - 4, 12, title)
                 pdf.set_font("Helvetica", size=6)
                 lines = artist.split("\n")
+                if merged and edges is SMALL_TABLES[1]:
+                    lines = lines if i % merged == merged // 2 else []
                 for j, text in enumerate(lines):
                     pdf.set_xy(edges[2] + 2, y + SMALL_PITCH / 2 - 3.5 * len(lines) + 7 * j)
                     pdf.cell(edges[3] - edges[2] - 2, 7, text)
+        if merged:
+            for k in range(0, len(tables[1]), merged):
+                pdf.set_fill_color(235, 235, 245)
+                pdf.rect(
+                    SMALL_TABLES[1][2], SMALL_TOP + k * SMALL_PITCH, 34, merged * SMALL_PITCH, "D"
+                )
+        if artist_background and tables[0]:
+            pdf.set_fill_color(245, 245, 250)
+            pdf.rect(SMALL_TABLES[0][2], SMALL_TOP, 29, len(tables[0]) * SMALL_PITCH, style="D")
         for i in range(max((len(t) for t in tables), default=0)):
             for x in DECOY_X:
                 pdf.rect(x, SMALL_TOP + i * SMALL_PITCH, 0.2, 30, style="F")

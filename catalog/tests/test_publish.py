@@ -348,6 +348,9 @@ def test_a_pause_set_during_a_publish_is_not_lost(loaded, pdf, tmp_path, monkeyp
             "Monthly lists, March 2019 to November 2026",
         ),
         (["December 2019", "May 2020"], "Monthly lists, December 2019 to May 2020"),
+        (["March 2019"], "Monthly list, March 2019"),
+        (["2020 Sept", "2020 Oct"], "Monthly lists, September 2020 to October 2020"),
+        (["Volume 3", "2020 May"], "Volume 3"),
         (["Odd label"], "Volumes not stated"),
     ],
 )

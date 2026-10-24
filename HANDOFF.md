@@ -94,7 +94,7 @@ Details: [docs/setup-development.md](docs/setup-development.md).
 ## Important decisions
 
 - Public repo: **no PDFs or song data committed** (`.gitignore`). Local-only ingestion until rights are resolved.
-- A release is tied to a model only by page-1 header evidence, never by the section it was listed under.
+- A release is tied to a model only through a `release_model` evidence row: the page-1 header for Reyna (strict), or "listed under <section> on the publisher's page" for the other machine groups ([ADR 0004](docs/decisions/0004-machine-group-models.md)).
 - Song numbers are text; entries are never merged across numbers or models.
 - Uncertain data is not built: documents with errors are quarantined, conflicting numbers are excluded and block `validated`, uncertain artists are withheld.
 - Commits and PRs carry no co-author or tool attribution.

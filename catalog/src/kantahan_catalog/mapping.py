@@ -50,10 +50,13 @@ class MapResult:
 def apply_section_mappings(conn: sqlite3.Connection, links: Iterable[DiscoveredLink]) -> MapResult:
     added = already = strict = missing = 0
     unknown: list[str] = []
+    models = {r[0] for r in conn.execute("SELECT slug FROM model")}
     for link in links:
         if link.source != "a":  # B and C only repeat what A lists
             continue
         slug = SECTION_TO_MODEL.get(link.section)
+        if slug is not None and slug not in models:
+            raise KeyError(f"section {link.section!r} maps to {slug!r}, which has no model row")
         if slug is None:
             if link.section not in unknown:
                 unknown.append(link.section)

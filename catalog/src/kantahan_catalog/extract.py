@@ -46,6 +46,7 @@ MIN_CODE_SHARE = 0.05  # a code column holds at least this share of all 5-digit 
 MIN_CELL_GAP = 8.0  # empty space between an artist cell's text and the next table's titles
 MERGED_MIN_ROWS = 1.8  # a cell this many row pitches tall spans several rows
 MERGED_MIN_WIDTH = 20.0
+ZONE_PAD = 3.0  # _table_rows accepts words this far outside a table's title and artist edges
 MIN_PAGE_CODES = 3  # codes per column a page needs before its own columns are trusted
 MIN_PAGE_VOTES = 3  # lines a page needs before its own cut is trusted over the document's
 LINE_TOLERANCE = 4.0  # words whose centres are this close vertically are on one text line
@@ -137,6 +138,15 @@ def _borrow(index: int, measured: dict[int, Any]) -> Any:
     return measured[best]
 
 
+def _majority_cut(votes: Counter[int]) -> float | None:
+    """The cut a page's text lines agree on, or None when they do not agree (or are too few)."""
+    total = sum(votes.values())
+    if total < MIN_PAGE_VOTES:
+        return None
+    x, n = votes.most_common(1)[0]
+    return float(x) - 1.5 if n * 2 >= total else None
+
+
 def borderless_template(pages: list[Any]) -> list[list[Edges]]:
     """Table edges per page for documents whose cell borders cannot be read as borders.
 
@@ -160,23 +170,41 @@ def borderless_template(pages: list[Any]) -> list[list[Edges]]:
         [_cut_votes(page, lo, hi) for lo, hi in page_spans]
         for page, page_spans in zip(pages, spans, strict=True)
     ]
-    own: dict[int, list[float | None]] = {
-        i: [
-            float(v.most_common(1)[0][0]) - 1.5 if sum(v.values()) >= MIN_PAGE_VOTES else None
-            for v in page_votes
-        ]
-        for i, page_votes in enumerate(votes)
-    }
-    complete = {i: cuts for i, cuts in own.items() if all(c is not None for c in cuts)}
-    if not complete:
-        raise ExtractionError("cannot tell where one table ends and the next begins")
+    own: list[list[float | None]] = [[_majority_cut(v) for v in page_votes] for page_votes in votes]
+    cuts_per_page = []
+    for i in range(len(pages)):
+        row: list[float] = []
+        for k in range(expected - 1):
+            have: dict[int, float] = {
+                j: c for j in range(len(pages)) if (c := own[j][k]) is not None
+            }
+            if not have:
+                raise ExtractionError("cannot tell where one table ends and the next begins")
+            chosen = own[i][k]
+            row.append(chosen if chosen is not None else float(_borrow(i, have)))
+        cuts_per_page.append(row)
     page_width = min(float(p.width) for p in pages)
     templates: list[list[Edges]] = []
     for i, cols in enumerate(columns):
-        cuts = complete[i] if i in complete else _borrow(i, complete)
-        bounded = [min(max(float(c), lo), hi) for c, (lo, hi) in zip(cuts, spans[i], strict=True)]
+        bounded = [
+            min(max(float(c), lo), hi)
+            for c, (lo, hi) in zip(cuts_per_page[i], spans[i], strict=True)
+        ]
+        # A word counts for a table when its centre lies within 3 points of the table's edges
+        # (see _table_rows); the cut therefore sits between the two zones with no overlap.
         edges = [0.0, *bounded, page_width]
-        templates.append([(edges[k], c[0] - 1, c[1] + 1, edges[k + 1]) for k, c in enumerate(cols)])
+        last = len(cols) - 1
+        templates.append(
+            [
+                (
+                    edges[k] + (ZONE_PAD if k else 0.0),
+                    c[0] - 1,
+                    c[1] + 1,
+                    edges[k + 1] - (ZONE_PAD + 0.01 if k < last else 0.0),
+                )
+                for k, c in enumerate(cols)
+            ]
+        )
     return templates
 
 
@@ -293,6 +321,14 @@ def _suspect(unresolved: set[int], row_count: int) -> set[int]:
     return out
 
 
+def _line_count(words: list[dict[str, Any]]) -> int:
+    lines: list[float] = []
+    for w in sorted(words, key=lambda w: w["top"]):
+        if not lines or w["top"] - lines[-1] > 0.5 * (w["bottom"] - w["top"]):
+            lines.append(w["top"])
+    return len(lines)
+
+
 def _merged_artists(
     artist_words: list[dict[str, Any]],
     cy: list[float],
@@ -320,11 +356,13 @@ def _merged_artists(
             if r["x0"] <= _center(w)[0] <= r["x1"] and r["top"] <= _center(w)[1] <= r["bottom"]
         ]
         text = _lines_text(inside)
-        if not text:
+        covered = [row for row, y in enumerate(cy) if r["top"] <= y <= r["bottom"]]
+        # A merged cell holds one short text for several rows. If it has about a line per row
+        # it is a background shape behind ordinary cells, not a merged cell.
+        if not text or len(covered) < 2 or _line_count(inside) >= len(covered):
             continue
-        for row, y in enumerate(cy):
-            if r["top"] <= y <= r["bottom"]:
-                out[row] = text
+        for row in covered:
+            out[row] = text
     return out
 
 
@@ -404,7 +442,8 @@ def _read(pages: list[Any], templates: list[list[Edges]]) -> tuple[list[RawRow],
 
 
 def _trusted(rows: list[RawRow], stray: int) -> bool:
-    return stray <= FALLBACK_STRAYS or stray <= FALLBACK_STRAY_RATE * len(rows)
+    """True when the validator would not reject this reading for stray codes."""
+    return stray <= FALLBACK_STRAYS and (stray <= 1 or stray <= FALLBACK_STRAY_RATE * len(rows))
 
 
 def extract_rows(path: str | Path) -> DocumentExtract:

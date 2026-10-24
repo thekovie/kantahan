@@ -87,3 +87,12 @@ def test_unknown_sections_documents_not_imported_and_other_sources_are_reported(
     assert result.unknown_sections == ("SOMETHING NEW",)
     assert result.not_imported == 1 and result.added == 0
     assert models_of(conn, "Volume 5") == []
+
+
+def test_a_section_whose_model_row_is_missing_is_an_error_not_a_silent_skip(conn, pdf):
+    import pytest
+
+    add(conn, pdf("a.pdf", sample_rows(30000, 5), header="Vol. 5 ! 1"), 5)
+    conn.execute("DELETE FROM model WHERE slug = 'bravo'")
+    with pytest.raises(KeyError, match="no model row"):
+        apply_section_mappings(conn, [link(5, "BRAVO")])

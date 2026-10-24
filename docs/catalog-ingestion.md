@@ -73,7 +73,7 @@ Warnings are recorded but do not block: identical duplicate number (imported onc
 
 ## Model mapping (implemented)
 
-A release is `mapped` only when the page-1 header says "For Reyna" (see [model-compatibility.md](model-compatibility.md)); everything else is `held` and never built. On the real data: **14 releases mapped** (Vol 62 to 76, 3,216 rows), **29 held** (9,273 rows), 0 quarantined; the 14 mapped releases build to **3,180 songs**. Sources B and C add 77 links to the same 43 documents and no new documents.
+A release is `mapped` to Reyna only when its page-1 header says "For Reyna", and to another machine group when the publisher's page lists it there (M4; see [model-compatibility.md](model-compatibility.md)); a release with no evidence is `held` and never built. On the real data: **14 releases mapped** (Vol 62 to 76, 3,216 rows), **29 held** (9,273 rows), 0 quarantined; the 14 mapped releases build to **3,180 songs**. Sources B and C add 77 links to the same 43 documents and no new documents.
 
 ## Build rules (implemented)
 
@@ -89,12 +89,16 @@ Scheduled 14-day runs and monthly audit, publication, manifest and gzip, client 
 
 ## Older layouts and M4 results
 
-**Readers.** Documents are first read through their cell borders (the Reyna-era layout, unchanged). When that leaves more than 3 song codes outside every table (and more than 1% of rows), or finds no usable table structure, the document is read by where its 5-digit codes sit instead. The code column of each table is measured on each page, because pages of one document are laid out with different offsets (some alternate between two, book style). A table's cut is the strongest per-line vote for where the widest gap on a text line ends, and a page with too little to measure borrows from the nearest page on the same side of the spread. Whichever reading leaves fewer stray codes wins, with the border reading preferred on ties.
+**Readers.** Documents are first read through their cell borders (the Reyna-era layout, unchanged). When that leaves song codes outside every table that the validator would reject (more than 3, or more than 1 and over 1% of rows), or finds no usable table structure, the document is read by where its 5-digit codes sit instead. The code column of each table is measured on each page, because pages of one document are laid out with different offsets (some alternate between two, book style). A table's cut is the strongest per-line vote for where the widest gap on a text line ends, and a page with too little to measure borrows from the nearest page on the same side of the spread. Whichever reading leaves fewer stray codes wins, with the border reading preferred on ties.
 
 **Merged artist cells.** Some layouts ("5x5 Featured Artists") draw one artist cell across five rows. A tall rectangle in the artist column gives its text to every row it covers.
 
-**Safety checks.** All 43 Reyna-section documents, and every other document read through borders, extract identically with the new code (compared row by row). The older layouts were checked against rendered pages. A bundle never changes when a document is re-imported with the same hash unless `--reimport` is used on purpose; after `--reimport`, run `import` over all sections once (a shared file loses its links to other sections' URLs) and then `map`.
+**Safety checks.** All 43 Reyna-section documents, and every other document read through borders, extract identically with the new code (compared row by row). The older layouts were checked against rendered pages. A bundle never changes when a document is re-imported with the same hash unless `--reimport` is used on purpose; `--reimport` replaces a document inside one transaction, keeps every section's link to a shared file and any `withdrawn_at`, checks the new rows against the old count, and keeps the old import if the new reading is rejected. Run `map` afterwards.
 
 **Reviewed exceptions.** `catalog/reviewed.yaml` lists files a person checked on the rendered page where the source legitimately leaves artists blank. It names files and reasons only.
 
 **Results (local run, 2026-10-24).** 363 files fetched (815 MB, 0 failures), 295 distinct documents, 292 releases imported, 3 documents quarantined (see [model-compatibility.md](model-compatibility.md)), about 62,000 rows in mapped releases, 12 bundles published.
+
+**Zone edges.** Table zones in the border-free reader do not overlap: a one-letter title word ("I") sitting at the cut used to be read as part of the previous table's artist (found in review; 488 stored rows in older documents had stray text such as "Twenty One I Pilots", all corrected).
+
+**Scheduled runs.** `run` and `audit` cover every machine group the publisher lists (`--section all`); a section that is not in `mapping.py` yet is reported with a warning and its volumes simply wait, without blocking the others.

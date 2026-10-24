@@ -25,7 +25,7 @@ from .discover import (
 )
 from .fetch import Fetcher, FetchError
 from .importer import FILE_KEY, ensure_source, import_pdf
-from .mapping import apply_section_mappings
+from .mapping import SECTION_TO_MODEL, apply_section_mappings
 from .publish import (
     DEFAULT_KEEP,
     PublishError,
@@ -38,6 +38,7 @@ from .publish import (
 
 SCRIPT_SRC = re.compile(r'src="((?:https?:)?//[^"]*songlist-update-data\.js[^"]*)"')
 DEFAULT_SECTION = "REYNA SERIES"
+ALL_SECTIONS = "ALL"
 Out = Callable[[str], None]
 
 
@@ -93,6 +94,8 @@ def cmd_discover(args: argparse.Namespace, out: Out, fetcher: Fetcher, **_: Any)
 def _section_links(args: argparse.Namespace) -> list[DiscoveredLink]:
     links = load_links(args.work / "discovered.json")
     wanted = args.section.upper()
+    if wanted == ALL_SECTIONS:  # every group the publisher lists, which `run` and `audit` use
+        return [x for x in links if x.section in SECTION_TO_MODEL and x.source in args.from_sources]
     return [x for x in links if x.section.upper() == wanted and x.source in args.from_sources]
 
 
@@ -113,18 +116,21 @@ def cmd_fetch(args: argparse.Namespace, out: Out, fetcher: Fetcher, **_: Any) ->
     return 1 if failed else 0
 
 
-def _blank_artist_keys(path: Path) -> frozenset[str]:
-    """File keys a person has looked at and confirmed leave the artist cell empty on purpose."""
+def _blank_artist_hashes(path: Path) -> frozenset[str]:
+    """SHA-256 of files a person looked at and confirmed leave the artist cell empty on purpose.
+
+    Keyed by content, so a file replaced behind the same link does not inherit the exception.
+    """
     if not path.exists():
         return frozenset()
     data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-    return frozenset(str(e["file_key"]) for e in data.get("accept_blank_artists", []))
+    return frozenset(str(e["sha256"]) for e in data.get("accept_blank_artists", []))
 
 
 def cmd_import(args: argparse.Namespace, out: Out, **_: Any) -> int:
     conn = db.connect(args.work / "catalog.sqlite")
     db.migrate(conn)
-    blank_ok = _blank_artist_keys(args.reviewed)
+    blank_hashes = _blank_artist_hashes(args.reviewed)
     sources = _sources(args.sources)
     for sid in args.from_sources:
         if sid not in sources:
@@ -144,9 +150,12 @@ def cmd_import(args: argparse.Namespace, out: Out, **_: Any) -> int:
             label=link.label,
             retry_quarantined=args.retry_quarantined,
             reimport=args.reimport,
-            blank_artists_ok=bool((m := FILE_KEY.search(link.url)) and m.group(1) in blank_ok),
+            blank_artist_hashes=blank_hashes,
         )
         tally[result.outcome] = tally.get(result.outcome, 0) + 1
+        if result.outcome == "rejected":
+            reasons = sorted({i.code for i in result.issues if i.severity == "error"})
+            out(f"  REJECTED {link.label}: {reasons}; kept the previous import")
         if result.outcome == "quarantined":
             reasons = sorted({i.code for i in result.issues if i.severity == "error"})
             out(f"  QUARANTINED {link.label}: {reasons}")
@@ -165,8 +174,8 @@ def cmd_map(args: argparse.Namespace, out: Out, **_: Any) -> int:
         f"listed but not imported {result.not_imported}"
     )
     for section in result.unknown_sections:
-        out(f"  WARNING: section {section!r} has no model; add it to mapping.py")
-    return 1 if result.unknown_sections else 0
+        out(f"  WARNING: section {section!r} has no model yet; its volumes are not published")
+    return 0
 
 
 def _count(conn: sqlite3.Connection, sql: str, *params: str) -> int:
@@ -282,7 +291,7 @@ def cmd_withdraw(args: argparse.Namespace, out: Out, **_: Any) -> int:
 
 
 def _sub(args: argparse.Namespace, **extra: Any) -> argparse.Namespace:
-    base = {"section": DEFAULT_SECTION, "from_sources": ["a"], "refresh": False}
+    base = {"section": ALL_SECTIONS, "from_sources": ["a"], "refresh": False}
     return argparse.Namespace(
         **{**vars(args), **base, "retry_quarantined": False, "reimport": False, **extra}
     )

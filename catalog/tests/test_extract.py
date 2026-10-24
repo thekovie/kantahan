@@ -205,3 +205,38 @@ def test_the_border_reader_still_wins_when_it_understands_the_document(tmp_path,
     rows = [("15001", "Dati", "Sam Conception")]
     result = extract_rows(pdf("a.pdf", rows))
     assert [r.number for r in result.rows] == ["15001"]
+
+
+def test_a_one_letter_title_word_does_not_leak_into_the_previous_tables_artist(tmp_path):
+    left = [(str(42000 + i), f"Old Song {i}", f"Art {i}") for i in range(10)]
+    right = [(str(42100 + i), f"I Will Survive {i}", f"Band {i}") for i in range(10)]
+    result = extract_rows(make_two_table_pdf(tmp_path / "old.pdf", [[left, right]]))
+    by_number = {r.number: r for r in result.rows}
+    assert by_number["42003"].artist == "Art 3"
+    assert by_number["42103"].title == "I Will Survive 3" and by_number["42103"].artist == "Band 3"
+
+
+def test_an_artist_cell_drawn_across_several_rows_gives_its_text_to_each_row(tmp_path):
+    left = [(str(42000 + i), f"Old Song {i}", f"Art {i}") for i in range(10)]
+    right = [(str(42100 + i), f"Song {i}", "Big Name") for i in range(10)]
+    result = extract_rows(make_two_table_pdf(tmp_path / "m.pdf", [[left, right]], merged=5))
+    by_number = {r.number: r for r in result.rows}
+    assert {by_number[str(42100 + i)].artist for i in range(10)} == {"Big Name"}
+    assert by_number["42003"].artist == "Art 3"
+
+
+def test_a_tall_background_rectangle_is_not_mistaken_for_a_merged_cell(tmp_path):
+    left = [(str(42000 + i), f"Old Song {i}", f"Art {i}") for i in range(10)]
+    right = [(str(42100 + i), f"Song {i}", f"Band {i}") for i in range(10)]
+    result = extract_rows(
+        make_two_table_pdf(tmp_path / "bg.pdf", [[left, right]], artist_background=True)
+    )
+    by_number = {r.number: r for r in result.rows}
+    assert by_number["42002"].artist == "Art 2" and by_number["42005"].artist == "Art 5"
+
+
+def test_a_sparse_page_borrows_the_layout_of_a_similar_page(tmp_path):
+    full = two_tables(20, 20, 42000)
+    sparse = [[("43000", "Lonely", "Art")], []]
+    result = extract_rows(make_two_table_pdf(tmp_path / "s.pdf", [full, sparse, full]))
+    assert len(result.rows) == 81 and result.stray_tokens == 0

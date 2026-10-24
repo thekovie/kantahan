@@ -172,3 +172,12 @@ def test_too_many_title_conflicts_are_never_tolerated(conn, pdf, tmp_path):
     add(conn, pdf("b.pdf", clash), 2)
     result = build_bundle(conn, "reyna", tmp_path, max_conflict_share=0.05)
     assert result.status == "building" and len(result.conflicts) == 10
+
+
+def test_conflicts_of_exactly_the_allowed_share_are_tolerated(conn, pdf, tmp_path):
+    rows = [(str(15000 + i), f"Song {i}", "Artist") for i in range(100)]
+    add(conn, pdf("a.pdf", rows), 1)
+    clash = [(str(15000 + i), f"Other {i}", "Other") for i in range(5)]
+    add(conn, pdf("b.pdf", clash), 2)
+    result = build_bundle(conn, "reyna", tmp_path, max_conflict_share=0.05)
+    assert len(result.conflicts) == 5 and result.status == "validated" and result.songs == 95

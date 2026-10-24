@@ -25,7 +25,7 @@ phone: open app -> saved catalog shows at once -> (if the last check is over 12 
 |---|---|
 | `run` | The scheduled pass: `discover`, `fetch` (new links only), `import`, `map`, `publish`. Skips itself ("not due") unless the last successful scheduled run is older than `--min-interval-days` (default 14). `--manual` ignores the interval. Holds a lock, so two runs never overlap. One dead download link does not block the others: the run continues, publishes what it has, and exits 1 with outcome `partial`, which does not count as a success, so the next daily run tries again. Exit 0 ok, 1 error or partial, 2 blocked by a safety gate. Each run is recorded in `import_run`. |
 | `publish` | Build every model listed in `display.yaml`, verify, and publish a new version. `--keep N` versions stay on disk (default 5; the live one is never pruned). `--allow-drop` lifts the drop gate. |
-| `audit` | Download every known document again and compare its hash with what was imported. The document host sends no ETag or Last-Modified, so a file replaced behind the same link is only visible this way. Reports `CHANGED` files, imports nothing, exits 2 on drift. Meant to run monthly. To take a changed file: `fetch --refresh`, `import`, then `publish`. |
+| `audit` | Download every known document (all machine groups, about 800 MB, so run it monthly at most) again and compare its hash with what was imported. The document host sends no ETag or Last-Modified, so a file replaced behind the same link is only visible this way. Reports `CHANGED` files, imports nothing, exits 2 on drift. Meant to run monthly. To take a changed file: `fetch --refresh`, `import`, then `publish`. |
 | `rollback vN` | Point the live manifest at an older version after re-checking that version's hashes. Phones follow because they update to any different version, not only newer ones. **Rollback is temporary**: the next `run` or `publish` builds from the database again and publishes a new version, so to keep something out use `withdraw`, and to stop updates use `suspend`. Refuses versions that predate a withdrawal. Waits for no one: if a `run` or `publish` is in progress it stops with a message. |
 | `suspend [--notice TEXT]` / `resume` | Make every app that checks in hide the songs and show the notice (bundles stay in place). Meant for a takedown request while it is being handled. Works even while a long `run` is fetching (it only takes a short lock on the manifest), and a publish that is running, or runs later, keeps the pause. Apps already open notice it at their next check. |
 | `withdraw --release LABEL` (or `--release-id N`) | Leave a release out of every later build, publish a catalog without it, and **delete every older version folder**, because those still contain the withdrawn songs (any later publish also removes such folders). Only the models that contained the release may shrink past the drop gate. If publishing is not possible (for example it was the only release), the release stays withdrawn and the command says to `suspend`. Songs already saved on devices are replaced at their next update, or hidden at once by `suspend`. |
@@ -60,10 +60,12 @@ v<N>/manifest.json    the manifest as published, used by rollback
   "models": [{
     "slug": "reyna", "name": "Reyna", "family": "Reyna series", "hue": "magenta",
     "file": "v3/reyna.json", "sha256": "<64 hex of the file's exact bytes>", "bytes": 143995,
-    "songs": 3186, "excluded": 0, "coverage": "Volumes 62 to 76"
+    "songs": 3186, "coverage": "Volumes 62 to 76"
   }]
 }
 ```
+
+`excluded` (not shown above) is added to a model only when some song numbers were left out because the publisher lists them with different titles; the app then says how many.
 
 ### Scheduling
 

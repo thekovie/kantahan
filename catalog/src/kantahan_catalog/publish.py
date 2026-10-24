@@ -159,8 +159,9 @@ def read_manifest(out_dir: str | Path) -> dict[str, Any] | None:
 _MONTHS = (
     "January February March April May June July August September October November December"
 ).split()
+_MONTH_WORD = "|".join(f"{m[:3]}[a-z]*" for m in _MONTHS)  # full names and abbreviations ("Sept")
 _MONTH_LABEL = re.compile(
-    rf"^\s*(?:(?P<y1>\d{{4}})\s+(?P<m1>{'|'.join(_MONTHS)})|(?P<m2>{'|'.join(_MONTHS)})\s+(?P<y2>\d{{4}}))\s*$",
+    rf"^\s*(?:(?P<y1>\d{{4}})\s+(?P<m1>{_MONTH_WORD})|(?P<m2>{_MONTH_WORD})\s+(?P<y2>\d{{4}}))\s*$",
     re.I,
 )
 _VOLUME_LABEL = re.compile(r"volume\s+(\d+)(?:\s*[-~]\s*(\d+))?", re.I)
@@ -172,15 +173,23 @@ def _coverage(labels: list[str]) -> str:
     for label in labels:
         m = _MONTH_LABEL.match(label)
         if m:
-            month = (m["m1"] or m["m2"]).capitalize()
-            months.append((int(m["y1"] or m["y2"]), _MONTHS.index(month), month))
+            index = next(
+                i
+                for i, name in enumerate(_MONTHS)
+                if name[:3].lower() == (m["m1"] or m["m2"])[:3].lower()
+            )
+            months.append((int(m["y1"] or m["y2"]), index, _MONTHS[index]))
     if months and len(months) == len(labels):
         first, last = min(months), max(months)
+        if first == last:
+            return f"Monthly list, {first[2]} {first[0]}"
         return f"Monthly lists, {first[2]} {first[0]} to {last[2]} {last[0]}"
+    if months:  # months mixed with volumes: describe only what has a volume number
+        labels = [label for label in labels if not _MONTH_LABEL.match(label)]
     numbers = [
         int(n) for label in labels for m in _VOLUME_LABEL.finditer(label) for n in m.groups() if n
     ]
-    if not numbers:
+    if not numbers and not months:
         numbers = [int(n) for label in labels for n in re.findall(r"\d+", label)]
     if not numbers:
         return "Volumes not stated"

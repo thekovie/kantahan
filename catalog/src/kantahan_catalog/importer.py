@@ -12,6 +12,7 @@ import hashlib
 import json
 import re
 import sqlite3
+from collections.abc import Collection
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -136,13 +137,25 @@ def _insert_entries(conn: sqlite3.Connection, release_id: int, extract: Document
         )
 
 
-def _forget_quarantined(conn: sqlite3.Connection, document_id: int) -> None:
-    """Drop a document, its release and songs, so it is evaluated again after an extractor fix."""
-    with conn:
-        conn.execute(
-            "UPDATE document_link SET document_id = NULL WHERE document_id = ?", (document_id,)
-        )
-        conn.execute("DELETE FROM document WHERE id = ?", (document_id,))
+def _detach_and_replace(conn: sqlite3.Connection, document_id: int) -> tuple[list[int], str | None]:
+    """Remove a document with its release and songs, to replace it after an extractor fix.
+
+    Must run inside the caller's transaction. Returns the ids of the links that pointed at it
+    (they are re-pointed at the replacement, so every section's link to a shared file survives)
+    and the old release's `withdrawn_at`, which the replacement inherits.
+    """
+    link_ids = [
+        r["id"]
+        for r in conn.execute("SELECT id FROM document_link WHERE document_id = ?", (document_id,))
+    ]
+    release = conn.execute(
+        "SELECT withdrawn_at FROM release WHERE document_id = ?", (document_id,)
+    ).fetchone()
+    conn.execute(
+        "UPDATE document_link SET document_id = NULL WHERE document_id = ?", (document_id,)
+    )
+    conn.execute("DELETE FROM document WHERE id = ?", (document_id,))
+    return link_ids, release["withdrawn_at"] if release else None
 
 
 def import_pdf(
@@ -155,7 +168,7 @@ def import_pdf(
     now: datetime | None = None,
     retry_quarantined: bool = False,
     reimport: bool = False,
-    blank_artists_ok: bool = False,
+    blank_artist_hashes: Collection[str] = (),
 ) -> ImportResult:
     stamp = _stamp(now)
     data = Path(path).read_bytes()
@@ -166,10 +179,10 @@ def import_pdf(
     source_id = int(source["id"])
 
     existing = conn.execute("SELECT id, status FROM document WHERE sha256 = ?", (sha,)).fetchone()
-    if existing and (reimport or (retry_quarantined and existing["status"] == "quarantined")):
-        _forget_quarantined(conn, existing["id"])
-        existing = None
-    if existing:
+    replacing = existing is not None and (
+        reimport or (retry_quarantined and existing["status"] == "quarantined")
+    )
+    if existing and not replacing:
         return _unchanged(conn, existing, source_id, url, label, stamp)
 
     key_match = FILE_KEY.search(url)
@@ -179,13 +192,21 @@ def import_pdf(
     extract: DocumentExtract | None
     try:
         extract = extract_rows(path)
-        issues = validate_document(extract, previous or None, blank_artists_ok)
+        issues = validate_document(extract, previous or None, sha in blank_artist_hashes)
     except ExtractionError as exc:
         extract, issues = None, [Issue("extraction_failed", "error", str(exc))]
     blocked = has_errors(issues)
     classification = classify_header(extract.header_lines) if extract else None
 
+    if replacing and existing is not None and existing["status"] == "ok" and blocked:
+        # Never trade a working import for a rejected one: keep what is there.
+        return ImportResult("rejected", existing["id"], None, 0, tuple(issues), None)
+
     with conn:
+        relink: list[int] = []
+        inherited_withdrawal: str | None = None
+        if replacing and existing is not None:
+            relink, inherited_withdrawal = _detach_and_replace(conn, existing["id"])
         document_id = conn.execute(
             "INSERT INTO document (sha256, bytes, pages, file_key, header_text, header_family, "
             "header_evidence, status, first_seen) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -203,6 +224,10 @@ def import_pdf(
         ).lastrowid
         assert document_id is not None
         _touch_link(conn, source_id, document_id, url, label, stamp)
+        for link_id in relink:
+            conn.execute(
+                "UPDATE document_link SET document_id = ? WHERE id = ?", (document_id, link_id)
+            )
         if blocked or extract is None or classification is None:
             _quarantine(conn, document_id, issues, stamp)
             return ImportResult("quarantined", document_id, None, 0, tuple(issues), None)
@@ -212,6 +237,11 @@ def import_pdf(
             (document_id, label, status),
         ).lastrowid
         assert release_id is not None
+        if inherited_withdrawal:
+            conn.execute(
+                "UPDATE release SET withdrawn_at = ? WHERE id = ?",
+                (inherited_withdrawal, release_id),
+            )
         for old in earlier:
             conn.execute(
                 "UPDATE release SET superseded_by = ? WHERE id = ?", (release_id, old["id"])

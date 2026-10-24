@@ -56,7 +56,7 @@ Page-1 headers were classified automatically. 14 releases (Vol 62 to 76) are `ma
 
 ## Rules for the importer
 
-- A document is associated with a model only through an explicit evidence row (`release_model.evidence`), never through the section it was found in.
+- A document is associated with a model only through an explicit evidence row (`release_model.evidence`). Two kinds exist: the document's own page-1 header (the only kind accepted for Reyna) and "listed under <section> on the publisher's song list page" for the other machine groups (see ADR 0004). A section is never evidence for Reyna.
 - Unknown mappings are imported as quarantined or held back; they are not shown in the app.
 - Song numbers keep their per-model meaning: the same number in two model families is two different entries.
 
