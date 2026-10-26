@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect, useRef } from "react";
 import { Route, Switch, useLocation } from "wouter";
 import { Footer } from "./components/Footer";
+import { BackToTop } from "./components/BackToTop";
 import { Header } from "./components/Header";
 import { useCatalog } from "./hooks/useCatalog";
 import { useTheme } from "./hooks/useTheme";
@@ -61,6 +62,7 @@ export default function App() {
         </Suspense>
       </main>
       <Footer />
+      <BackToTop onTop={() => main.current?.focus({ preventScroll: true })} />
     </div>
   );
 }

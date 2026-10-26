@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
 test.use({ colorScheme: "dark" });
@@ -121,4 +122,42 @@ test("the navigation bar and the machine sign stay pinned while the list scrolls
   await page.keyboard.press("Tab");
   const focused = await page.evaluate(() => document.activeElement?.getBoundingClientRect().top ?? 0);
   expect(focused).toBeGreaterThanOrEqual(header.height + sign.height - 1);
+});
+
+test("a long scroll offers Back to top, which returns to the start", async ({ page }) => {
+  await page.getByRole("tab", { name: /^N, \d+ songs?/ }).click();
+  await expect(page.getByRole("button", { name: "Back to top" })).toHaveCount(0);
+  await page.evaluate(() => window.scrollTo(0, 3000));
+  const button = page.getByRole("button", { name: "Back to top" });
+  await expect(button).toBeVisible();
+  const box = await button.boundingBox();
+  const view = page.viewportSize();
+  if (!box || !view) throw new Error("no button or viewport");
+  expect(box.height).toBeGreaterThanOrEqual(44);
+  expect(box.x + box.width).toBeLessThanOrEqual(view.width);
+  expect(box.y + box.height).toBeLessThanOrEqual(view.height);
+  const scan = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
+  expect(scan.violations.map((v) => v.id)).toEqual([]);
+  await button.click();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeLessThan(5);
+  await expect(button).toHaveCount(0);
+  await expect(page.getByRole("main")).toBeFocused();
+});
+
+test("with text at twice the size the wordmark does not run under the header buttons", async ({ page }) => {
+  await page.addStyleTag({ content: "html { font-size: 200% !important }" });
+  const brand = await page.locator("header .brand").boundingBox();
+  const actions = await page.locator("header .header__actions").boundingBox();
+  if (!brand || !actions) throw new Error("header parts are not on the page");
+  // Side by side or on separate rows, but never on top of each other.
+  const apart = brand.x + brand.width <= actions.x + 1 || brand.y + brand.height <= actions.y + 1;
+  expect(apart).toBe(true);
+  // The pinned machine sign still sits directly under the (now taller) bar.
+  const header = await page.locator("header.header").boundingBox();
+  const sign = await page.locator(".line").first().boundingBox();
+  if (!header || !sign) throw new Error("the bar or the sign is not on the page");
+  await page.evaluate(() => window.scrollTo(0, 1500));
+  const pinned = await page.locator(".line").first().boundingBox();
+  expect(Math.abs((pinned?.y ?? -99) - (header.y + header.height))).toBeLessThanOrEqual(1);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 });

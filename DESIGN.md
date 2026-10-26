@@ -257,3 +257,7 @@ The first choice in the machine chooser is **All machines**: every machine's son
 ## Pinned bars and the short note
 
 The navigation bar is `position: sticky` at the top (z-index 30) and the machine sign sticks directly under it (`top: var(--header-h)`). `--header-h` is the bar's height (3.75rem plus its 1px rule and the phone's top inset), and `scroll-padding-top` leaves room for both bars so keyboard focus is never hidden. On phones the pinned sign hides its volumes text and clamps the name to two lines. The note under the list is a short summary (machine, volumes, count), the source credit and catalog version, and the update button; the caveats sit behind the native `<details>` "About this list". The footer is a single sentence.
+
+## Back to top, and very large text
+
+A round-ended "Top" button (ink fill, a ring in the page colour so it stays legible over the song numbers) appears at the bottom right after two screens of scrolling; it scrolls to the top (instantly with reduced motion) and focuses the main content. The header may wrap at large text sizes: it measures its own height into `--header-h`, which the machine sign and the scroll padding use. A song row keeps the number beside the title while the title has at least 11rem, and puts it underneath otherwise.

@@ -1,5 +1,5 @@
 import { Menu, Moon, Sun, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 
 interface HeaderProps {
@@ -20,6 +20,21 @@ export function Header({ theme, onToggleTheme, demo = false }: HeaderProps) {
   const [open, setOpen] = useState(false);
   const [location] = useLocation();
   const root = useRef<HTMLDivElement>(null);
+  const bar = useRef<HTMLElement>(null);
+
+  // The machine sign and the scroll padding sit just under this bar, so publish its real height.
+  useLayoutEffect(() => {
+    const el = bar.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const publish = () => document.documentElement.style.setProperty("--header-h", `${el.getBoundingClientRect().height}px`);
+    publish();
+    const watcher = new ResizeObserver(publish);
+    watcher.observe(el);
+    return () => {
+      watcher.disconnect();
+      document.documentElement.style.removeProperty("--header-h");
+    };
+  }, []);
 
   useEffect(() => setOpen(false), [location]);
   useEffect(() => {
@@ -37,7 +52,7 @@ export function Header({ theme, onToggleTheme, demo = false }: HeaderProps) {
   }, [open]);
 
   return (
-    <header className="header">
+    <header className="header" ref={bar}>
       <div className="header__bar">
         <Link href="/" className="brand" aria-label="Kantahan, songbook home">
           <img src="/brand/logo.svg" alt="" width={36} height={36} />

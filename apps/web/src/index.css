@@ -87,7 +87,7 @@
 }
 
 html {
-  /* One bar of 3rem buttons with 0.375rem above and below, its 1px rule and the phone's top inset. */
+  /* The usual height of the bar; the header measures itself and replaces this when it differs (large text). */
   --header-h: calc(3.75rem + 1px + env(safe-area-inset-top));
   /* Keyboard focus and in-page jumps stop below the two pinned bars (the bar and the machine sign). */
   scroll-padding-top: calc(var(--header-h) + 4rem);
@@ -175,6 +175,7 @@ h3 {
 }
 .header__bar {
   display: flex;
+  flex-wrap: wrap; /* at very large text the buttons drop under the name; the bar's height is measured, not assumed */
   align-items: center;
   gap: 0.25rem 0.75rem;
   max-width: 42rem;
@@ -183,6 +184,9 @@ h3 {
 }
 .brand {
   min-width: 0;
+  overflow: hidden; /* at very large text sizes the name shortens instead of running under the buttons */
+  text-overflow: ellipsis;
+  white-space: nowrap;
   display: inline-flex;
   align-items: center;
   gap: 0.625rem;
@@ -472,10 +476,10 @@ h3 {
   border-bottom: 1px solid var(--line);
 }
 .song {
-  display: grid;
-  grid-template-columns: 1fr auto;
+  display: flex;
+  flex-wrap: wrap; /* at very large text the number drops under the title instead of squeezing it */
   align-items: center;
-  gap: 1rem;
+  gap: 0.25rem 1rem;
   width: 100%;
   min-height: 4.5rem;
   padding: 0.5rem 0.5rem 0.5rem 0.25rem;
@@ -483,6 +487,13 @@ h3 {
   border-radius: 0.5rem;
   background: transparent;
   text-align: left;
+}
+.song > :first-child {
+  flex: 1 1 11rem;
+  min-width: 0;
+}
+.song > :last-child {
+  margin-left: auto;
 }
 .song:hover {
   background: var(--surface-2);
@@ -860,6 +871,33 @@ h3 {
 .prose a {
   color: var(--text);
   font-weight: 600;
+}
+
+/* Back to top: appears once the list has been scrolled a long way. */
+.to-top {
+  position: fixed;
+  z-index: 20; /* above the list and the machine sign, below the bar and the number sheet */
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 3rem;
+  padding: 0 1rem 0 0.75rem;
+  border: 2px solid var(--bg); /* a ring in the page colour keeps it clear of the numbers behind it */
+  border-radius: 999px;
+  background: var(--brand);
+  color: var(--on-brand);
+  font-weight: 700;
+  box-shadow: 0 2px 10px rgb(11 27 43 / 0.35);
+  cursor: pointer;
+  animation: to-top-in 160ms ease-out;
+}
+@keyframes to-top-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
