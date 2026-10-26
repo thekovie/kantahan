@@ -132,6 +132,18 @@ curl -s  https://kantahan.example/catalog/manifest.json | head -c 300           
 
 Open **Rights and removal**, send a test message, and check that it arrives. If it never arrives: `docker compose logs contact` shows `contact failed: <ErrorType>` (no message text is ever logged); see the troubleshooting page. For a rate-limit check from your own network, send five messages in a row: the sixth must be refused with a message about trying again later. If **everyone** is refused after five messages, your proxy is not forwarding `X-Forwarded-For`.
 
+## After an update that changes how documents are read
+
+Some releases fix the parser (for example [data-review.md](data-review.md)). The documents are already on the volume, so nothing is downloaded again. In the Terminal of the `ingest` container (or `docker compose exec ingest ...`):
+
+```bash
+kc import --reimport --section all    # re-reads every document; a document that would get worse is rejected and the old reading is kept
+kc map                                # joins volumes to machines (adds the T-Series HDD machine on the first run)
+kc publish --allow-drop               # builds and publishes; --allow-drop because a machine can shrink by more than the 2% gate when documents move to another machine
+```
+
+Check the output: the `import:` line should say how many documents were imported and none rejected, and `SET ASIDE` lines name the few rows left out of a document. Phones pick up the new version by themselves. `kc stats` shows what is in the database.
+
 ## Scheduling
 
 The scheduler is the host's cron. `deploy/scripts/cron-job.sh` runs one job, logs it, stays silent on success and prints the tail of the log on failure, so cron's `MAILTO` only mails real problems (the host needs a mail agent such as msmtp for that). `run` decides itself whether a pass is due (every 14 days) and a failed run is tried again the next day.

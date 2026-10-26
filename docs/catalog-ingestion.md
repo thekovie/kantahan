@@ -59,10 +59,11 @@ Known limits: the rule assumes the PDF writes cells row by row (true for every a
 
 ## Validation rules (implemented)
 
-Errors quarantine the whole document, so nothing uncertain is built:
+Errors quarantine the whole document, so nothing uncertain is built. Before that, a **few odd rows are set aside and reported** (`SET ASIDE ...` in the import output, never padded or guessed): rows whose number is not 5 digits, and numbers printed twice with different text (both rows go). Up to 20 rows and 10% of the document; more than that and the document is quarantined as below.
 
 - number is not 5 digits (leading zeros allowed)
 - empty title
+- more than 2 rows start with column header text ("Song Title", "Popularized By:"): the extractor is reading headers as data
 - the same number twice in one document with different text
 - more than 5% of rows without an artist
 - more than one number-like token outside every table when that is over 1% of the rows or over 3 tokens (rows may have been missed; a single token is audited page furniture and tolerated)
