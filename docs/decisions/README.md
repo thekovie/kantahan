@@ -13,3 +13,4 @@ One short file per decision: context, decision, consequences. Number sequentiall
 | [0007](0007-all-machines-view.md) | An all-machines view that never merges machines | Accepted |
 | [0008](0008-coolify-ready-deployment.md) | A deployment shaped for Coolify | Accepted |
 | [0009](0009-t-series-hdd.md) | T-Series HDD is its own machine | Accepted |
+| [0010](0010-merged-rows-in-all-view.md) | Merged rows in the all-machines view | Accepted |

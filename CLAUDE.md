@@ -11,7 +11,7 @@ Rules specific to this repo:
 - Scope is a songbook only. Do not add queueing, accounts, playback, lyrics or social features.
 - Never invent song numbers, download URLs or model mappings. Separate verified evidence from assumptions in docs.
 - Never commit source PDFs or extracted catalog data to the public repo (owner decision; see docs/legal-and-attribution.md). `.gitignore` enforces `*.pdf` and catalog work dirs. Credit the source wherever catalog data is shown.
-- Song numbers are strings (keep leading zeros). Never deduplicate across models.
+- Song numbers are strings (keep leading zeros). Never deduplicate across models in the data (bundles, manifest, database). Only the All machines view groups display rows, and only for the same song under the same number, never dropping a machine (ADR 0010).
 - Do not imply affiliation with Platinum Karaoke or Vismay International Corporation.
 - Commit messages and PR text carry no co-author trailers or tool attribution.
 - Update HANDOFF.md at the end of every meaningful session.

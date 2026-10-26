@@ -1,6 +1,6 @@
 # 0007: An all-machines view that never merges machines
 
-Status: accepted, 2026-10-24.
+Status: accepted, 2026-10-24. Amended by [0010](0010-merged-rows-in-all-view.md): rows with the same song and the same number are now shown once, naming every machine.
 
 ## Context
 

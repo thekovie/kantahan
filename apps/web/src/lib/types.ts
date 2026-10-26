@@ -23,8 +23,9 @@ export const ALL_MODELS = "all";
 
 export interface Song {
   id: number;
-  /** Slug of the machine this entry belongs to; set only in the all-machines view. */
-  model?: string;
+  /** Slugs of the machines that use this number for this song, in manifest order; set only in the
+   *  all-machines view, where identical entries are shown once. */
+  models?: readonly string[];
   number: string;
   title: string;
   artist: string;

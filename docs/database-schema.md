@@ -30,7 +30,7 @@ SQLite, created by numbered migrations in [`catalog/src/kantahan_catalog/migrati
 
 - Song numbers are text. `00589` and `589` are different numbers.
 - A model's songs come only from `mapped` releases.
-- Nothing is ever deduplicated across models; `song_entry` rows belong to a release.
+- Nothing is ever deduplicated across models in the data; `song_entry` rows belong to a release. (The app's All machines view shows identical song and number once, in the browser only: [ADR 0010](decisions/0010-merged-rows-in-all-view.md).)
 - A quarantined document has no release and no entries.
 - `flags` may contain `overprint` (artist text overlap that could not be resolved: artist kept in the database, withheld from bundles) and `title_overprint` (unresolved title overlap: row left out of bundles). Rare after the overlap rule: 12 of 12,489 rows in the audited documents.
 

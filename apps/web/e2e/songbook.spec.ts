@@ -94,7 +94,7 @@ test("the all-machines view labels every row with its machine, and keeps the cho
   await expect(rows.first()).toBeVisible();
   // Every row names a machine, and more than one machine appears among the results.
   const names = await rows.evaluateAll((nodes) =>
-    nodes.map((node) => node.querySelector(".song__model")?.textContent?.trim() ?? ""),
+    nodes.map((node) => node.querySelector(".song__machines > span:nth-child(2)")?.textContent?.trim() ?? ""),
   );
   expect(names.every((name) => name !== "")).toBe(true);
   expect(new Set(names).size).toBeGreaterThan(1);
