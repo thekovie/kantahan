@@ -277,3 +277,15 @@ def test_the_free_space_floor_can_be_lowered(world, monkeypatch):
 
 def test_free_bytes_reads_the_nearest_existing_folder(tmp_path):
     assert runner.free_bytes(tmp_path / "does" / "not" / "exist") > 0
+
+
+def test_odd_rows_in_a_document_are_reported_and_the_rest_is_published(world, tmp_path):
+    run, work, pages, _ = world
+    rows = sample_rows(15000, 20) + [("782", "Short Number", "A")]
+    pages[PDF_URL] = Path(
+        make_pdf(tmp_path / "odd.pdf", [[rows]], header="Vol. 1 For Reyna ! 1")
+    ).read_bytes()
+    code, text = run("run", "--manual")
+    assert code == 0 and "published v1" in text
+    assert "SET ASIDE" in text and "782" in text
+    assert manifest(work)["models"][0]["songs"] == 20

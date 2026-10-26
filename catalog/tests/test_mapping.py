@@ -37,7 +37,7 @@ def models_of(conn, label):
 
 def test_every_publisher_section_has_a_seeded_model(conn):
     slugs = {r[0] for r in conn.execute("SELECT slug FROM model")}
-    assert set(SECTION_TO_MODEL.values()) <= slugs and len(slugs) == 12
+    assert set(SECTION_TO_MODEL.values()) <= slugs and len(slugs) == 13
 
 
 def test_a_volume_joins_every_section_that_lists_it(conn, pdf):
@@ -96,3 +96,30 @@ def test_a_section_whose_model_row_is_missing_is_an_error_not_a_silent_skip(conn
     conn.execute("DELETE FROM model WHERE slug = 'bravo'")
     with pytest.raises(KeyError, match="no model row"):
         apply_section_mappings(conn, [link(5, "BRAVO")])
+
+
+def test_a_t_series_hdd_document_listed_under_t_x_joins_its_own_machine_only(conn, pdf):
+    add(conn, pdf("h.pdf", sample_rows(15700, 5), header="Vol. 60 For T-Series, HDD ! 1"), 60)
+    add(
+        conn,
+        pdf("d.pdf", sample_rows(15700, 5, "Other"), header="Vol. 64 For T-Series DVD ! 1"),
+        64,
+    )
+    links = [link(60, "T-X SERIES"), link(64, "T-X SERIES")]
+    apply_section_mappings(conn, links)
+    assert models_of(conn, "Volume 60") == ["t-series-hdd"]
+    assert models_of(conn, "Volume 64") == ["t-x"]
+
+
+def test_a_header_split_replaces_an_earlier_mapping_to_the_section_default(conn, pdf):
+    add(conn, pdf("h.pdf", sample_rows(15700, 5), header="Vol. 60 For T-Series, HDD ! 1"), 60)
+    # What an older run did: the document was joined to the section's machine.
+    conn.execute(
+        "INSERT INTO release_model (release_id, model_id, evidence) "
+        "SELECT r.id, m.id, 'listed under T-X SERIES' FROM release r, model m "
+        "WHERE r.label = 'Volume 60' AND m.slug = 't-x'"
+    )
+    apply_section_mappings(conn, [link(60, "T-X SERIES")])
+    assert models_of(conn, "Volume 60") == ["t-series-hdd"]
+    apply_section_mappings(conn, [link(60, "T-X SERIES")])  # and stays that way
+    assert models_of(conn, "Volume 60") == ["t-series-hdd"]

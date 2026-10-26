@@ -9,6 +9,7 @@ from .models import Classification
 
 # Order matters: the longer family name must be tested before its prefix.
 _RULES: tuple[tuple[str, re.Pattern[str]], ...] = (
+    ("t-series-hdd", re.compile(r"\bT-Series,?\s+HDD\b", re.I)),
     ("t-x-r-bmb", re.compile(r"T-X-R-BMB", re.I)),
     ("t-x", re.compile(r"\bT-X\b", re.I)),
     ("sd-series", re.compile(r"\bSD SERIES\b", re.I)),

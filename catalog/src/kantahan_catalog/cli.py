@@ -187,6 +187,9 @@ def cmd_import(args: argparse.Namespace, out: Out, **_: Any) -> int:
             out(f"  [{number}/{len(links)}] imported {link.label}: {result.rows} songs")
         elif number % 100 == 0:
             out(f"  [{number}/{len(links)}] links checked")
+        for issue in result.issues:
+            if issue.code.startswith("row_excluded"):
+                out(f"  SET ASIDE {link.label}: {issue.message}")
         if result.outcome == "rejected":
             reasons = sorted({i.code for i in result.issues if i.severity == "error"})
             out(f"  REJECTED {link.label}: {reasons}; kept the previous import")

@@ -21,7 +21,7 @@ from .classify import FAMILY_TO_MODEL, classify_header
 from .extract import extract_rows
 from .models import DocumentExtract, ExtractionError, Issue
 from .normalize import fold
-from .validate import has_errors, validate_document
+from .validate import has_errors, set_aside_odd_rows, validate_document
 
 FILE_KEY = re.compile(r"mediafire\.com/file(?:_premium)?/(\w+)/")
 MAX_QUARANTINE_SAMPLES = 50
@@ -191,8 +191,10 @@ def import_pdf(
     previous = earlier[0]["n"] if earlier else None
     extract: DocumentExtract | None
     try:
-        extract = extract_rows(path)
-        issues = validate_document(extract, previous or None, sha in blank_artist_hashes)
+        extract, set_aside = set_aside_odd_rows(extract_rows(path))
+        issues = set_aside + validate_document(
+            extract, previous or None, sha in blank_artist_hashes
+        )
     except ExtractionError as exc:
         extract, issues = None, [Issue("extraction_failed", "error", str(exc))]
     blocked = has_errors(issues)

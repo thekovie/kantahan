@@ -50,8 +50,8 @@ def run(env, *argv, fetcher=None):
 
 
 def test_migrate_then_revert(env):
-    assert run(env, "migrate")[1].endswith("[1, 2, 3, 4, 5]")
-    assert run(env, "migrate", "--down", "1")[1].endswith("[5]")
+    assert run(env, "migrate")[1].endswith("[1, 2, 3, 4, 5, 6]")
+    assert run(env, "migrate", "--down", "1")[1].endswith("[6]")
 
 
 def test_full_local_flow_discover_fetch_import_build(env, tmp_path):

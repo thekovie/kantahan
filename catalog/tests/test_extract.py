@@ -240,3 +240,73 @@ def test_a_sparse_page_borrows_the_layout_of_a_similar_page(tmp_path):
     sparse = [[("43000", "Lonely", "Art")], []]
     result = extract_rows(make_two_table_pdf(tmp_path / "s.pdf", [full, sparse, full]))
     assert len(result.rows) == 81 and result.stray_tokens == 0
+
+
+def test_a_column_header_above_the_first_row_is_not_part_of_its_title(tmp_path):
+    table = [
+        ("15682", "20 Million", "Rivermaya"),
+        ("15683", "A Love Like This", "Dan Fogelberg"),
+    ]
+    pdf = make_pdf(tmp_path / "a.pdf", [[table]], column_headers=True)
+    assert rows_of(pdf) == table
+
+
+def test_a_two_line_first_title_keeps_both_lines_under_a_column_header(tmp_path):
+    table = [
+        ("15682", "A Long Title That\nWraps Onto Two Lines", "Rivermaya"),
+        ("15683", "A Love Like This", "Dan Fogelberg"),
+    ]
+    pdf = make_pdf(tmp_path / "a.pdf", [[table]], column_headers=True)
+    assert rows_of(pdf)[0] == ("15682", "A Long Title That Wraps Onto Two Lines", "Rivermaya")
+
+
+def test_every_table_on_a_page_ignores_its_own_column_header(tmp_path):
+    tables = [
+        [("15682", "First Song", "Artist One"), ("15683", "Second Song", "Artist Two")],
+        [("15782", "Third Song", "Artist Three")],
+        [("15882", "Fourth Song", "Artist Four")],
+    ]
+    pdf = make_pdf(tmp_path / "a.pdf", [tables], column_headers=True)
+    assert [r[1] for r in rows_of(pdf)] == [
+        "First Song",
+        "Second Song",
+        "Third Song",
+        "Fourth Song",
+    ]
+
+
+def test_a_version_mark_printed_in_a_title_is_not_part_of_the_title(tmp_path):
+    table = [
+        ("45235", "How To Love v.86", "Lil Wayne"),
+        ("45236", "Never v.87 Bed", "Ashley Tisdale"),
+        ("45237", "A Song Called V.2", "Someone"),
+    ]
+    pdf = make_pdf(tmp_path / "a.pdf", [[table]])
+    assert (
+        [r[1] for r in rows_of(pdf)]
+        == [
+            "How To Love",
+            "Never Bed",
+            "A Song Called V.2",  # only the publisher's "v.NN" volume marks are removed, not "V.2" in a name
+        ]
+    )
+
+
+def test_a_two_line_title_with_tight_line_spacing_stays_with_its_own_row(tmp_path):
+    # Real documents print wrapped lines so close together that their boxes overlap a little (about
+    # a sixth of a word). That is not two cells drawn on top of each other.
+    rows = [
+        ("15000", "Just Take My Heart", "Mr. Big"),
+        ("15001", "Just Tell Me You\nLove Me", "England Dan"),
+        ("15002", "Just The Two Of Us", "Adele"),
+    ]
+    got = rows_by_number(make_pdf(tmp_path / "t.pdf", [[rows]], title_leading=9))
+    assert got["15000"].title == "Just Take My Heart"
+    assert got["15001"].title == "Just Tell Me You Love Me"
+    assert got["15002"].title == "Just The Two Of Us"
+
+
+def test_a_header_repeated_inside_the_table_is_not_part_of_the_next_title(tmp_path):
+    rows = [(f"{15000 + i}", f"Song Number {i}", f"Artist {i}") for i in range(6)]
+    pdf = make_pdf(tmp_path / "r.pdf", [[rows]], repeated_header_before=(3,))
+    assert [r[1] for r in rows_of(pdf)] == [r[1] for r in rows]
