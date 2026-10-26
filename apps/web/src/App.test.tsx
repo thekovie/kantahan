@@ -76,6 +76,30 @@ describe("songbook", () => {
     expect(more).toHaveAttribute("open");
   });
 
+  it("offers a way back to the top only after scrolling a long way", async () => {
+    stubNetwork(ROUTES);
+    const user = userEvent.setup();
+    const scrollTo = vi.fn();
+    vi.stubGlobal("scrollTo", scrollTo);
+    mount();
+    await screen.findByRole("region", { name: "About this catalog" });
+    expect(screen.queryByRole("button", { name: "Back to top" })).not.toBeInTheDocument();
+
+    const scrollTo_ = (y: number) => {
+      Object.defineProperty(window, "scrollY", { value: y, configurable: true });
+      window.dispatchEvent(new Event("scroll"));
+    };
+    scrollTo_(window.innerHeight * 3);
+    const button = await screen.findByRole("button", { name: "Back to top" });
+    await user.click(button);
+    expect(scrollTo).toHaveBeenLastCalledWith(expect.objectContaining({ top: 0 }));
+    // Focus moves to the content so keyboard users are not left on a button that disappears.
+    expect(screen.getByRole("main")).toHaveFocus();
+
+    scrollTo_(0);
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Back to top" })).not.toBeInTheDocument());
+  });
+
   it("walks the alphabet rail", async () => {
     stubNetwork(ROUTES);
     const user = userEvent.setup();

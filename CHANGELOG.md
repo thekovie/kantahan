@@ -4,6 +4,13 @@ All notable changes are documented here. Format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Fixed
+- Link previews: pasting the site into Facebook, Messenger, Telegram or X showed no card because the page had no Open Graph or Twitter tags. `index.html` now carries them, with absolute addresses and the 1200x630 share image; a test keeps them in place. After deploying, ask Facebook to fetch the page again with its Sharing Debugger (it caches what it saw before).
+- At very large text sizes the wordmark ran under the header buttons, and song rows squeezed the title into a sliver beside the number. The header now wraps (and publishes its measured height so the pinned machine sign still sits right under it), and the number drops under the title when there is no room beside it.
+
+### Added
+- A **Back to top** button appears after scrolling two screens down and returns to the start, moving focus to the content for keyboard users.
+
 ### Changed
 - The navigation bar is now pinned to the top of the screen, and the machine sign sticks right under it, so both stay in view while the list scrolls (keyboard focus never ends up hidden behind them). On phones the pinned sign shows only the machine (up to two lines for long names); the volumes are in the note.
 - The note under the list is short: the machine, its volumes and song count, the source (always visible, as credit) with the catalog version, and the Check for updates button. The caveats (earlier volumes not included, numbers left out, how rows are merged) are behind one "About this list" fold. The footer is one line.
