@@ -20,7 +20,7 @@ SQLite, created by numbered migrations in [`catalog/src/kantahan_catalog/migrati
 | `release_model` | the evidence row tying a release to a model, with the header line as text |
 | `song_entry` | a row as printed: `number` (TEXT, leading zeros kept), raw title and artist, folded title/artist for matching, page, `flags`. Unique per `(release, number)` |
 | `song` | canonical song, created only when folded title and artist are both non-empty and equal. Entries are linked, never merged or dropped: the same title under different numbers stays separate |
-| `model` (12 rows after migration 0005), `release_model` | one model per publisher machine group; `release_model.evidence` says why a release belongs to it ("page-1 header: ..." for Reyna, "listed under ..." for the others); see [model-compatibility.md](model-compatibility.md) |
+| `model` (13 rows after migration 0006), `release_model` | one model per publisher machine group; `release_model.evidence` says why a release belongs to it ("page-1 header: ..." for Reyna, "listed under ..." for the others); see [model-compatibility.md](model-compatibility.md) |
 | `publication`, `publication_event` | M3: one row per published catalog (`v<id>`, status, manifest hash) and a log of rollback, suspend, resume and withdraw actions (migration 0004) |
 | `catalog_version`, `catalog_version_model` | local build records: status `building`/`validated`/`published`/`withdrawn`, parent version, bundle SHA-256 and song count per model |
 | `quarantine` | documents rejected by validation, with reason and sample details |

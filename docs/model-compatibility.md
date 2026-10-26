@@ -24,14 +24,15 @@ Reyna, Reyna 2, Reyna 3C, Reyna SE (grouped as "Reyna /2/3C/SE") and Reyna 3 / R
 
 ## Machine groups (M4, run locally on 2026-10-24)
 
-All 393 Source A links were fetched and imported (363 files; 295 distinct documents by hash, because the same file is often linked from several sections). 12 models, one per publisher section:
+All 393 Source A links were fetched and imported (363 files; 295 distinct documents by hash, because the same file is often linked from several sections). 13 models: one per publisher section, plus **T-Series HDD**, which the publisher lists under T-X SERIES but whose documents say "For T-Series, HDD" in their own header ([ADR 0009](decisions/0009-t-series-hdd.md)). Counts below are from the rebuild of 2026-10-26 (see [data-review.md](data-review.md)):
 
 | Model (publisher section) | Releases | Songs in bundle | Left out as conflicting | Notes |
 |---|---|---|---|---|
 | Reyna | 14 | 3,186 | 0 | header rule, Vol 62 to 76 only |
-| T-X | 47 | 13,706 | 205 | Vol 24 to 108 |
-| Flute / Piano V1.5 / Piano XL SD / PK10 | 32 | 8,821 | 183 | Vol 24 to 108 (shares files with T-X) |
-| Major / Alpha / Cello / X3 / Piano XL HDD | 140 | 12,875 | 5 | monthly lists, 2015 to 2026 |
+| T-X | 45 | 13,242 | 0 | Vol 24 to 108 without the two HDD volumes |
+| T-Series HDD | 2 | 882 | 0 | Vol 58 and 60 (header "For T-Series, HDD") |
+| Flute / Piano V1.5 / Piano XL SD / PK10 | 32 | 9,004 | 0 | Vol 24 to 108 (shares files with T-X) |
+| Major / Alpha / Cello / X3 / Piano XL HDD | 143 | 13,140 | 0 | monthly lists, 2015 to 2026 (the three held-back 2015 and 2021 lists now import) |
 | KS-40 / KBOX-2 / KBOX-3 | 31 | 11,341 | 0 | Vol 2 to 35 |
 | KS-5 / Junior Lite / KS-10 / Junior 2 | 26 | 10,265 | 0 | Vol 2 to 35 |
 | KS-100 Minibox / KS-10 Mini SD | 18 | 4,837 | 2 | Vol 18 to 35 |
@@ -45,7 +46,7 @@ Observations:
 
 - The same file is listed under several groups (for example "T-X Series V.106 / K-Box V.33" under Reyna, T-X, Flute/Piano and KS-40). Under the Reyna decision it joins T-X, Flute/Piano and KS-40, but not Reyna.
 - Most headers name no machine. Headers that do: "For Reyna" (Vol 62 to 76), "For P-Series" (Vol 69 to 76), "T-X Series", "SD Series", "KS-Series", "K-Box Series".
-- **Conflicts.** With many volumes per model, a song number sometimes means different songs (T-X Vol 60 and Vol 65 at 15858) or has revised wording ("Muli v.86" and "Muli"). Such numbers are left out of the bundle, and a model publishes only if they are at most 5% of its numbers (the app shows the count). A number with the same title but different artist text keeps the song and withholds the artist.
+- **Conflicts.** With many volumes per model, a song number sometimes means different songs (for example 15858 in T-Series HDD Vol 60 and T-X Vol 65, now separate machines) or has revised wording (a subtitle, a title cut at a line break). Such numbers are left out of the bundle, and a model publishes only if they are at most 5% of its numbers (the app shows the count). A number with the same title but different artist text keeps the song and withholds the artist.
 - **Not imported (3 documents):** HDD "2015 October" and "2015 November" (song numbers of only 3 or 4 digits in the source) and HDD "2021 March" (one number listed twice with different text). They stay quarantined.
 - **Blank artists.** The "Kid Songs" tables (Bravo Vol 8, P-Series Vol 73) leave the artist cell empty in the source; they are accepted through `catalog/reviewed.yaml`, which names each file a person checked.
 - **Not evidence of machine compatibility:** nothing here says which individual machine in a group can use a list.

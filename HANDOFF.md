@@ -1,12 +1,14 @@
 # Handoff
 
-Last updated: **2026-10-24**
+Last updated: **2026-10-26**
 
 ## Current milestone
 
 **M0 to M5 are all merged to `main`; the project is feature-complete and verified locally.** M5 (production readiness) landed in PR #5. The full stack (web, contact, ingest) builds as Docker images and passes a smoke test, but **nothing is hosted yet**: deploying needs a VPS, a domain, a reverse proxy and an SMTP account, which are the owner's to provide ([docs/deployment.md](docs/deployment.md)). The project is feature-complete against the brief.
 
 ## Completed
+
+- **Data review (2026-10-26)**, [docs/data-review.md](docs/data-review.md): parser fixes (column headers read into titles, `v.NN` marks, tightly spaced title lines read as colliding cells, whole documents quarantined for a few odd rows) and the T-Series HDD machine ([ADR 0009](docs/decisions/0009-t-series-hdd.md)). Rebuilt locally from the same 363 documents: 78,141 to 79,029 songs, 0 documents quarantined. **To publish it on the server:** `kc import --reimport --section all`, `kc map`, `kc publish --allow-drop` (see docs/deployment.md, "After an update that changes how documents are read"). Songs that exist only on a machine's built-in base catalog (for example Sinatra's "My Way") are not in any published list and cannot be added from official sources.
 
 - **M0** source audit, repo, logo. **M1** catalog pipeline. **M2** offline songbook PWA ([DESIGN.md](DESIGN.md)). **M3** versioned publishing and verified automatic updates ([docs/catalog-updates.md](docs/catalog-updates.md)). **M4** twelve machine-group models ([docs/model-compatibility.md](docs/model-compatibility.md), [ADR 0004](docs/decisions/0004-machine-group-models.md)).
 - **M5** ([ADR 0005](docs/decisions/0005-production-deployment.md), [docs/security.md](docs/security.md)):
