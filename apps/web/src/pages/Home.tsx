@@ -6,7 +6,7 @@ import { LetterStrip } from "../components/LetterStrip";
 import { ModelPicker } from "../components/ModelPicker";
 import { Readout } from "../components/Readout";
 import { SearchField } from "../components/SearchField";
-import { SongList } from "../components/SongList";
+import { SongList, machinesOf } from "../components/SongList";
 import { BootSkeleton, SongSkeleton, StatePanel } from "../components/StatePanel";
 import type { UpdateState, useCatalog } from "../hooks/useCatalog";
 import { RESULT_LIMIT, type SongIndex } from "../lib/search";
@@ -42,7 +42,8 @@ export function Home({ catalog }: { catalog: ReturnType<typeof useCatalog> }) {
   if (!first) return null;
   const isAll = modelSlug === ALL_MODELS && manifest.models.length > 1;
   const model: ModelInfo | null = isAll ? null : (manifest.models.find((m) => m.slug === modelSlug) ?? first);
-  const readoutModel = (open && manifest.models.find((m) => m.slug === open.model)) || model || first;
+  const ownMachines = open && isAll ? machinesOf(open, manifest.models) : [];
+  const readoutModels = ownMachines.length > 0 ? ownMachines : [model ?? first];
 
   return (
     <>
@@ -69,7 +70,7 @@ export function Home({ catalog }: { catalog: ReturnType<typeof useCatalog> }) {
           />
         )}
       </div>
-      <Readout song={open} model={readoutModel} onClose={() => setOpen(null)} />
+      <Readout song={open} models={readoutModels} onClose={() => setOpen(null)} />
     </>
   );
 }

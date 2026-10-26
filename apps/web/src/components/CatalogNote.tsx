@@ -31,9 +31,9 @@ export function CatalogNote({ manifest, model, songCount, update, onCheck }: Cat
           </>
         ) : (
           <>
-            All machines · {songCount.toLocaleString("en-PH")} songs from {manifest.models.length} machines. The same
-            number can be a different song on another machine, so each row says which machine it is for. Songs added
-            in earlier volumes are not included.
+            All machines · {songCount.toLocaleString("en-PH")} song numbers from {manifest.models.length} machines.
+            A row lists every machine that uses that number for the song; the same number can be another song on
+            another machine. Songs added in earlier volumes are not included.
           </>
         )}{" "}
         Compiled from{" "}

@@ -414,7 +414,7 @@ describe("all machines", () => {
     const user = userEvent.setup();
     const first = mount();
     await user.click(await screen.findByRole("radio", { name: "All machines" }));
-    expect(await screen.findByText(/each row says which machine it is for/i)).toBeInTheDocument();
+    expect(await screen.findByText(/A row lists every machine that uses that number for the song/i)).toBeInTheDocument();
     expect(localStorage.getItem("kantahan.model")).toBe("all");
     first.unmount();
     mount();
@@ -429,6 +429,63 @@ describe("all machines", () => {
     expect(await screen.findByText(/Model B could not be loaded/)).toBeInTheDocument();
     await user.type(screen.getByRole("searchbox"), "dahilan");
     expect(await screen.findByRole("button", { name: /Dahilan/ })).toBeInTheDocument();
+  });
+
+  describe("a song numbered the same on several machines", () => {
+    const rows = [["15563", "Dahilan", "Sample Artist D"], ["20000", "Only here", "Someone"]] as const;
+    const four = ["a", "b", "c", "d"].map((letter) => ({
+      slug: `m-${letter}`,
+      name: `Model ${letter.toUpperCase()}`,
+      bundle: makeBundle(rows, `m-${letter}`),
+    }));
+    const manifest = makeManifest({
+      models: four.map((m, i) => modelEntry(m.slug, m.bundle, m.name, (["magenta", "aqua", "lime", "orange"] as const)[i]!)),
+    });
+    const FOUR = {
+      "/catalog/manifest.json": manifest,
+      ...Object.fromEntries(four.map((m) => [`/catalog/${m.slug}.json`, m.bundle])),
+    };
+
+    it("is one row that names two machines and counts the rest", async () => {
+      stubNetwork(FOUR);
+      const user = userEvent.setup();
+      mount();
+      await user.click(await screen.findByRole("radio", { name: "All machines" }));
+      await user.type(await screen.findByRole("searchbox"), "15563");
+      const list = await screen.findByRole("list", { name: "Search results" });
+      const rows = within(list).getAllByRole("button");
+      expect(rows).toHaveLength(1);
+      expect(within(rows[0]!).getByText("Model A, Model B and 2 more")).toBeInTheDocument();
+      expect(rows[0]).toHaveAccessibleName(/For Model A, Model B, Model C, Model D/); // the full list is there for screen readers
+    });
+
+    it("names both machines when only two share the number", async () => {
+      const two = { ...FOUR, "/catalog/manifest.json": makeManifest({ models: manifest.models.slice(0, 2) }) };
+      stubNetwork(two);
+      const user = userEvent.setup();
+      mount();
+      await user.click(await screen.findByRole("radio", { name: "All machines" }));
+      await user.type(await screen.findByRole("searchbox"), "15563");
+      expect(await screen.findByText("Model A, Model B")).toBeInTheDocument();
+    });
+
+    it("lists every machine in the number sheet", async () => {
+      stubNetwork(FOUR);
+      const user = userEvent.setup();
+      mount();
+      await user.click(await screen.findByRole("radio", { name: "All machines" }));
+      await user.type(await screen.findByRole("searchbox"), "15563");
+      await user.click(await screen.findByRole("button", { name: /Dahilan/ }));
+      const dialog = await screen.findByRole("dialog", { name: "Dahilan" });
+      expect(within(dialog).getByText("For 4 machines")).toBeInTheDocument();
+      const names = within(within(dialog).getByRole("list", { name: "Machines" })).getAllByRole("listitem");
+      expect(names.map((li) => li.textContent)).toEqual([
+        expect.stringContaining("Model A"),
+        expect.stringContaining("Model B"),
+        expect.stringContaining("Model C"),
+        expect.stringContaining("Model D"),
+      ]);
+    });
   });
 
   it("has no All choice when there is only one machine", async () => {

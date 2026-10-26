@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type LoadDeps, type LoadFailure, type LoadSource, loadManifestFromAnywhere, loadSongs } from "../lib/loader";
 import { readLastCheck, readModel, writeModel } from "../lib/prefs";
+import { mergeAcrossMachines } from "../lib/merge";
 import { SongIndex } from "../lib/search";
 import { type SyncResult, checkForUpdates } from "../lib/sync";
 import { ALL_MODELS, type Manifest, type Song } from "../lib/types";
@@ -82,7 +83,7 @@ export function useCatalog(deps?: LoadDeps) {
       }
       if (!quiet && current()) setState({ phase: "songs-loading", manifest, slug: ALL_MODELS });
       const results = await Promise.allSettled(manifest.models.map((m) => loadSongs(m, manifest, depsRef.current)));
-      const songs: Song[] = [];
+      const loaded: { slug: string; songs: readonly Song[] }[] = [];
       const missing: string[] = [];
       let source: LoadSource = "device";
       let firstError: unknown;
@@ -95,13 +96,13 @@ export function useCatalog(deps?: LoadDeps) {
           return;
         }
         if (result.value.source === "network") source = "network";
-        for (const song of result.value.songs) songs.push({ ...song, id: songs.length, model: model.slug });
+        loaded.push({ slug: model.slug, songs: result.value.songs });
       });
-      if (songs.length === 0) {
+      if (loaded.length === 0) {
         if (!quiet && current()) setState({ ...describe(firstError), phase: "songs-failed", manifest, slug: ALL_MODELS });
         return false;
       }
-      const index = new SongIndex(songs);
+      const index = new SongIndex(mergeAcrossMachines(loaded));
       for (const stale of [...indexes.current.keys()]) {
         if (stale.startsWith(`${ALL_MODELS}:`)) indexes.current.delete(stale);
       }

@@ -33,7 +33,7 @@ Songs and numbers come from the official Platinum Karaoke song-list updates, ext
 ## Capabilities and Constraints
 
 - Search by title, artist or number; partial, case- and accent-insensitive, basic typo tolerance.
-- Model selector with a remembered choice, plus an **All machines** view (added 2026-10-24 at the owner's request; it is also what a first visit opens on): every machine's songs in one searchable list. Nothing is merged: each entry keeps its own machine and number, every row names its machine, and a number that two machines use for different songs shows as two rows. Offline search; catalog version info.
+- Model selector with a remembered choice, plus an **All machines** view (added 2026-10-24 at the owner's request; it is also what a first visit opens on): every machine's songs in one searchable list. The data is never merged. In this view identical entries (same song, same number) show once and name every machine that has them; the same song under different numbers, or a number used for different songs, stay separate rows. Offline search; catalog version info.
 - Catalog updates (manual check, silent background sync) arrive in M3; M2 loads the catalog and stores it locally.
 - Pages: About, Privacy, Rights and Removal (the contact form is M5; until then the page points to the repository issue tracker).
 - Not in scope: queueing, sharing, QR codes, accounts, multiplayer, streaming, lyrics, payments, social.

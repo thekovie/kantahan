@@ -48,7 +48,16 @@ export function LineSign({ model, top = false }: LineSignProps) {
   );
 }
 
+interface AllSignProps {
+  detail: string;
+  /** Shown instead of "All machines", for example "For 4 machines" in a number sheet. */
+  name?: string;
+  badge?: string;
+  /** Square top corners, for use as the header of a sheet. */
+  top?: boolean;
+}
+
 /** The sign for the all-machines view: ink, because no single machine's colour applies. */
-export function AllSign({ detail }: { detail: string }) {
-  return <Sign className="line hue-all" badge="All" name="All machines" detail={detail} />;
+export function AllSign({ detail, name = "All machines", badge = "All", top = false }: AllSignProps) {
+  return <Sign className={`line hue-all${top ? " line--top" : ""}`} badge={badge} name={name} detail={detail} />;
 }
