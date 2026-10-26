@@ -106,3 +106,19 @@ test("the all-machines view labels every row with its machine, and keeps the cho
   await page.reload();
   await expect(page.getByRole("radio", { name: "All machines" })).toBeChecked();
 });
+
+test("the navigation bar and the machine sign stay pinned while the list scrolls", async ({ page }) => {
+  await page.getByRole("tab", { name: /^N, \d+ songs?/ }).click();
+  await page.evaluate(() => window.scrollTo(0, 1200));
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(600);
+  const header = await page.locator("header.header").boundingBox();
+  const sign = await page.locator(".line").first().boundingBox();
+  if (!header || !sign) throw new Error("the bar or the sign is not on the page");
+  expect(Math.round(header.y)).toBe(0);
+  // The machine sign sits directly under the bar (within a pixel), so nothing slides between them.
+  expect(Math.abs(sign.y - (header.y + header.height))).toBeLessThanOrEqual(1);
+  // Keyboard focus is never hidden under the two pinned bars.
+  await page.keyboard.press("Tab");
+  const focused = await page.evaluate(() => document.activeElement?.getBoundingClientRect().top ?? 0);
+  expect(focused).toBeGreaterThanOrEqual(header.height + sign.height - 1);
+});

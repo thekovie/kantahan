@@ -61,6 +61,21 @@ describe("songbook", () => {
     expect(screen.getByRole("link", { name: "Synthetic demo data" })).toHaveAttribute("href", "https://example.test/source");
   });
 
+  it("keeps the catalog note short, with the caveats behind About this list", async () => {
+    stubNetwork(ROUTES);
+    const user = userEvent.setup();
+    mount();
+    const note = await screen.findByRole("region", { name: "About this catalog" });
+    expect(within(note).getByText(/Model A · Demo volume 1 · 8 songs/)).toBeInTheDocument();
+    expect(within(note).getByRole("link", { name: "Synthetic demo data" })).toBeVisible();
+    expect(within(note).getByRole("button", { name: "Check for updates" })).toBeVisible();
+    const more = within(note).getByText("About this list").closest("details");
+    expect(more).not.toHaveAttribute("open");
+    expect(more).toHaveTextContent(/Songs added in earlier volumes are not included/);
+    await user.click(within(note).getByText("About this list"));
+    expect(more).toHaveAttribute("open");
+  });
+
   it("walks the alphabet rail", async () => {
     stubNetwork(ROUTES);
     const user = userEvent.setup();
@@ -185,7 +200,9 @@ describe("shell", () => {
     const user = userEvent.setup();
     mount();
     // The footer is on every page, including the songbook.
-    expect(await within(await screen.findByRole("contentinfo")).findByText(/More karaoke machines from the Philippines are coming soon/)).toBeInTheDocument();
+    const footer = within(await screen.findByRole("contentinfo"));
+    expect(await footer.findByText(/More local machines coming soon/)).toBeInTheDocument();
+    expect(footer.getByText(/independent and not affiliated with Platinum Karaoke/)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Menu" }));
     await user.click(within(screen.getByRole("navigation", { name: "Site" })).getByRole("link", { name: "About" }));
     const main = within(screen.getByRole("main"));

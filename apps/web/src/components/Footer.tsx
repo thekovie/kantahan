@@ -10,8 +10,8 @@ export function Footer() {
           <Link href="/rights">Rights and removal</Link>
         </nav>
         <p>
-          Kantahan is an independent songbook. It is not affiliated with, endorsed by or sponsored by Platinum Karaoke or
-          Vismay International Corporation. More karaoke machines from the Philippines are coming soon.
+          Kantahan is independent and not affiliated with Platinum Karaoke or Vismay International Corporation. More
+          local machines coming soon.
         </p>
       </div>
     </footer>
