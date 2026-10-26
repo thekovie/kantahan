@@ -253,3 +253,7 @@ A dynamic mic on a yellow disc (#ffc20e). The ball head is also a magnifying len
 ## All machines view
 
 The first choice in the machine chooser is **All machines**: every machine's songs in one list. Its line sign is ink (no machine colour applies) with the badge "All" and the count of machines. Rows are **merged when the song and its number are the same on several machines**: one row, with a small stack of line-colour dots and the first two machine names then "and N more" under the artist (the full list is read out to screen readers). The same song under different numbers, and the same number for different songs, stay separate rows. Opening a merged row shows an ink sign "For N machines" and every machine by name in a list. See [ADR 0010](docs/decisions/0010-merged-rows-in-all-view.md).
+
+## Pinned bars and the short note
+
+The navigation bar is `position: sticky` at the top (z-index 30) and the machine sign sticks directly under it (`top: var(--header-h)`). `--header-h` is the bar's height (3.75rem plus its 1px rule and the phone's top inset), and `scroll-padding-top` leaves room for both bars so keyboard focus is never hidden. On phones the pinned sign hides its volumes text and clamps the name to two lines. The note under the list is a short summary (machine, volumes, count), the source credit and catalog version, and the update button; the caveats sit behind the native `<details>` "About this list". The footer is a single sentence.
