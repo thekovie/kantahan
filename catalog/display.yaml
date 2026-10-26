@@ -14,6 +14,10 @@ models:
     name: T-X
     family: Platinum machine group
     hue: violet
+  t-series-hdd:
+    name: T-Series HDD
+    family: Platinum machine group
+    hue: yellow
   flute-piano-piano-xl-sd-pk10:
     name: Flute / Piano V1.5 / Piano XL SD / PK10
     family: Platinum machine group

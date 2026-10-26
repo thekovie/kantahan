@@ -37,3 +37,9 @@ def test_negated_reyna_is_not_reyna():
 def test_song_rows_following_a_short_header_are_not_read_as_header():
     lines = ["Volume 85", "Dahilan 15572 For Reyna Callalily"]
     assert classify_header(lines).family == "unstated"
+
+
+def test_a_t_series_hdd_header_is_its_own_family_and_the_dvd_one_is_not():
+    assert classify_header(["Vol. 60 For T-Series, HDD"]).family == "t-series-hdd"
+    assert classify_header(["- 58 For T-Series, HDD"]).family == "t-series-hdd"
+    assert classify_header(["Vol. 64 For T-Series DVD"]).family == "unstated"

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import re
 import statistics
+from collections import defaultdict
+from dataclasses import replace
 
 from .models import DocumentExtract, Issue
 
@@ -16,6 +18,15 @@ SAMPLE = 5
 # have at most one (page furniture), so tolerate a handful and block beyond that.
 MAX_STRAY_TOKENS = 3
 MAX_STRAY_RATE = 0.01
+# Column headers ("Song Title", "Popularized By:") that end up inside a title or an artist. A
+# couple of songs may really start that way; more means headers are being read as data again.
+HEADER_TEXT = re.compile(r"^(song\s+title|popularized\s+by:?)\b", re.I)
+MAX_HEADER_TEXT_ROWS = 2
+# A few rows with an unusable number (not five digits) or a number printed twice with different
+# text are set aside and reported; the rest of the document is imported. More than this means the
+# document was probably misread, so it is quarantined as a whole instead.
+MAX_SET_ASIDE_ROWS = 20
+MAX_SET_ASIDE_RATE = 0.10
 
 
 def validate_document(
@@ -26,11 +37,54 @@ def validate_document(
         return [Issue("no_rows", "error", "no song rows were extracted")]
     issues: list[Issue] = []
     issues += _row_errors(extract)
+    issues += _header_text(extract)
     issues += _duplicates(extract)
     issues += _artist_checks(extract, blank_artists_ok)
     issues += _drift(extract, previous_rows)
     issues += _review_flags(extract)
     return issues
+
+
+def set_aside_odd_rows(extract: DocumentExtract) -> tuple[DocumentExtract, list[Issue]]:
+    """Leave out the few rows that cannot be trusted, instead of rejecting the whole document.
+
+    Odd rows are those whose number is not five digits (nothing is padded or guessed) and numbers
+    printed twice with different text (both rows go: which one is right is not known). Warnings
+    name the numbers. When there are more than a few, nothing is changed and validation quarantines
+    the document as before.
+    """
+    rows = extract.rows
+    texts: dict[str, set[tuple[str, str]]] = defaultdict(set)
+    for r in rows:
+        texts[r.number].add((r.title, r.artist))
+    bad = [r for r in rows if not NUMBER_FORMAT.fullmatch(r.number)]
+    clash = [r for r in rows if len(texts[r.number]) > 1 and NUMBER_FORMAT.fullmatch(r.number)]
+    odd = len(bad) + len(clash)
+    if odd == 0 or odd > min(MAX_SET_ASIDE_ROWS, MAX_SET_ASIDE_RATE * len(rows)):
+        return extract, []
+    issues: list[Issue] = []
+    if bad:
+        sample = [r.number for r in bad[:SAMPLE]]
+        issues.append(
+            Issue(
+                "row_excluded_bad_number",
+                "warn",
+                f"{len(bad)} rows with a number that is not five digits were set aside "
+                f"(sample {sample}); the rest of the document was imported",
+            )
+        )
+    if clash:
+        sample = sorted({r.number for r in clash})[:SAMPLE]
+        issues.append(
+            Issue(
+                "row_excluded_duplicate",
+                "warn",
+                f"{len(clash)} rows share a number but not their text and were set aside "
+                f"(sample {sample}); the rest of the document was imported",
+            )
+        )
+    skip = {id(r) for r in bad} | {id(r) for r in clash}
+    return replace(extract, rows=tuple(r for r in rows if id(r) not in skip)), issues
 
 
 def _row_errors(extract: DocumentExtract) -> list[Issue]:
@@ -43,6 +97,21 @@ def _row_errors(extract: DocumentExtract) -> list[Issue]:
         if not r.title:
             issues.append(Issue("missing_title", "error", f"row {r.number} has no title", r.number))
     return issues
+
+
+def _header_text(extract: DocumentExtract) -> list[Issue]:
+    leaked = [r for r in extract.rows if HEADER_TEXT.match(r.title) or HEADER_TEXT.match(r.artist)]
+    if not leaked:
+        return []
+    systematic = len(leaked) > MAX_HEADER_TEXT_ROWS
+    return [
+        Issue(
+            "header_text_leaked",
+            "error" if systematic else "warn",
+            f"{len(leaked)} rows start with column header text (sample "
+            f"{[r.number for r in leaked[:SAMPLE]]})",
+        )
+    ]
 
 
 def _duplicates(extract: DocumentExtract) -> list[Issue]:

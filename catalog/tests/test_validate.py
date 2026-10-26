@@ -98,3 +98,41 @@ def test_blank_artists_are_accepted_only_when_a_person_confirmed_the_document():
     assert any(i.code == "artist_missing_rate" for i in validate_document(doc))
     reviewed = validate_document(doc, blank_artists_ok=True)
     assert not any(i.severity == "error" for i in reviewed)
+
+
+def test_odd_rows_are_set_aside_only_while_they_are_few():
+    from kantahan_catalog.models import DocumentExtract, RawRow
+    from kantahan_catalog.validate import set_aside_odd_rows
+
+    def row(n, title="T", artist="A"):
+        return RawRow(n, title, artist, 1, 0, 0)
+
+    good = tuple(row(f"{15000 + i}", f"T{i}") for i in range(40))
+    few = DocumentExtract(good + (row("782"), row("15000", "Other")), 1, (), 0)
+    kept, issues = set_aside_odd_rows(few)
+    assert len(kept.rows) == 39 and {i.code for i in issues} == {
+        "row_excluded_bad_number",
+        "row_excluded_duplicate",
+    }
+    many = DocumentExtract(good[:10] + tuple(row(f"{100 + i}") for i in range(10)), 1, (), 0)
+    unchanged, none = set_aside_odd_rows(many)
+    assert unchanged is many and none == []
+
+
+def test_column_header_text_inside_titles_or_artists_blocks_the_document_when_systematic():
+    def rows_with(prefix, count, where="title"):
+        out = []
+        for i in range(30):
+            leak = i < count
+            title = f"{prefix if leak and where == 'title' else ''}Song {i}"
+            artist = f"{prefix if leak and where == 'artist' else ''}Artist {i}"
+            out.append(RawRow(f"{15000 + i}", title, artist, 1, 0, i))
+        return DocumentExtract(tuple(out), 1, (), 0)
+
+    systematic = validate_document(rows_with("Song Title ", 5))
+    assert any(i.code == "header_text_leaked" and i.severity == "error" for i in systematic)
+    artist = validate_document(rows_with("Popularized By: ", 5, "artist"))
+    assert any(i.code == "header_text_leaked" and i.severity == "error" for i in artist)
+    one = validate_document(rows_with("Song Title ", 1))
+    assert any(i.code == "header_text_leaked" and i.severity == "warn" for i in one)
+    assert not [i for i in validate_document(rows_with("", 0)) if i.code == "header_text_leaked"]

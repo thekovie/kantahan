@@ -17,7 +17,7 @@ from typing import Any
 import pdfplumber
 
 from .models import DocumentExtract, ExtractionError, RawRow
-from .normalize import clean
+from .normalize import clean, strip_version_marks
 
 # ASCII digits only and fullmatch: `\d` alone would accept fullwidth digits, `$` a trailing newline.
 NUMBER_CELL = re.compile(r"\d{3,7}", re.ASCII)  # number-like in a number cell; validate decides
@@ -31,9 +31,16 @@ EDGE_MERGE = 1.5  # points; borders closer than this are the same border
 HEADER_LINES = 12
 DEFAULT_PITCH = 20.0
 ROW_REACH = 0.9  # a word further than this many pitches from a number is not in its row
-# Normal wrapped lines never overlap (line pitch exceeds glyph height), so even a small overlap
-# means two cells are drawn on top of each other.
-OVERLAP_FRACTION = 0.05
+# A column header ("Song Title", "Popularized By:") sits 0.8 to 0.9 of a row away from the row under
+# it, which is inside ROW_REACH, so its words were read as part of that row. It appears above the
+# first row and again at the start of each section inside a table. Header words that far from every
+# row (a wrapped three-line title reaches only about 0.55) are dropped. Position alone is not
+# enough: a tall wrapped title can legitimately reach that far, so only the header's own words go.
+HEADER_REACH = 0.6
+HEADER_WORDS = frozenset({"song", "title", "popularized", "by", "by:"})
+# Two cells drawn on top of each other overlap heavily (measured 0.8 of a word's area), while the
+# tightly spaced lines of one wrapped title overlap by about 0.16 and must stay together.
+OVERLAP_FRACTION = 0.35
 BOUNDARY_REACH = 0.6  # an overlap must sit this close (in row pitches) to a row boundary
 SAME_LINE = 0.3
 
@@ -392,7 +399,9 @@ def _table_rows(
     )
     title_words, artist_words = [], []
     for w in words:
-        x = _center(w)[0]
+        x, y = _center(w)
+        if w["text"].lower() in HEADER_WORDS and min(abs(c - y) for c in cy) > pitch * HEADER_REACH:
+            continue  # a column header, not part of any row
         if NUMBER_CELL.fullmatch(w["text"]) and e1 - 3 <= x <= e2 + 3:
             continue
         if e0 - 3 <= x <= e1:
@@ -412,7 +421,7 @@ def _table_rows(
         rows.append(
             RawRow(
                 number=n["text"],
-                title=_lines_text(titles.get(i, [])),
+                title=strip_version_marks(_lines_text(titles.get(i, []))),
                 artist=merged.get(i) or _lines_text(artists.get(i, [])),
                 page=page_no,
                 table=table_no,

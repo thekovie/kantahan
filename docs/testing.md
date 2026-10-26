@@ -1,6 +1,6 @@
 # Testing
 
-Catalog pipeline: **237 tests, 95% line coverage** (`pytest --cov`), `ruff` clean, `mypy --strict` clean. Contact service: **64 tests, 98% line coverage**. Web app: **178 unit and integration tests (98% line coverage), 58 Playwright end-to-end tests** (mobile Pixel 7 and desktop 1440 wide, including axe scans), `tsc --strict` clean.
+Catalog pipeline: **257 tests, 96% line coverage** (`pytest --cov`), `ruff` clean, `mypy --strict` clean. Contact service: **64 tests, 98% line coverage**. Web app: **178 unit and integration tests (98% line coverage), 58 Playwright end-to-end tests** (mobile Pixel 7 and desktop 1440 wide, including axe scans), `tsc --strict` clean.
 
 ## Policy
 

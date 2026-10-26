@@ -8,7 +8,12 @@ Reyna is the exception, by the owner's decision (2026-10-24): its section alone 
 because Source D sells separate Reyna and T-X volumes. A volume joins `reyna` only when its own
 page-1 header says so, which the importer already records.
 
-Mappings are only ever added: a link that disappears from the page does not remove songs.
+A header can also split a section: the publisher lists "For T-Series, HDD" volumes under T-X
+SERIES, but they share numbers with the T-Series DVD volumes, so they are their own machine (see
+HEADER_SPLITS). That is the one case where a mapping is replaced: the section's default model is
+removed from such a volume.
+
+Otherwise mappings are only ever added: a link that disappears from the page does not remove songs.
 """
 
 from __future__ import annotations
@@ -33,6 +38,9 @@ SECTION_TO_MODEL: dict[str, str] = {
     "BRAVO": "bravo",
     "P-SERIES": "p-series",
 }
+
+# (section, the document's own header family) -> the machine that document belongs to instead.
+HEADER_SPLITS: dict[tuple[str, str], str] = {("T-X SERIES", "t-series-hdd"): "t-series-hdd"}
 
 # Models that need their own header to say so; being listed in the section is not enough.
 HEADER_ONLY_MODELS = frozenset({"reyna"})
@@ -65,14 +73,27 @@ def apply_section_mappings(conn: sqlite3.Connection, links: Iterable[DiscoveredL
             strict += 1
             continue
         release = conn.execute(
-            "SELECT r.id FROM document_link dl JOIN source s ON s.id = dl.source_id "
+            "SELECT r.id, d.header_family FROM document_link dl "
+            "JOIN source s ON s.id = dl.source_id "
             "JOIN release r ON r.document_id = dl.document_id "
+            "JOIN document d ON d.id = r.document_id "
             "WHERE s.slug = 'a' AND dl.url = ? AND r.superseded_by IS NULL",
             (link.url,),
         ).fetchone()
         if release is None:
             missing += 1
             continue
+        split = HEADER_SPLITS.get((link.section, release["header_family"]))
+        if split is not None:
+            if split not in models:
+                raise KeyError(f"header split maps to {split!r}, which has no model row")
+            with conn:
+                conn.execute(
+                    "DELETE FROM release_model WHERE release_id = ? "
+                    "AND model_id = (SELECT id FROM model WHERE slug = ?)",
+                    (release["id"], slug),
+                )
+            slug = split
         with conn:
             inserted = conn.execute(
                 "INSERT OR IGNORE INTO release_model (release_id, model_id, evidence) "

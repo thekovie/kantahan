@@ -237,3 +237,31 @@ def test_blank_artists_are_accepted_only_for_the_reviewed_file_content(conn, pdf
         blank_artist_hashes={sha},
     )
     assert again.outcome == "quarantined"
+
+
+def test_a_few_odd_rows_are_set_aside_and_the_rest_of_the_document_is_imported(conn, pdf):
+    rows = sample_rows(15000, 30) + [("782", "Short Number", "A"), ("6098", "Four Digits", "B")]
+    result = run(conn, pdf("o.pdf", rows))
+    assert (result.outcome, result.rows) == ("imported", 30)
+    assert "row_excluded_bad_number" in {i.code for i in result.issues}
+    numbers = {r["number"] for r in conn.execute("SELECT number FROM song_entry")}
+    assert len(numbers) == 30 and "782" not in numbers and "6098" not in numbers
+    assert count(conn, "quarantine") == 0
+
+
+def test_a_number_printed_twice_with_different_songs_sets_those_rows_aside_not_the_document(
+    conn, pdf
+):
+    rows = sample_rows(15000, 30) + [("15000", "Another Song", "Other Artist")]
+    result = run(conn, pdf("d.pdf", rows))
+    assert (result.outcome, result.rows) == ("imported", 29)
+    assert "row_excluded_duplicate" in {i.code for i in result.issues}
+    numbers = {r["number"] for r in conn.execute("SELECT number FROM song_entry")}
+    assert "15000" not in numbers and "15001" in numbers
+
+
+def test_a_document_with_many_odd_rows_is_still_quarantined(conn, pdf):
+    rows = sample_rows(15000, 10) + [(str(100 + i), f"Short {i}", "A") for i in range(10)]
+    result = run(conn, pdf("m.pdf", rows))
+    assert result.outcome == "quarantined"
+    assert conn.execute("SELECT reason FROM quarantine").fetchone()["reason"] == "bad_number"
